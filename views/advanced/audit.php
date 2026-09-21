@@ -1,1 +1,1 @@
-<?php require __DIR__.'/audit-content.php';
+<?php $viewFile=BASE_PATH.'/views/advanced/audit-content.php';require BASE_PATH.'/views/layout.php';
