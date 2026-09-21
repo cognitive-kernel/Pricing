@@ -1,0 +1,1 @@
+<?php $viewFile=BASE_PATH.'/views/prices/queue-content.php';require BASE_PATH.'/views/layout.php';
