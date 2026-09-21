@@ -36,6 +36,7 @@ try {
         'settings.manage' => 'مدیریت تنظیمات',
         'imports.view' => 'مشاهده Import',
         'imports.manage' => 'اجرای Import',
+        'api.tokens.manage' => 'مدیریت API Token',
     ];
 
     foreach ($permissions as $code => $name) {
