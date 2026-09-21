@@ -31,7 +31,7 @@
         </summary>
 
         <div class="mt-3">
-          <form method="post" action="/pricing/public/admin/users/<?=(int)$u['id']?>/status" class="mb-3">
+          <form method="post" action="/pricing/public/admin/users/<?=(int)$u['id']?>/profile" class="mb-3"><input type="hidden" name="_csrf" value="<?=Security::e(Security::csrf())?>"><div class="row g-2"><div class="col-md-4"><input name="name" value="<?=Security::e($u['name'])?>" class="form-control" placeholder="نام" required></div><div class="col-md-4"><input name="email" type="email" value="<?=Security::e($u['email'])?>" class="form-control" placeholder="ایمیل"></div><div class="col-md-3"><select name="unit_id" class="form-select"><option value="0">بدون واحد</option><?php foreach($units as $unit):?><option value="<?=(int)$unit['id']?>" <?=((int)$u['unit_id']===(int)$unit['id'])?'selected':''?>><?=Security::e($unit['name'])?></option><?php endforeach;?></select></div><div class="col-md-3"><input name="password" type="password" minlength="8" class="form-control" placeholder="رمز جدید (اختیاری)"></div><div class="col-12"><button class="btn btn-sm btn-outline-primary">ذخیره اطلاعات کاربر</button></div></div></form><form method="post" action="/pricing/public/admin/users/<?=(int)$u['id']?>/status" class="mb-3">
             <input type="hidden" name="_csrf" value="<?=Security::e(Security::csrf())?>">
             <button class="btn btn-sm <?=$active?'btn-outline-danger':'btn-outline-success'?>">
               <?=$active?'غیرفعال کردن کاربر':'فعال کردن کاربر'?>
