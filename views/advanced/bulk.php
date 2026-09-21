@@ -1,1 +1,1 @@
-<?php require __DIR__.'/bulk-content.php';
+<?php $viewFile=BASE_PATH.'/views/advanced/bulk-content.php';require BASE_PATH.'/views/layout.php';
