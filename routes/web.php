@@ -1,10 +1,9 @@
 <?php
-use App\Controllers\AdminController;use App\Controllers\AuthController;use App\Controllers\PriceController;use App\Controllers\ManagementController;
+use App\Controllers\AdminController;use App\Controllers\AuthController;use App\Controllers\PriceController;use App\Controllers\ManagementController;use App\Controllers\AdvancedController;
 $router->get('/',fn()=>\App\Core\Security::redirect('/prices'));
 $router->get('/login',[AuthController::class,'login']);$router->post('/login',[AuthController::class,'login']);$router->post('/logout',[AuthController::class,'logout']);
 $router->get('/password',[AuthController::class,'password']);$router->post('/password',[AuthController::class,'password']);
-$router->get('/prices',[PriceController::class,'index']);$router->get('/prices/queue',[PriceController::class,'queue']);$router->get('/prices/create',[PriceController::class,'form']);$router->post('/prices',[PriceController::class,'save']);$router->get('/prices/{id}/history',[PriceController::class,'history']);
-$router->get('/prices/{id}/edit',[PriceController::class,'form']);$router->post('/prices/{id}',[PriceController::class,'save']);$router->post('/prices/{id}/delete',[PriceController::class,'delete']);
+$router->get('/prices',[PriceController::class,'index']);$router->get('/prices/queue',[PriceController::class,'queue']);$router->get('/prices/create',[PriceController::class,'form']);$router->post('/prices',[PriceController::class,'save']);$router->get('/prices/{id}/history',[PriceController::class,'history']);$router->get('/prices/{id}/edit',[PriceController::class,'form']);$router->post('/prices/{id}',[PriceController::class,'save']);$router->post('/prices/{id}/delete',[PriceController::class,'delete']);
 $router->get('/admin/units',[AdminController::class,'units']);$router->post('/admin/units',[AdminController::class,'storeUnit']);
 $router->get('/admin/groups',[AdminController::class,'groups']);$router->post('/admin/groups',[AdminController::class,'storeGroup']);$router->post('/admin/groups/{id}/permissions',[AdminController::class,'groupPermissions']);
 $router->get('/admin/users',[AdminController::class,'users']);$router->post('/admin/users',[AdminController::class,'storeUser']);$router->post('/admin/users/{id}/status',[AdminController::class,'userStatus']);$router->post('/admin/users/{id}/groups',[AdminController::class,'userGroups']);$router->post('/admin/users/{id}/permissions',[AdminController::class,'userPermissions']);
@@ -17,4 +16,11 @@ $router->get('/audit',[ManagementController::class,'audit']);$router->get('/repo
 $router->get('/settings',[ManagementController::class,'settings']);$router->post('/settings',[ManagementController::class,'saveSetting']);
 $router->get('/api-tokens',[ManagementController::class,'apiTokens']);$router->post('/api-tokens',[ManagementController::class,'createApiToken']);$router->post('/api-tokens/{id}/revoke',[ManagementController::class,'revokeApiToken']);
 $router->get('/imports/products',[ManagementController::class,'importForm']);$router->post('/imports/products',[ManagementController::class,'importProducts']);
+$router->get('/search',[AdvancedController::class,'search']);$router->get('/products/bulk',[AdvancedController::class,'bulk']);$router->post('/products/bulk',[AdvancedController::class,'bulkApply']);
+$router->get('/admin/product-sources/{id}',[AdvancedController::class,'productSources']);$router->post('/admin/product-sources/{id}',[AdvancedController::class,'saveProductSources']);
+$router->get('/workflow',[AdvancedController::class,'workflow']);$router->post('/workflow/start',[AdvancedController::class,'workflowStart']);$router->post('/workflow/{id}',[AdvancedController::class,'workflowUpdate']);
+$router->get('/admin/queue-settings',[AdvancedController::class,'queueSettings']);$router->post('/admin/queue-settings',[AdvancedController::class,'saveQueueSettings']);
+$router->get('/admin/health',[AdvancedController::class,'health']);$router->get('/admin/audit',[AdvancedController::class,'auditSearch']);
+$router->get('/exports/{type}',[AdvancedController::class,'export']);$router->get('/exports/{type}/excel',[AdvancedController::class,'excel']);
+$router->post('/notifications/generate',[AdvancedController::class,'generateNotifications']);
 $router->get('/api/products',[\App\Controllers\ApiController::class,'products']);$router->get('/api/products/{id}/prices',[\App\Controllers\ApiController::class,'prices']);$router->get('/api/queue',[\App\Controllers\ApiController::class,'queue']);
