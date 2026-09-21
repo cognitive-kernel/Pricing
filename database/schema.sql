@@ -7,6 +7,12 @@ IF OBJECT_ID('dbo.products','U') IS NULL CREATE TABLE dbo.products(id INT IDENTI
 IF COL_LENGTH('dbo.products','importance') IS NULL ALTER TABLE dbo.products ADD importance TINYINT NOT NULL CONSTRAINT DF_products_importance DEFAULT 1;
 IF COL_LENGTH('dbo.products','is_active') IS NULL ALTER TABLE dbo.products ADD is_active BIT NOT NULL CONSTRAINT DF_products_active DEFAULT 1;
 IF COL_LENGTH('dbo.products','expected_sources') IS NULL ALTER TABLE dbo.products ADD expected_sources TINYINT NOT NULL CONSTRAINT DF_products_expected_sources DEFAULT 3;
+IF COL_LENGTH('dbo.products','min_sources') IS NULL ALTER TABLE dbo.products ADD min_sources TINYINT NOT NULL CONSTRAINT DF_products_min_sources DEFAULT 2;
+IF COL_LENGTH('dbo.products','max_sources') IS NULL ALTER TABLE dbo.products ADD max_sources TINYINT NOT NULL CONSTRAINT DF_products_max_sources DEFAULT 3;
+IF COL_LENGTH('dbo.products','status') IS NULL ALTER TABLE dbo.products ADD status NVARCHAR(30) NOT NULL CONSTRAINT DF_products_status DEFAULT 'active';
+IF OBJECT_ID('dbo.product_categories','U') IS NULL CREATE TABLE dbo.product_categories(id INT IDENTITY PRIMARY KEY,name NVARCHAR(150) NOT NULL UNIQUE,description NVARCHAR(500) NULL,is_active BIT NOT NULL DEFAULT 1,created_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),updated_at DATETIME2 NOT NULL DEFAULT SYSDATETIME());
+IF COL_LENGTH('dbo.products','category_id') IS NULL ALTER TABLE dbo.products ADD category_id INT NULL;
+IF NOT EXISTS(SELECT 1 FROM sys.foreign_keys WHERE name='FK_products_category') ALTER TABLE dbo.products ADD CONSTRAINT FK_products_category FOREIGN KEY(category_id) REFERENCES dbo.product_categories(id);
 IF OBJECT_ID('dbo.product_prices','U') IS NULL CREATE TABLE dbo.product_prices(id BIGINT IDENTITY PRIMARY KEY,product_id INT NOT NULL,source_no TINYINT NOT NULL,supplier NVARCHAR(255) NOT NULL,package_price DECIMAL(18,4) NOT NULL,unit_price DECIMAL(18,4) NOT NULL,price_received_at DATETIME2 NOT NULL,notes NVARCHAR(1000) NULL,created_by INT NULL,created_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),updated_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),CONSTRAINT FK_product_prices_product FOREIGN KEY(product_id) REFERENCES dbo.products(id));
 IF COL_LENGTH('dbo.product_prices','notes') IS NULL ALTER TABLE dbo.product_prices ADD notes NVARCHAR(1000) NULL;
 IF COL_LENGTH('dbo.product_prices','created_by') IS NULL ALTER TABLE dbo.product_prices ADD created_by INT NULL;
