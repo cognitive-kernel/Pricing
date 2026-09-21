@@ -6,7 +6,7 @@
       <input type="hidden" name="_csrf" value="<?=Security::e(Security::csrf())?>">
       <div class="col-md-3"><input name="username" class="form-control" placeholder="نام کاربری" required></div>
       <div class="col-md-3"><input name="name" class="form-control" placeholder="نام" required></div>
-      <div class="col-md-3"><input name="password" type="password" minlength="8" class="form-control" placeholder="رمز اولیه" required></div>
+      <div class="col-md-3"><input name="password" type="password" minlength="8" class="form-control" placeholder="رمز اولیه" required></div><div class="col-md-3"><input name="email" type="email" class="form-control" placeholder="ایمیل"></div>
       <div class="col-md-3">
         <select name="groups[]" multiple class="form-select" size="3">
           <?php foreach($groups as $g):?>
