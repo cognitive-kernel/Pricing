@@ -7,7 +7,7 @@ $router->get('/prices',[PriceController::class,'index']);$router->get('/prices/q
 $router->get('/prices/{id}/edit',[PriceController::class,'form']);$router->post('/prices/{id}',[PriceController::class,'save']);$router->post('/prices/{id}/delete',[PriceController::class,'delete']);
 $router->get('/admin/units',[AdminController::class,'units']);$router->post('/admin/units',[AdminController::class,'storeUnit']);
 $router->get('/admin/groups',[AdminController::class,'groups']);$router->post('/admin/groups',[AdminController::class,'storeGroup']);$router->post('/admin/groups/{id}/permissions',[AdminController::class,'groupPermissions']);
-$router->get('/admin/users',[AdminController::class,'users']);$router->post('/admin/users',[AdminController::class,'storeUser']);$router->post('/admin/users/{id}/groups',[AdminController::class,'userGroups']);$router->post('/admin/users/{id}/permissions',[AdminController::class,'userPermissions']);
+$router->get('/admin/users',[AdminController::class,'users']);$router->post('/admin/users',[AdminController::class,'storeUser']);$router->post('/admin/users/{id}/status',[AdminController::class,'userStatus']);$router->post('/admin/users/{id}/groups',[AdminController::class,'userGroups']);$router->post('/admin/users/{id}/permissions',[AdminController::class,'userPermissions']);
 $router->get('/dashboard',[ManagementController::class,'dashboard']);$router->post('/queue/rebuild',[ManagementController::class,'rebuildQueue']);
 $router->get('/admin/categories',[ManagementController::class,'categories']);$router->post('/admin/categories',[ManagementController::class,'storeCategory']);
 $router->get('/admin/queue',[ManagementController::class,'queue']);$router->post('/admin/queue/{id}',[ManagementController::class,'updateQueue']);
