@@ -13,3 +13,4 @@ $router->get('/notifications',[ManagementController::class,'notifications']);$ro
 $router->get('/audit',[ManagementController::class,'audit']);$router->get('/reports',[ManagementController::class,'reports']);$router->get('/reports/export',[ManagementController::class,'exportPrices']);
 $router->get('/settings',[ManagementController::class,'settings']);$router->post('/settings',[ManagementController::class,'saveSetting']);
 $router->get('/imports/products',[ManagementController::class,'importForm']);$router->post('/imports/products',[ManagementController::class,'importProducts']);
+$router->get('/api/products',[\App\Controllers\ApiController::class,'products']);$router->get('/api/products/{id}/prices',[\App\Controllers\ApiController::class,'prices']);$router->get('/api/queue',[\App\Controllers\ApiController::class,'queue']);
