@@ -1,1 +1,1 @@
-<?php require __DIR__.'/search-content.php';
+<?php $viewFile=BASE_PATH.'/views/advanced/search-content.php';require BASE_PATH.'/views/layout.php';
