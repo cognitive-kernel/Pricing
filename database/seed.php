@@ -28,6 +28,7 @@ try {
             'imports.view'=>'مشاهده Import','imports.manage'=>'اجرای Import'
         ],
         'سیستم'=>[
+            'account.password.change'=>'تغییر رمز عبور',
             'settings.view'=>'مشاهده تنظیمات','settings.manage'=>'مدیریت تنظیمات','queue.settings'=>'تنظیمات موتور صف','system.health'=>'سلامت سیستم','security.manage'=>'مدیریت امنیت و Session',
             'api.tokens.manage'=>'مدیریت API Token','api.products.view'=>'دسترسی API محصولات','api.prices.view'=>'دسترسی API قیمت‌ها','api.queue.view'=>'دسترسی API صف'
         ],
