@@ -1,1 +1,1 @@
-<?php require __DIR__.'/notification-settings-content.php';
+<?php $viewFile=BASE_PATH.'/views/advanced/notification-settings-content.php';require BASE_PATH.'/views/layout.php';
