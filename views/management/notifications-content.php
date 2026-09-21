@@ -1,0 +1,1 @@
+<h4>اعلان‌ها</h4><div class="list-group"><?php foreach($rows as $r):?><a class="list-group-item list-group-item-action <?=$r['is_read']?'':'fw-bold'?>" href="/pricing/public/notifications/<?= (int)$r['id']?>/read"><div><?=\App\Core\Security::e($r['title'])?></div><small><?=\App\Core\Security::e($r['message'])?></small></a><?php endforeach;?></div>
