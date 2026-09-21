@@ -42,14 +42,12 @@ try {
     foreach ($permissions as $code => $meta) {
         $s = $pdo->prepare('SELECT id FROM permissions WHERE code = :code');
         $s->execute(['code' => $code]);
-
         if ($s->fetchColumn() === false) {
-            $s = $pdo->prepare('INSERT INTO permissions(code,name,type,created_at,updated_at) VALUES(:code,:name,:type,GETDATE(),GETDATE())');
-            $s->execute([
-                'code' => $code,
-                'name' => $name,
-                'type' => str_starts_with($code, 'admin.') ? 'admin' : 'form',
-            ]);
+            $s = $pdo->prepare('INSERT INTO permissions(code,name,type,permission_group,created_at,updated_at) VALUES(:code,:name,:type,:grp,GETDATE(),GETDATE())');
+            $s->execute(['code'=>$code,'name'=>$meta['name'],'type'=>str_starts_with($code,'admin.')?'admin':'form','grp'=>$meta['group']]);
+        } else {
+            $s = $pdo->prepare('UPDATE permissions SET name=:name,type=:type,permission_group=:grp,updated_at=GETDATE() WHERE code=:code');
+            $s->execute(['code'=>$code,'name'=>$meta['name'],'type'=>str_starts_with($code,'admin.')?'admin':'form','grp'=>$meta['group']]);
         }
     }
 
