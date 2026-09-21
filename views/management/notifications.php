@@ -1,1 +1,1 @@
-<?php require BASE_PATH.'/views/layout.php';
+<?php $viewFile=BASE_PATH.'/views/management/notifications-content.php';require BASE_PATH.'/views/layout.php';
