@@ -28,8 +28,7 @@ final class Security
     public static function redirect(string $path): never
     {
         if ($path !== '' && $path[0] === '/') {
-            $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-            $base = rtrim(dirname($requestPath), '/\\');
+            $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/'), '/\\');
 
             if ($base !== '' && $base !== '/' && strncasecmp($path, $base, strlen($base)) !== 0) {
                 $path = $base . $path;
