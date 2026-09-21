@@ -48,6 +48,7 @@ try {
         'workflow.manage' => 'مدیریت گردش کار',
         'queue.settings' => 'تنظیمات موتور صف',
         'system.health' => 'سلامت سیستم',
+        'security.manage' => 'مدیریت امنیت و Session',
         'notifications.manage' => 'مدیریت اعلان‌ها',
     ];
 
