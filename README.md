@@ -22,3 +22,12 @@ Setup:
 5. CI پروژه در `.github/workflows/ci.yml` بررسی Syntax فایل‌های PHP را انجام می‌دهد.
 
 اتصال واقعی به ERP یا منابع خارجی قیمت از طریق قراردادهای `App\\Contracts\\ErpClient` و `App\\Contracts\\PriceSource` انجام می‌شود و نیازمند پیاده‌سازی Adapter متناسب با سرویس مقصد است.
+
+
+## وضعیت فعلی
+
+قابلیت‌های مدیریتی هسته شامل محصولات، تاریخچه قیمت، صف هوشمند، دسته‌بندی، تأمین‌کنندگان، کاربران و Permission، Audit، Notification، داشبورد، گزارش، Import CSV، API و API Token، تنظیمات، Workflow پایه، Migration و Backup است.
+
+**فعلاً متوقف:** اتصال ERP و دریافت خودکار قیمت از منابع خارجی. برای این دو مورد فقط Contractهای فنی نگهداری می‌شوند تا مشخصات سرویس و روش احراز هویت تعیین شود.
+
+برای ارتقای دیتابیس از `php database/migrate.php` و برای Seed اولیه از `php database/seed.php` استفاده شود.
