@@ -1,1 +1,1 @@
-<?php require __DIR__.'/queue-settings-content.php';
+<?php $viewFile=BASE_PATH.'/views/advanced/queue-settings-content.php';require BASE_PATH.'/views/layout.php';
