@@ -1,0 +1,7 @@
+<?php
+declare(strict_types=1);
+namespace App\Support;
+final class Jalali {
+ public static function toGregorian(string $date):string{[$jy,$jm,$jd]=array_map('intval',preg_split('/[\/-]/',trim($date)));$jy+=1595;$days=-355668+365*$jy+intdiv($jy,33)*8+intdiv(($jy%33)+3,4)+$jd+(($jm<7)?($jm-1)*31:(($jm-7)*30+186));$gy=400*intdiv($days,146097);$days%=146097;if($days>36524){$gy+=100*intdiv(--$days,36524);$days%=36524;if($days>=365)$days++;}$gy+=4*intdiv($days,1461);$days%=1461;if($days>365){$gy+=intdiv($days-1,365);$days=($days-1)%365;}$gd=$days+1;$sal=[0,31,59,90,120,151,181,212,243,273,304,334,365];$leap=($gy%4===0&&($gy%100!==0||$gy%400===0));for($gm=1;$gm<=12&&$gd>$sal[$gm]-($gm>2&&$leap?1:0);$gm++){}$gm--; $gd-=$sal[$gm-1]+($gm>2&&$leap?1:0);return sprintf('%04d-%02d-%02d',$gy,$gm,$gd);}
+ public static function fromGregorian(string $date):string{[$gy,$gm,$gd]=array_map('intval',explode('-',substr($date,0,10)));$dm=[0,31,28,31,30,31,30,31,31,30,31,30,31];$gy2=$gy-1600;$gm2=$gm-1;$gd2=$gd-1;$days=365*$gy2+intdiv($gy2+3,4)-intdiv($gy2+99,100)+intdiv($gy2+399,400);for($i=0;$i<$gm2;$i++)$days+=$dm[$i+1];if($gm2>1&&($gy%4===0&&($gy%100!==0||$gy%400===0)))$days++;$days+=$gd2-79;$jy=979+33*intdiv($days,12053);$days%=12053;$jy+=4*intdiv($days,1461);$days%=1461;if($days>365){$jy+=intdiv($days-1,365);$days=($days-1)%365;}$jm=$days<186?1+intdiv($days,31):7+intdiv($days-186,30);$jd=1+($days<186?$days%31:($days-186)%30);return sprintf('%04d/%02d/%02d',$jy,$jm,$jd);}
+}

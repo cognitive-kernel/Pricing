@@ -1,0 +1,1 @@
+<?php $viewFile=BASE_PATH.'/views/admin/users-content.php';require BASE_PATH.'/views/layout.php';

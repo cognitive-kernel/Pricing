@@ -1,0 +1,1 @@
+<?php $viewFile=BASE_PATH.'/views/prices/form-content.php';$editing=true;require BASE_PATH.'/views/layout.php';
