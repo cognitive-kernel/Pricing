@@ -1,0 +1,1 @@
+<?php require __DIR__.'/notification-settings-content.php';
