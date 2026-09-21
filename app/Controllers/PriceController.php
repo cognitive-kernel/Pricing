@@ -15,15 +15,14 @@ final class PriceController
 {
     private function latestPricesSql(): string
     {
-        return "WITH ranked_prices AS (
+        return "SELECT * FROM (
             SELECT pp.*,
                    ROW_NUMBER() OVER (
                        PARTITION BY pp.product_id, pp.source_no
                        ORDER BY pp.price_received_at DESC, pp.id DESC
                    ) AS rn
             FROM product_prices pp
-        )
-        SELECT * FROM ranked_prices WHERE rn = 1";
+        ) ranked_prices WHERE rn = 1";
     }
 
     public function index(): void
