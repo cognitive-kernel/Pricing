@@ -1,0 +1,1 @@
+<?php require __DIR__.'/product-sources-content.php';
