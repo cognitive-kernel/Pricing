@@ -1,1 +1,1 @@
-<?php require __DIR__.'/sessions-content.php';
+<?php $viewFile=BASE_PATH.'/views/advanced/sessions-content.php';require BASE_PATH.'/views/layout.php';
