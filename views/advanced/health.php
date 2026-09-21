@@ -1,1 +1,1 @@
-<?php require __DIR__.'/health-content.php';
+<?php $viewFile=BASE_PATH.'/views/advanced/health-content.php';require BASE_PATH.'/views/layout.php';
