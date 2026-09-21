@@ -1,4 +1,4 @@
-<?php use App\\Core\\Security;?>
+<?php use App\Core\Security;?>
 <div class="card mb-3">
   <div class="card-body">
     <h5>ثبت کاربر جدید</h5>
