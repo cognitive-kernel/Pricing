@@ -37,6 +37,11 @@ try {
         'imports.view' => 'مشاهده Import',
         'imports.manage' => 'اجرای Import',
         'api.tokens.manage' => 'مدیریت API Token',
+        'categories.view' => 'مشاهده دسته محصولات',
+        'categories.manage' => 'مدیریت دسته محصولات',
+        'suppliers.edit' => 'ویرایش تأمین‌کننده',
+        'suppliers.delete' => 'غیرفعال‌سازی تأمین‌کننده',
+        'prices.history.view' => 'مشاهده تاریخچه قیمت',
     ];
 
     foreach ($permissions as $code => $name) {
