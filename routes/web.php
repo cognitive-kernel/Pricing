@@ -12,5 +12,6 @@ $router->get('/admin/suppliers',[ManagementController::class,'suppliers']);$rout
 $router->get('/notifications',[ManagementController::class,'notifications']);$router->get('/notifications/{id}/read',[ManagementController::class,'readNotification']);
 $router->get('/audit',[ManagementController::class,'audit']);$router->get('/reports',[ManagementController::class,'reports']);$router->get('/reports/export',[ManagementController::class,'exportPrices']);
 $router->get('/settings',[ManagementController::class,'settings']);$router->post('/settings',[ManagementController::class,'saveSetting']);
+$router->post('/api-tokens',[ManagementController::class,'createApiToken']);
 $router->get('/imports/products',[ManagementController::class,'importForm']);$router->post('/imports/products',[ManagementController::class,'importProducts']);
 $router->get('/api/products',[\App\Controllers\ApiController::class,'products']);$router->get('/api/products/{id}/prices',[\App\Controllers\ApiController::class,'prices']);$router->get('/api/queue',[\App\Controllers\ApiController::class,'queue']);
