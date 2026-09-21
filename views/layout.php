@@ -4,8 +4,59 @@ use App\Core\Security;
 use App\Services\PermissionService;
 ?>
 <!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?=Security::e(APP_NAME)?></title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet"><link rel="stylesheet" href="/pricing/assets/css/app.css"></head><body>
-<nav class="navbar navbar-expand-lg bg-dark navbar-dark sticky-top"><div class="container-fluid"><a class="navbar-brand" href="/pricing/public/prices">Pricing</a><?php if(Auth::check()):$uid=Auth::userId();?><div class="d-flex gap-2 align-items-center flex-wrap">
-<?php $menus=[['prices.view','قیمت‌ها','/pricing/public/prices'],['prices.create','ثبت قیمت','/pricing/public/prices/create'],['search.view','جستجوی پیشرفته','/pricing/public/search'],['products.bulk','عملیات گروهی','/pricing/public/products/bulk'],['workflow.view','Workflow','/pricing/public/workflow'],['dashboard.view','داشبورد','/pricing/public/dashboard'],['suppliers.view','تأمین‌کنندگان','/pricing/public/admin/suppliers'],['categories.view','دسته‌ها','/pricing/public/admin/categories'],['prices.queue.manage','مدیریت صف','/pricing/public/admin/queue'],['queue.settings','تنظیمات صف','/pricing/public/admin/queue-settings'],['admin.units.view','واحدها','/pricing/public/admin/units'],['admin.groups.view','گروه‌ها','/pricing/public/admin/groups'],['admin.users.view','کاربران','/pricing/public/admin/users'],['reports.view','گزارش‌ها','/pricing/public/reports'],['audit.view','لاگ فعالیت','/pricing/public/audit'],['notifications.view','اعلان‌ها','/pricing/public/notifications'],['api.tokens.manage','API Token','/pricing/public/api-tokens'],['imports.view','ورود محصولات','/pricing/public/imports/products'],['imports.manage','Import پیشرفته','/pricing/public/imports/advanced'],['settings.view','تنظیمات','/pricing/public/settings'],['system.health','سلامت سیستم','/pricing/public/admin/health'],['security.manage','Sessionها','/pricing/public/admin/sessions'],['notifications.manage','تنظیم اعلان‌ها','/pricing/public/admin/notification-settings']];foreach($menus as $m):if(PermissionService::allows($uid,$m[0])):?><a class="btn btn-sm btn-outline-light" href="<?=$m[2]?>"><?=$m[1]?></a><?php endif;endforeach;?>
-<a class="btn btn-sm btn-outline-light" href="/pricing/public/password">تغییر رمز</a><form method="post" action="/pricing/public/logout" class="d-inline"><input type="hidden" name="_csrf" value="<?=Security::e(Security::csrf())?>"><button class="btn btn-sm btn-outline-light">خروج</button></form></div><?php endif;?></div></nav>
+<nav class="navbar navbar-expand-lg bg-dark navbar-dark sticky-top"><div class="container-fluid"><a class="navbar-brand" href="/pricing/public/prices">Pricing</a><?php if(Auth::check()):$uid=Auth::userId();?>
+<div class="d-flex gap-2 align-items-center flex-wrap">
+<?php
+$menus=[
+ 'عملیات قیمت'=>[
+  ['prices.view','لیست قیمت‌ها','/pricing/public/prices'],
+  ['prices.create','ثبت قیمت','/pricing/public/prices/create'],
+  ['prices.queue.view','صف استعلام','/pricing/public/prices/queue'],
+  ['search.view','جستجوی پیشرفته','/pricing/public/search'],
+  ['products.bulk','عملیات گروهی','/pricing/public/products/bulk'],
+  ['workflow.view','گردش کار','/pricing/public/workflow'],
+ ],
+ 'اطلاعات پایه'=>[
+  ['suppliers.view','تأمین‌کنندگان','/pricing/public/admin/suppliers'],
+  ['categories.view','دسته‌بندی محصولات','/pricing/public/admin/categories'],
+  ['admin.units.view','واحدها','/pricing/public/admin/units'],
+ ],
+ 'گزارش‌ها'=>[
+  ['dashboard.view','داشبورد','/pricing/public/dashboard'],
+  ['reports.view','گزارش قیمت‌ها','/pricing/public/reports'],
+  ['audit.view','گزارش فعالیت','/pricing/public/audit'],
+ ],
+ 'اعلان‌ها'=>[
+  ['notifications.view','اعلان‌ها','/pricing/public/notifications'],
+  ['notifications.manage','تنظیم اعلان‌ها','/pricing/public/admin/notification-settings'],
+ ],
+ 'ورود اطلاعات'=>[
+  ['imports.view','Import محصولات','/pricing/public/imports/products'],
+  ['imports.manage','Import پیشرفته','/pricing/public/imports/advanced'],
+ ],
+ 'سیستم'=>[
+  ['settings.view','تنظیمات','/pricing/public/settings'],
+  ['queue.settings','تنظیمات صف','/pricing/public/admin/queue-settings'],
+  ['system.health','سلامت سیستم','/pricing/public/admin/health'],
+  ['security.manage','Sessionها','/pricing/public/admin/sessions'],
+  ['api.tokens.manage','API Token','/pricing/public/api-tokens'],
+ ],
+ 'مدیریت دسترسی'=>[
+  ['admin.users.view','کاربران','/pricing/public/admin/users'],
+  ['admin.groups.view','گروه‌ها و دسترسی‌ها','/pricing/public/admin/groups'],
+ ],
+];
+foreach($menus as $label=>$items){
+ $visible=array_values(array_filter($items,fn($m)=>PermissionService::allows($uid,$m[0])));
+ if(!$visible)continue;
+ ?><div class="dropdown">
+ <button class="btn btn-sm btn-outline-light dropdown-toggle" data-bs-toggle="dropdown"><?=$label?></button>
+ <ul class="dropdown-menu dropdown-menu-end">
+ <?php foreach($visible as $m):?><li><a class="dropdown-item" href="<?=$m[2]?>"><?=$m[1]?></a></li><?php endforeach;?>
+ </ul></div>
+<?php }
+?>
+<div class="dropdown"><button class="btn btn-sm btn-outline-light dropdown-toggle" data-bs-toggle="dropdown">حساب من</button><ul class="dropdown-menu dropdown-menu-end"><li><a class="dropdown-item" href="/pricing/public/password">تغییر رمز</a></li><li><hr class="dropdown-divider"></li><li><form method="post" action="/pricing/public/logout" class="px-2"><input type="hidden" name="_csrf" value="<?=Security::e(Security::csrf())?>"><button class="btn btn-sm btn-outline-danger w-100">خروج</button></form></li></ul></div>
+</div><?php endif;?></div></nav>
 <main class="container-fluid py-3"><?php if(!empty($success)):?><div class="alert alert-success"><?=Security::e($success)?></div><?php endif;?><?php if(!empty($error)):?><div class="alert alert-danger"><?=Security::e($error)?></div><?php endif;?><?php require $viewFile;?></main>
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script><script src="/pricing/assets/js/app.js"></script></body></html>
