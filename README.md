@@ -11,3 +11,14 @@ Setup:
 2. Point Apache to public/ or use /pricing/public.
 3. Enable PDO_SQLSRV.
 4. Run php database/seed.php when initial permissions/admin data are needed.
+
+
+## راه‌اندازی قابلیت‌های جدید
+
+1. فایل `database/schema.sql` را روی دیتابیس SQL Server اجرا کنید.
+2. سپس `database/seed.php` را با PHP پروژه اجرا کنید تا Permissionهای جدید ثبت شوند.
+3. برای بازسازی صف قیمت می‌توان `database/maintenance.php` را با PHP اجرا کرد.
+4. گزارش‌ها، داشبورد، تأمین‌کنندگان، Import و API در مسیرهای ثبت‌شده در `routes/web.php` قرار دارند.
+5. CI پروژه در `.github/workflows/ci.yml` بررسی Syntax فایل‌های PHP را انجام می‌دهد.
+
+اتصال واقعی به ERP یا منابع خارجی قیمت از طریق قراردادهای `App\\Contracts\\ErpClient` و `App\\Contracts\\PriceSource` انجام می‌شود و نیازمند پیاده‌سازی Adapter متناسب با سرویس مقصد است.
