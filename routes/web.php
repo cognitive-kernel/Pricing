@@ -16,7 +16,7 @@ $router->get('/audit',[ManagementController::class,'audit']);$router->get('/repo
 $router->get('/settings',[ManagementController::class,'settings']);$router->post('/settings',[ManagementController::class,'saveSetting']);
 $router->get('/api-tokens',[ManagementController::class,'apiTokens']);$router->post('/api-tokens',[ManagementController::class,'createApiToken']);$router->post('/api-tokens/{id}/revoke',[ManagementController::class,'revokeApiToken']);
 $router->get('/imports/products',[ManagementController::class,'importForm']);$router->post('/imports/products',[ManagementController::class,'importProducts']);
-$router->get('/search',[AdvancedController::class,'search']);$router->get('/products/bulk',[AdvancedController::class,'bulk']);$router->post('/products/bulk',[AdvancedController::class,'bulkApply']);
+$router->get('/search',[AdvancedController::class,'search']);$router->post('/search/save-filter',[AdvancedController::class,'saveFilter']);$router->post('/search/filter/{id}/delete',[AdvancedController::class,'deleteFilter']);$router->get('/products/bulk',[AdvancedController::class,'bulk']);$router->post('/products/bulk',[AdvancedController::class,'bulkApply']);
 $router->get('/admin/product-sources/{id}',[AdvancedController::class,'productSources']);$router->post('/admin/product-sources/{id}',[AdvancedController::class,'saveProductSources']);
 $router->get('/workflow',[AdvancedController::class,'workflow']);$router->post('/workflow/start',[AdvancedController::class,'workflowStart']);$router->post('/workflow/{id}',[AdvancedController::class,'workflowUpdate']);
 $router->get('/admin/queue-settings',[AdvancedController::class,'queueSettings']);$router->post('/admin/queue-settings',[AdvancedController::class,'saveQueueSettings']);
