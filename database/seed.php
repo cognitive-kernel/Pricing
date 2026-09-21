@@ -9,52 +9,37 @@ $pdo = Database::connection();
 $pdo->beginTransaction();
 
 try {
-    $permissions = [
-        'prices.view' => 'مشاهده لیست قیمت',
-        'prices.create' => 'ثبت قیمت',
-        'prices.edit' => 'ویرایش قیمت',
-        'prices.delete' => 'حذف قیمت',
-        'admin.units.view' => 'مشاهده واحدها',
-        'admin.units.create' => 'ثبت واحد',
-        'admin.units.edit' => 'ویرایش واحد',
-        'admin.units.delete' => 'حذف واحد',
-        'admin.groups.view' => 'مشاهده گروه‌ها',
-        'admin.groups.create' => 'ثبت گروه',
-        'admin.groups.edit' => 'ویرایش گروه',
-        'admin.groups.permissions' => 'مدیریت دسترسی گروه',
-        'admin.users.view' => 'مشاهده کاربران',
-        'admin.users.create' => 'ثبت کاربر',
-        'admin.users.edit' => 'ویرایش اطلاعات کاربر',
-        'admin.users.permissions' => 'مدیریت دسترسی کاربر',
-        'dashboard.view' => 'مشاهده داشبورد',
-        'prices.queue.manage' => 'مدیریت صف قیمت',
-        'suppliers.view' => 'مشاهده تأمین‌کنندگان',
-        'suppliers.create' => 'ثبت تأمین‌کننده',
-        'notifications.view' => 'مشاهده اعلان‌ها',
-        'audit.view' => 'مشاهده گزارش فعالیت',
-        'reports.view' => 'مشاهده گزارش‌ها',
-        'reports.export' => 'خروجی گزارش‌ها',
-        'settings.view' => 'مشاهده تنظیمات',
-        'settings.manage' => 'مدیریت تنظیمات',
-        'imports.view' => 'مشاهده Import',
-        'imports.manage' => 'اجرای Import',
-        'api.tokens.manage' => 'مدیریت API Token',
-        'categories.view' => 'مشاهده دسته محصولات',
-        'categories.manage' => 'مدیریت دسته محصولات',
-        'suppliers.edit' => 'ویرایش تأمین‌کننده',
-        'suppliers.delete' => 'غیرفعال‌سازی تأمین‌کننده',
-        'prices.history.view' => 'مشاهده تاریخچه قیمت',
-        'search.view' => 'جستجوی پیشرفته',
-        'products.bulk' => 'عملیات گروهی محصولات',
-        'workflow.view' => 'مشاهده گردش کار',
-        'workflow.manage' => 'مدیریت گردش کار',
-        'queue.settings' => 'تنظیمات موتور صف',
-        'system.health' => 'سلامت سیستم',
-        'security.manage' => 'مدیریت امنیت و Session',
-        'notifications.manage' => 'مدیریت اعلان‌ها',
+    $permissionGroups = [
+        'عملیات قیمت'=>[
+            'prices.view'=>'مشاهده لیست قیمت','prices.create'=>'ثبت قیمت','prices.edit'=>'ویرایش قیمت','prices.delete'=>'حذف قیمت','prices.history.view'=>'مشاهده تاریخچه قیمت',
+            'prices.queue.view'=>'مشاهده صف استعلام','prices.queue.manage'=>'مدیریت صف قیمت','search.view'=>'جستجوی پیشرفته','search.filters.manage'=>'مدیریت فیلترهای ذخیره‌شده','products.bulk'=>'عملیات گروهی محصولات','workflow.view'=>'مشاهده گردش کار','workflow.manage'=>'مدیریت گردش کار','product.sources.view'=>'مشاهده منابع محصول','product.sources.manage'=>'مدیریت منابع محصول'
+        ],
+        'اطلاعات پایه'=>[
+            'admin.units.view'=>'مشاهده واحدها','admin.units.create'=>'ثبت واحد','admin.units.edit'=>'ویرایش واحد','admin.units.delete'=>'غیرفعال‌سازی واحد',
+            'categories.view'=>'مشاهده دسته محصولات','categories.manage'=>'مدیریت دسته محصولات','suppliers.view'=>'مشاهده تأمین‌کنندگان','suppliers.create'=>'ثبت تأمین‌کننده','suppliers.edit'=>'ویرایش تأمین‌کننده','suppliers.delete'=>'غیرفعال‌سازی تأمین‌کننده'
+        ],
+        'گزارش‌ها'=>[
+            'dashboard.view'=>'مشاهده داشبورد','reports.view'=>'مشاهده گزارش‌ها','reports.export'=>'خروجی گزارش‌ها','audit.view'=>'مشاهده گزارش فعالیت'
+        ],
+        'اعلان‌ها'=>[
+            'notifications.view'=>'مشاهده اعلان‌ها','notifications.manage'=>'مدیریت اعلان‌ها'
+        ],
+        'ورود اطلاعات'=>[
+            'imports.view'=>'مشاهده Import','imports.manage'=>'اجرای Import'
+        ],
+        'سیستم'=>[
+            'settings.view'=>'مشاهده تنظیمات','settings.manage'=>'مدیریت تنظیمات','queue.settings'=>'تنظیمات موتور صف','system.health'=>'سلامت سیستم','security.manage'=>'مدیریت امنیت و Session',
+            'api.tokens.manage'=>'مدیریت API Token','api.products.view'=>'دسترسی API محصولات','api.prices.view'=>'دسترسی API قیمت‌ها','api.queue.view'=>'دسترسی API صف'
+        ],
+        'مدیریت دسترسی'=>[
+            'admin.groups.view'=>'مشاهده گروه‌ها','admin.groups.create'=>'ثبت گروه','admin.groups.edit'=>'ویرایش گروه','admin.groups.permissions'=>'مدیریت دسترسی گروه',
+            'admin.users.view'=>'مشاهده کاربران','admin.users.create'=>'ثبت کاربر','admin.users.edit'=>'ویرایش اطلاعات کاربر','admin.users.status'=>'فعال/غیرفعال‌سازی کاربر','admin.users.permissions'=>'مدیریت دسترسی کاربر'
+        ]
     ];
+    $permissions = [];
+    foreach ($permissionGroups as $group => $items) foreach ($items as $code => $name) $permissions[$code] = ['name'=>$name,'group'=>$group];
 
-    foreach ($permissions as $code => $name) {
+    foreach ($permissions as $code => $meta) {
         $s = $pdo->prepare('SELECT id FROM permissions WHERE code = :code');
         $s->execute(['code' => $code]);
 
@@ -79,7 +64,7 @@ try {
     }
     $gid = (int) $gid;
 
-    foreach ($permissions as $code => $name) {
+    foreach ($permissions as $code => $meta) {
         $s = $pdo->prepare('SELECT 1 FROM group_permissions WHERE group_id = :gid AND permission_code = :code');
         $s->execute(['gid' => $gid, 'code' => $code]);
 
