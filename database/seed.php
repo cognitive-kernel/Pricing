@@ -24,6 +24,18 @@ try {
         'admin.users.view' => 'مشاهده کاربران',
         'admin.users.create' => 'ثبت کاربر',
         'admin.users.permissions' => 'مدیریت دسترسی کاربر',
+        'dashboard.view' => 'مشاهده داشبورد',
+        'prices.queue.manage' => 'مدیریت صف قیمت',
+        'suppliers.view' => 'مشاهده تأمین‌کنندگان',
+        'suppliers.create' => 'ثبت تأمین‌کننده',
+        'notifications.view' => 'مشاهده اعلان‌ها',
+        'audit.view' => 'مشاهده گزارش فعالیت',
+        'reports.view' => 'مشاهده گزارش‌ها',
+        'reports.export' => 'خروجی گزارش‌ها',
+        'settings.view' => 'مشاهده تنظیمات',
+        'settings.manage' => 'مدیریت تنظیمات',
+        'imports.view' => 'مشاهده Import',
+        'imports.manage' => 'اجرای Import',
     ];
 
     foreach ($permissions as $code => $name) {
