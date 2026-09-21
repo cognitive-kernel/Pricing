@@ -42,6 +42,13 @@ try {
         'suppliers.edit' => 'ویرایش تأمین‌کننده',
         'suppliers.delete' => 'غیرفعال‌سازی تأمین‌کننده',
         'prices.history.view' => 'مشاهده تاریخچه قیمت',
+        'search.view' => 'جستجوی پیشرفته',
+        'products.bulk' => 'عملیات گروهی محصولات',
+        'workflow.view' => 'مشاهده گردش کار',
+        'workflow.manage' => 'مدیریت گردش کار',
+        'queue.settings' => 'تنظیمات موتور صف',
+        'system.health' => 'سلامت سیستم',
+        'notifications.manage' => 'مدیریت اعلان‌ها',
     ];
 
     foreach ($permissions as $code => $name) {
