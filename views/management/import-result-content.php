@@ -1,0 +1,1 @@
+<h4>نتیجه Import</h4><div class="alert alert-info">کل: <?=$result['total']?> | موفق: <?=$result['success']?> | خطا: <?=$result['errors']?></div><?php if($result['details']):?><pre><?=\App\Core\Security::e(implode(PHP_EOL,$result['details']))?></pre><?php endif;?>
