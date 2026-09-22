@@ -7,52 +7,12 @@ on:
 jobs:
   php-lint:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        file:
-          - app/Controllers/AdvancedController.php
-          - app/Controllers/ApiController.php
-          - app/Controllers/ManagementController.php
-          - app/Controllers/PriceController.php
-          - app/Services/ImportService.php
-          - app/Services/PermissionService.php
-          - app/Services/ReportService.php
-          - app/Services/SpreadsheetService.php
-          - database/migrate.php
-          - database/seed.php
-          - public/index.php
-          - routes/web.php
-          - views/advanced/bulk-content.php
-          - views/advanced/import-content.php
-          - views/advanced/import-preview-content.php
-          - views/advanced/import-preview.php
-          - views/advanced/search-content.php
-          - views/layout.php
-          - views/management/categories-content.php
-          - views/management/dashboard-content.php
-          - views/management/import-content.php
-          - views/management/queue-content.php
-          - views/management/reports-content.php
-          - views/management/supplier-reports-content.php
-          - views/management/supplier-reports.php
-          - views/management/suppliers-content.php
-          - views/prices/form-content.php
     steps:
       - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-      - name: PHP lint ${{ matrix.file }}
-        run: php -l "${{ matrix.file }}"
-  static-smoke:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-      - name: PHP lint all
-        run: find app config database public routes views tests -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: PHP version
+        run: php -v
+      - name: PHP lint
+        run: |
+          find app config database public routes views tests -name '*.php' -print0 | xargs -0 -n1 php -l
       - name: Static smoke test
         run: php tests/static_smoke.php
