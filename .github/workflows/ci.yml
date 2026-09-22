@@ -10,24 +10,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: PHP lint
-        id: lint
-        continue-on-error: true
-        run: |
-          set +e
-          find app config database public routes views tests -name '*.php' -print0 | xargs -0 -n1 php -l > CI_LINT_REPORT.txt 2>&1
-          code=$?
-          cat CI_LINT_REPORT.txt
-          echo "exit_code=$code" >> CI_LINT_REPORT.txt
-          exit $code
-      - name: Commit lint report
-        if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          CONTENT=$(base64 -w0 CI_LINT_REPORT.txt)
-          gh api "repos/${GITHUB_REPOSITORY}/contents/CI_LINT_REPORT.txt" -X PUT -f message="CI: capture lint report" -f content="$CONTENT" -f branch="$GITHUB_HEAD_REF" || true
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-                - name: Fail if lint failed
-        if: steps.lint.outcome == 'failure'
-        run: exit 1
+          set +e
+          : > /tmp/lint.txt
+          : > /tmp/bad.txt
+          while IFS= read -r -d '' file; do
+            php -l "$file" >> /tmp/lint.txt 2>&1
+            code=$?
+            if [ $code -ne 0 ]; then echo "$file" >> /tmp/bad.txt; fi
+          done < <(find app config database public routes views tests -name '*.php' -print0)
+          cat /tmp/lint.txt
+          if [ -s /tmp/bad.txt ]; then
+            body="PHP lint failures:
+$(cat /tmp/bad.txt)"
+            gh pr comment "${{ github.event.pull_request.number }}" --body "$body" || true
+            exit 1
+          fi
+      - name: Static smoke test
+        run: php tests/static_smoke.php
