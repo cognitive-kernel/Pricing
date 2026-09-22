@@ -9,9 +9,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
+      - name: PHP version
+        run: php -v
       - name: PHP lint
         run: |
           find app config database public routes views tests -name '*.php' -print0 | xargs -0 -n1 php -l
