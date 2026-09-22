@@ -1,0 +1,1 @@
+<?php $viewFile=BASE_PATH.'/views/advanced/api-docs-content.php';require BASE_PATH.'/views/layout.php';
