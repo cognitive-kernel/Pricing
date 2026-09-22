@@ -3,7 +3,7 @@ use App\Core\Auth;
 use App\Core\Security;
 use App\Services\PermissionService;
 ?>
-<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?=Security::e(APP_NAME)?></title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet"><link rel="stylesheet" href="/pricing/assets/css/app.css"></head><body>
+<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?=Security::e(APP_NAME)?></title><link href="/pricing/assets/vendor/bootstrap/bootstrap.rtl.min.css" rel="stylesheet"><link rel="stylesheet" href="/pricing/assets/css/app.css"></head><body>
 <nav class="navbar navbar-expand-lg bg-dark navbar-dark sticky-top"><div class="container-fluid"><a class="navbar-brand" href="/pricing/public/prices">Pricing</a><?php if(Auth::check()):$uid=Auth::userId();?>
 <div class="d-flex gap-2 align-items-center flex-wrap">
 <?php
@@ -61,4 +61,4 @@ foreach($menus as $label=>$items){
 <div class="dropdown"><button class="btn btn-sm btn-outline-light dropdown-toggle" data-bs-toggle="dropdown">حساب من</button><ul class="dropdown-menu dropdown-menu-end"><?php if(PermissionService::allows($uid,'account.password.change')):?><li><a class="dropdown-item" href="/pricing/public/password">تغییر رمز</a></li><?php endif;?><li><hr class="dropdown-divider"></li><li><form method="post" action="/pricing/public/logout" class="px-2"><input type="hidden" name="_csrf" value="<?=Security::e(Security::csrf())?>"><button class="btn btn-sm btn-outline-danger w-100">خروج</button></form></li></ul></div>
 </div><?php endif;?></div></nav>
 <main class="container-fluid py-3"><?php if(!empty($success)):?><div class="alert alert-success"><?=Security::e($success)?></div><?php endif;?><?php if(!empty($error)):?><div class="alert alert-danger"><?=Security::e($error)?></div><?php endif;?><?php require $viewFile;?></main>
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script><script src="/pricing/assets/js/app.js"></script></body></html>
+<script src="/pricing/assets/vendor/jquery/jquery.min.js"></script><script src="/pricing/assets/vendor/bootstrap/bootstrap.bundle.min.js"></script><script src="/pricing/assets/js/app.js"></script></body></html>
