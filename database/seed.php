@@ -53,6 +53,16 @@ try {
         }
     }
 
+    $notificationRules = [
+        'critical'=>'اولویت بحرانی','missing_price'=>'محصول بدون قیمت','expired_price'=>'قیمت منقضی',
+        'incomplete_sources'=>'منابع ناقص','price_spread'=>'اختلاف قیمت','queue_new'=>'آیتم جدید صف',
+        'due_soon'=>'نزدیک موعد پیگیری','overdue'=>'تاخیر در پیگیری'
+    ];
+    foreach ($notificationRules as $ruleKey => $title) {
+        $s = $pdo->prepare('IF NOT EXISTS(SELECT 1 FROM notification_rules WHERE rule_key=:k) INSERT INTO notification_rules(rule_key,title,is_enabled,channel) VALUES(:k,:t,1,:c)');
+        $s->execute(['k'=>$ruleKey,'t'=>$title,'c'=>'panel']);
+    }
+
     $s = $pdo->prepare('SELECT id FROM groups WHERE name = :name');
     $s->execute(['name' => 'مدیر سیستم']);
     $gid = $s->fetchColumn();
