@@ -29,7 +29,11 @@ $statements=[
 "IF NOT EXISTS(SELECT 1 FROM sys.indexes WHERE name='IX_prices_supplier_date' AND object_id=OBJECT_ID('dbo.product_prices')) CREATE INDEX IX_prices_supplier_date ON dbo.product_prices(supplier,price_received_at DESC)",
 "IF NOT EXISTS(SELECT 1 FROM sys.indexes WHERE name='IX_notifications_user_read' AND object_id=OBJECT_ID('dbo.notifications')) CREATE INDEX IX_notifications_user_read ON dbo.notifications(user_id,is_read,created_at DESC)",
 "IF NOT EXISTS(SELECT 1 FROM sys.indexes WHERE name='IX_audit_user_action' AND object_id=OBJECT_ID('dbo.audit_logs')) CREATE INDEX IX_audit_user_action ON dbo.audit_logs(user_id,action,created_at DESC)",
-"IF NOT EXISTS(SELECT 1 FROM dbo.notification_rules) INSERT INTO dbo.notification_rules(rule_key,title,is_enabled,channel) VALUES('critical','اولویت بحرانی',1,'panel'),('missing_price','محصول بدون قیمت',1,'panel'),('expired_price','قیمت منقضی',1,'panel'),('incomplete_sources','منابع ناقص',1,'panel'),('price_spread','اختلاف قیمت',1,'panel')"
+"IF NOT EXISTS(SELECT 1 FROM dbo.notification_rules WHERE rule_key='queue_new') INSERT INTO dbo.notification_rules(rule_key,title,is_enabled,channel) VALUES('queue_new',N'آیتم جدید صف',1,'panel')
+IF NOT EXISTS(SELECT 1 FROM dbo.notification_rules WHERE rule_key='due_soon') INSERT INTO dbo.notification_rules(rule_key,title,is_enabled,channel) VALUES('due_soon',N'نزدیک موعد پیگیری',1,'panel')
+IF NOT EXISTS(SELECT 1 FROM dbo.notification_rules WHERE rule_key='overdue') INSERT INTO dbo.notification_rules(rule_key,title,is_enabled,channel) VALUES('overdue',N'تاخیر در پیگیری',1,'panel')
+IF NOT EXISTS(SELECT 1 FROM dbo.notification_rules WHERE rule_key='queue_new') INSERT INTO dbo.notification_rules(rule_key,title,is_enabled,channel) VALUES('queue_new',N'آیتم جدید صف',1,'panel')
+IF NOT EXISTS(SELECT 1 FROM dbo.notification_rules) INSERT INTO dbo.notification_rules(rule_key,title,is_enabled,channel) VALUES('critical','اولویت بحرانی',1,'panel'),('missing_price','محصول بدون قیمت',1,'panel'),('expired_price','قیمت منقضی',1,'panel'),('incomplete_sources','منابع ناقص',1,'panel'),('price_spread','اختلاف قیمت',1,'panel')"
 ];
 foreach($statements as $sql)$pdo->exec($sql);
 echo "Migration completed.".PHP_EOL;
