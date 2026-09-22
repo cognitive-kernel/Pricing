@@ -19,12 +19,13 @@ $menus=[
  'اطلاعات پایه'=>[
   ['suppliers.view','تأمین‌کنندگان','/pricing/public/admin/suppliers'],
   ['categories.view','دسته‌بندی محصولات','/pricing/public/admin/categories'],
+  ['suppliers.reports','گزارش تأمین‌کنندگان','/pricing/public/admin/supplier-reports'],
   ['admin.units.view','واحدها','/pricing/public/admin/units'],
  ],
  'گزارش‌ها'=>[
   ['dashboard.view','داشبورد','/pricing/public/dashboard'],
   ['reports.view','گزارش قیمت‌ها','/pricing/public/reports'],
-  ['audit.view','گزارش فعالیت','/pricing/public/audit'],
+  ['audit.view','گزارش فعالیت','/pricing/public/admin/audit'],
  ],
  'اعلان‌ها'=>[
   ['notifications.view','اعلان‌ها','/pricing/public/notifications'],
@@ -40,6 +41,7 @@ $menus=[
   ['system.health','سلامت سیستم','/pricing/public/admin/health'],
   ['security.manage','Sessionها','/pricing/public/admin/sessions'],
   ['api.tokens.manage','API Token','/pricing/public/api-tokens'],
+  ['api.docs.view','مستندات API','/pricing/public/api-docs'],
  ],
  'مدیریت دسترسی'=>[
   ['admin.users.view','کاربران','/pricing/public/admin/users'],
@@ -56,7 +58,7 @@ foreach($menus as $label=>$items){
  </ul></div>
 <?php }
 ?>
-<div class="dropdown"><button class="btn btn-sm btn-outline-light dropdown-toggle" data-bs-toggle="dropdown">حساب من</button><ul class="dropdown-menu dropdown-menu-end"><li><a class="dropdown-item" href="/pricing/public/password">تغییر رمز</a></li><li><hr class="dropdown-divider"></li><li><form method="post" action="/pricing/public/logout" class="px-2"><input type="hidden" name="_csrf" value="<?=Security::e(Security::csrf())?>"><button class="btn btn-sm btn-outline-danger w-100">خروج</button></form></li></ul></div>
+<div class="dropdown"><button class="btn btn-sm btn-outline-light dropdown-toggle" data-bs-toggle="dropdown">حساب من</button><ul class="dropdown-menu dropdown-menu-end"><?php if(PermissionService::allows($uid,'account.password.change')):?><li><a class="dropdown-item" href="/pricing/public/password">تغییر رمز</a></li><?php endif;?><li><hr class="dropdown-divider"></li><li><form method="post" action="/pricing/public/logout" class="px-2"><input type="hidden" name="_csrf" value="<?=Security::e(Security::csrf())?>"><button class="btn btn-sm btn-outline-danger w-100">خروج</button></form></li></ul></div>
 </div><?php endif;?></div></nav>
 <main class="container-fluid py-3"><?php if(!empty($success)):?><div class="alert alert-success"><?=Security::e($success)?></div><?php endif;?><?php if(!empty($error)):?><div class="alert alert-danger"><?=Security::e($error)?></div><?php endif;?><?php require $viewFile;?></main>
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script><script src="/pricing/assets/js/app.js"></script></body></html>
