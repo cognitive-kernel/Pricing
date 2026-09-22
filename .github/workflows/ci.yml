@@ -24,11 +24,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          CONTENT=$(base64 -w0 CI_LINT_REPORT.txt)
+          gh api "repos/${GITHUB_REPOSITORY}/contents/CI_LINT_REPORT.txt" -X PUT -f message="CI: capture lint report" -f content="$CONTENT" -f branch="$GITHUB_HEAD_REF" || true
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add CI_LINT_REPORT.txt
-          git commit -m "CI: capture lint report" || true
-          git push || true
-      - name: Fail if lint failed
+                - name: Fail if lint failed
         if: steps.lint.outcome == 'failure'
         run: exit 1
