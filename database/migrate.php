@@ -10,6 +10,8 @@ $statements=[
 "IF OBJECT_ID('dbo.product_categories','U') IS NULL CREATE TABLE dbo.product_categories(id INT IDENTITY PRIMARY KEY,name NVARCHAR(150) NOT NULL UNIQUE,description NVARCHAR(500) NULL,is_active BIT NOT NULL DEFAULT 1,created_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),updated_at DATETIME2 NOT NULL DEFAULT SYSDATETIME())",
 "IF COL_LENGTH('dbo.products','category_id') IS NULL ALTER TABLE dbo.products ADD category_id INT NULL",
 "IF NOT EXISTS(SELECT 1 FROM sys.foreign_keys WHERE name='FK_products_category') ALTER TABLE dbo.products ADD CONSTRAINT FK_products_category FOREIGN KEY(category_id) REFERENCES dbo.product_categories(id)",
+"IF COL_LENGTH('dbo.users','unit_id') IS NULL ALTER TABLE dbo.users ADD unit_id INT NULL",
+"IF NOT EXISTS(SELECT 1 FROM sys.foreign_keys WHERE name='FK_users_unit') AND COL_LENGTH('dbo.users','unit_id') IS NOT NULL ALTER TABLE dbo.users ADD CONSTRAINT FK_users_unit FOREIGN KEY(unit_id) REFERENCES dbo.units(id)",
 "IF COL_LENGTH('dbo.users','email') IS NULL ALTER TABLE dbo.users ADD email NVARCHAR(255) NULL",
 "IF COL_LENGTH('dbo.users','failed_login_count') IS NULL ALTER TABLE dbo.users ADD failed_login_count INT NOT NULL CONSTRAINT DF_users_failed_login DEFAULT 0",
 "IF COL_LENGTH('dbo.users','locked_until') IS NULL ALTER TABLE dbo.users ADD locked_until DATETIME2 NULL",
