@@ -34,7 +34,6 @@ $menus=[
  'ورود اطلاعات'=>[
   ['imports.view','Import محصولات','/pricing/public/imports/products'],
   ['imports.manage','Import پیشرفته','/pricing/public/imports/advanced'],
-  ['imports.preview','پیش‌نمایش Import','/pricing/public/imports/advanced'],
  ],
  'سیستم'=>[
   ['settings.view','تنظیمات','/pricing/public/settings'],
