@@ -22,7 +22,8 @@ try {
             'dashboard.view'=>'مشاهده داشبورد','reports.view'=>'مشاهده گزارش‌ها','reports.export'=>'خروجی گزارش‌ها','audit.view'=>'مشاهده گزارش فعالیت','reports.advanced'=>'گزارش‌های تحلیلی'
         ],
         'اعلان‌ها'=>[
-            'notifications.view'=>'مشاهده اعلان‌ها','notifications.manage'=>'مدیریت اعلان‌ها','notifications.email'=>'ارسال اعلان ایمیلی'
+            'notifications.view'=>'مشاهده اعلان‌ها','notifications.manage'=>'مدیریت اعلان‌ها','notifications.email'=>'ارسال اعلان ایمیلی',
+            'api.docs.view'=>'مشاهده مستندات API'
         ],
         'ورود اطلاعات'=>[
             'imports.view'=>'مشاهده Import','imports.manage'=>'اجرای Import','imports.preview'=>'پیش‌نمایش Import'
