@@ -41,6 +41,7 @@ $menus=[
   ['system.health','سلامت سیستم','/pricing/public/admin/health'],
   ['security.manage','Sessionها','/pricing/public/admin/sessions'],
   ['api.tokens.manage','API Token','/pricing/public/api-tokens'],
+  ['api.docs.view','مستندات API','/pricing/public/api-docs'],
  ],
  'مدیریت دسترسی'=>[
   ['admin.users.view','کاربران','/pricing/public/admin/users'],
