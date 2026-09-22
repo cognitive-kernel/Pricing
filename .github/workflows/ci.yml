@@ -9,11 +9,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
       - name: PHP lint
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          find app config database public routes views tests -name '*.php' -print0 | xargs -0 -n1 php -l
+          set +e
+          : > /tmp/lint.txt
+          : > /tmp/bad.txt
+          while IFS= read -r -d '' file; do
+            php -l "$file" >> /tmp/lint.txt 2>&1
+            code=$?
+            if [ $code -ne 0 ]; then echo "$file" >> /tmp/bad.txt; fi
+          done < <(find app config database public routes views tests -name '*.php' -print0)
+          cat /tmp/lint.txt
+          if [ -s /tmp/bad.txt ]; then
+            body="PHP lint failures:
+$(cat /tmp/bad.txt)"
+            gh pr comment "${{ github.event.pull_request.number }}" --body "$body" || true
+            exit 1
+          fi
       - name: Static smoke test
         run: php tests/static_smoke.php
