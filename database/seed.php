@@ -16,20 +16,20 @@ try {
         ],
         'اطلاعات پایه'=>[
             'admin.units.view'=>'مشاهده واحدها','admin.units.create'=>'ثبت واحد','admin.units.edit'=>'ویرایش واحد','admin.units.delete'=>'غیرفعال‌سازی واحد',
-            'categories.view'=>'مشاهده دسته محصولات','categories.manage'=>'مدیریت دسته محصولات','suppliers.view'=>'مشاهده تأمین‌کنندگان','suppliers.create'=>'ثبت تأمین‌کننده','suppliers.edit'=>'ویرایش تأمین‌کننده','suppliers.delete'=>'غیرفعال‌سازی تأمین‌کننده'
+            'categories.view'=>'مشاهده دسته محصولات','categories.manage'=>'مدیریت دسته محصولات','suppliers.reports'=>'گزارش عملکرد تأمین‌کنندگان','suppliers.view'=>'مشاهده تأمین‌کنندگان','suppliers.create'=>'ثبت تأمین‌کننده','suppliers.edit'=>'ویرایش تأمین‌کننده','suppliers.delete'=>'غیرفعال‌سازی تأمین‌کننده'
         ],
         'گزارش‌ها'=>[
-            'dashboard.view'=>'مشاهده داشبورد','reports.view'=>'مشاهده گزارش‌ها','reports.export'=>'خروجی گزارش‌ها','audit.view'=>'مشاهده گزارش فعالیت'
+            'dashboard.view'=>'مشاهده داشبورد','reports.view'=>'مشاهده گزارش‌ها','reports.export'=>'خروجی گزارش‌ها','audit.view'=>'مشاهده گزارش فعالیت','reports.advanced'=>'گزارش‌های تحلیلی'
         ],
         'اعلان‌ها'=>[
-            'notifications.view'=>'مشاهده اعلان‌ها','notifications.manage'=>'مدیریت اعلان‌ها'
+            'notifications.view'=>'مشاهده اعلان‌ها','notifications.manage'=>'مدیریت اعلان‌ها','notifications.email'=>'ارسال اعلان ایمیلی'
         ],
         'ورود اطلاعات'=>[
-            'imports.view'=>'مشاهده Import','imports.manage'=>'اجرای Import'
+            'imports.view'=>'مشاهده Import','imports.manage'=>'اجرای Import','imports.preview'=>'پیش‌نمایش Import'
         ],
         'سیستم'=>[
             'account.password.change'=>'تغییر رمز عبور',
-            'settings.view'=>'مشاهده تنظیمات','settings.manage'=>'مدیریت تنظیمات','queue.settings'=>'تنظیمات موتور صف','system.health'=>'سلامت سیستم','security.manage'=>'مدیریت امنیت و Session',
+            'settings.view'=>'مشاهده تنظیمات','settings.manage'=>'مدیریت تنظیمات','queue.settings'=>'تنظیمات موتور صف','system.health'=>'سلامت سیستم','security.manage'=>'مدیریت امنیت و Session','security.policy'=>'سیاست امنیتی',
             'api.tokens.manage'=>'مدیریت API Token','api.products.view'=>'دسترسی API محصولات','api.prices.view'=>'دسترسی API قیمت‌ها','api.queue.view'=>'دسترسی API صف'
         ],
         'مدیریت دسترسی'=>[
