@@ -1,1 +1,1 @@
-<?php require __DIR__.'/supplier-reports-content.php';
+<?php $viewFile=BASE_PATH.'/views/management/supplier-reports-content.php';require BASE_PATH.'/views/layout.php';
