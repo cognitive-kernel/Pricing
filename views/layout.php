@@ -19,6 +19,7 @@ $menus=[
  'اطلاعات پایه'=>[
   ['suppliers.view','تأمین‌کنندگان','/pricing/public/admin/suppliers'],
   ['categories.view','دسته‌بندی محصولات','/pricing/public/admin/categories'],
+  ['suppliers.reports','گزارش تأمین‌کنندگان','/pricing/public/admin/supplier-reports'],
   ['admin.units.view','واحدها','/pricing/public/admin/units'],
  ],
  'گزارش‌ها'=>[
