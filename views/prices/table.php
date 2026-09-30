@@ -47,8 +47,10 @@ use App\Support\Jalali;
     </td>
     <td>
         <?php if ($rahkaran): ?>
-            <div><strong><?=number_format((float) $rahkaran['Announcement_price'], 2)?></strong> <?=Security::e((string) $rahkaran['Announcement_unit'])?></div>
+            <div><strong>اعلامیه:</strong> <?=number_format((float) $rahkaran['Announcement_price'], 2)?> <?=Security::e((string) $rahkaran['Announcement_unit'])?></div>
             <div class="small text-muted"><?=Security::e((string) $rahkaran['Announcement_date'])?> · <?= (int) $rahkaran['Announcement_diff'] ?> روز</div>
+            <div><strong>فاکتور:</strong> <?= $rahkaran['invoice_price'] !== null ? number_format((float) $rahkaran['invoice_price'], 2) : '—' ?> <?=Security::e((string) ($rahkaran['invoice_unit'] ?? ''))?></div>
+            <div class="small text-muted"><?=Security::e((string) ($rahkaran['invoice_date'] ?? ''))?><?= $rahkaran['invoice_diff'] !== null ? ' · ' . (int) $rahkaran['invoice_diff'] . ' روز' : '' ?></div>
         <?php else: ?>
             —
         <?php endif; ?>
