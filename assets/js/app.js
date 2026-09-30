@@ -171,8 +171,26 @@ $(function(){
     jQuery.get('/pricing/public/prices',{q:q,ajax:1},function(html){
       jQuery('#price-table').html(html);
       initPriceActionRows();
+      initStatusFilter();
     });
   });
+
+  function applyStatusFilter(){
+    const filter=document.getElementById('status-filter');
+    if(!filter) return;
+    const value=filter.value;
+    document.querySelectorAll('#price-table tbody tr[class*="status-"]').forEach(function(row){
+      row.style.display=(value==='all' || row.classList.contains('status-'+value)) ? '' : 'none';
+    });
+  }
+
+  function initStatusFilter(){
+    const filter=document.getElementById('status-filter');
+    if(!filter || filter._statusFilterBound) return;
+    filter._statusFilterBound=true;
+    filter.addEventListener('change',applyStatusFilter);
+    applyStatusFilter();
+  }
 
   function initPriceActionRows(){
     document.querySelectorAll('.price-action-row[data-href]').forEach(function(row){
@@ -208,4 +226,5 @@ $(function(){
 
   initPriceActionRows();
   initPriceForm();
+  initStatusFilter();
 });
