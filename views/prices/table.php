@@ -84,14 +84,12 @@ use App\Support\Jalali;
     </td>
 
     <td>
-        <?php if ($status === 'green'): ?>
-            سبز
-        <?php elseif ($status === 'yellow'): ?>
-            زرد — حداقل <?= $required ?> قیمت
+        <?php if ($status === 'yellow'): ?>
+            حداقل <?= $required ?> قیمت
         <?php elseif ($status === 'orange'): ?>
-            نارنجی — حداقل <?= $required ?> قیمت
+            حداقل <?= $required ?> قیمت
         <?php elseif ($status === 'red'): ?>
-            قرمز — <?= $required ?> قیمت الزامی
+            <?= $required ?> قیمت الزامی
         <?php else: ?>
             —
         <?php endif; ?>
