@@ -28,9 +28,6 @@ final class RahkaranPriceService
         $server = (string) ($this->config['server'] ?? '');
         $database = (string) ($this->config['database'] ?? '');
         $dsn = 'sqlsrv:Server=' . $server . ';Database=' . $database;
-        if (!empty($this->config['charset'])) {
-            $dsn .= ';CharacterSet=' . $this->config['charset'];
-        }
         if (array_key_exists('trust_server_certificate', $this->config)) {
             $dsn .= ';TrustServerCertificate=' . ((bool) $this->config['trust_server_certificate'] ? '1' : '0');
         }
