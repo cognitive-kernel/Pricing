@@ -79,6 +79,10 @@ final class PriceController
         PermissionService::require(Auth::userId(), 'prices.view');
 
         $q = trim((string) ($_GET['q'] ?? ''));
+        $statusFilter = (string) ($_GET['status_filter'] ?? 'all');
+        if (!in_array($statusFilter, ['all', 'green', 'yellow', 'orange', 'red'], true)) {
+            $statusFilter = 'all';
+        }
         $page = max(1, (int) ($_GET['page'] ?? 1));
         $perPage = 100;
 
@@ -98,6 +102,43 @@ final class PriceController
             }));
         }
 
+        $pdo = Database::connection();
+        $allCodes = array_values(array_unique(array_filter(array_map(
+            static fn(array $row): string => trim((string) ($row['Code'] ?? '')),
+            $rahkaranRows
+        ))));
+
+        $productsByCode = [];
+        if ($allCodes) {
+            $s = $pdo->query("SELECT p.*,u.name unit_name FROM products p INNER JOIN units u ON u.id=p.unit_id");
+            foreach ($s->fetchAll() as $product) {
+                $code = (string) $product['product_code'];
+                if (isset($rahkaranRows[0]) || in_array($code, $allCodes, true)) {
+                    $productsByCode[$code] = $product;
+                }
+            }
+        }
+
+        $marketLatestByProduct = [];
+        $latest = $this->latestPricesSql();
+        $s = $pdo->query("SELECT lp.product_id,lp.price_received_at FROM ({$latest}) lp ORDER BY lp.product_id,lp.price_received_at DESC");
+        foreach ($s->fetchAll() as $r) {
+            $id = (int) $r['product_id'];
+            if (!isset($marketLatestByProduct[$id])) {
+                $marketLatestByProduct[$id] = $r['price_received_at'];
+            }
+        }
+
+        if ($statusFilter !== 'all') {
+            $rahkaranRows = array_values(array_filter($rahkaranRows, function (array $row) use ($productsByCode, $marketLatestByProduct, $statusFilter): bool {
+                $code = trim((string) ($row['Code'] ?? ''));
+                $local = $productsByCode[$code] ?? null;
+                $marketDate = $local ? ($marketLatestByProduct[(int) $local['id']] ?? null) : null;
+                $state = $this->rowStatus($marketDate, $row);
+                return $state['status'] === $statusFilter;
+            }));
+        }
+
         $total = count($rahkaranRows);
         $offset = ($page - 1) * $perPage;
         $pageRows = array_slice($rahkaranRows, $offset, $perPage);
@@ -106,22 +147,6 @@ final class PriceController
             static fn(array $row): string => trim((string) ($row['Code'] ?? '')),
             $pageRows
         ))));
-
-        $pdo = Database::connection();
-        $productsByCode = [];
-        if ($codes) {
-            $placeholders = implode(',', array_fill(0, count($codes), '?'));
-            $s = $pdo->prepare("SELECT p.*,u.name unit_name FROM products p INNER JOIN units u ON u.id=p.unit_id WHERE p.product_code IN ($placeholders)");
-            $s->execute($codes);
-            foreach ($s->fetchAll() as $product) {
-                $productsByCode[(string) $product['product_code']] = $product;
-            }
-        }
-
-        $ids = array_values(array_filter(array_map(
-            static fn(array $row): ?int => isset($productsByCode[(string) ($row['Code'] ?? '')]) ? (int) $productsByCode[(string) $row['Code']]['id'] : null,
-            $pageRows
-        )));
 
         $prices = [];
         if ($ids) {
@@ -172,7 +197,7 @@ final class PriceController
         }
 
         $pages = max(1, (int) ceil($total / $perPage));
-        $data = compact('products', 'prices', 'q', 'page', 'pages', 'perPage', 'total');
+        $data = compact('products', 'prices', 'q', 'statusFilter', 'page', 'pages', 'perPage', 'total');
 
         if (isset($_GET['ajax'])) {
             View::render('prices/table', $data);
