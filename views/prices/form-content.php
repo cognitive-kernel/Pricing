@@ -8,7 +8,7 @@
 </div>
 <?php endif; ?>
 
-<form method="post" action="/pricing/public/prices<?= $editing?'/'.(int)$product['id']:''?>" id="price-form">
+<form data-required-sources="<?= (int) $requiredSources ?>" method="post" action="/pricing/public/prices<?= $editing?'/'.(int)$product['id']:''?>" id="price-form">
 <input type="hidden" name="_csrf" value="<?=Security::e(Security::csrf())?>">
 <div class="row g-3">
 <div class="col-md-3"><label>کد کالا</label><input name="product_code" value="<?=Security::e($product['product_code']??'')?>" class="form-control" maxlength="100" required></div>
