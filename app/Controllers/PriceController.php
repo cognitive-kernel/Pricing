@@ -63,47 +63,53 @@ final class PriceController
         PermissionService::require(Auth::userId(), 'prices.view');
 
         $q = trim((string) ($_GET['q'] ?? ''));
-        $sort = (string) ($_GET['sort'] ?? 'registered_at');
-        $dir = ($_GET['direction'] ?? 'desc') === 'asc' ? 'ASC' : 'DESC';
         $page = max(1, (int) ($_GET['page'] ?? 1));
         $perPage = min(100, max(10, (int) ($_GET['per_page'] ?? 25)));
-        $allowed = [
-            'product_code' => 'p.product_code',
-            'product_name' => 'p.product_name',
-            'unit_name' => 'u.name',
-            'registered_at' => 'p.registered_at',
-            'latest_price_date' => 'latest_price_date'
-        ];
-        $order = $allowed[$sort] ?? $allowed['registered_at'];
-        $where = " WHERE p.status='active'";
-        $params = [];
+
+        try {
+            $rahkaranRows = RahkaranPriceService::instance()->allRows();
+        } catch (\Throwable $e) {
+            error_log('Rahkaran lookup failed on prices page: ' . $e->getMessage());
+            http_response_code(500);
+            exit('دریافت اطلاعات راهکاران ناموفق بود.');
+        }
 
         if ($q !== '') {
-            $where .= ' AND (p.product_code LIKE :q OR p.product_name LIKE :q)';
-            $params['q'] = '%' . $q . '%';
+            $needle = mb_strtolower($q);
+            $rahkaranRows = array_values(array_filter($rahkaranRows, static function (array $row) use ($needle): bool {
+                return str_contains(mb_strtolower((string) ($row['Code'] ?? '')), $needle)
+                    || str_contains(mb_strtolower((string) ($row['Name'] ?? '')), $needle);
+            }));
         }
+
+        $total = count($rahkaranRows);
+        $offset = ($page - 1) * $perPage;
+        $pageRows = array_slice($rahkaranRows, $offset, $perPage);
+
+        $codes = array_values(array_unique(array_filter(array_map(
+            static fn(array $row): string => trim((string) ($row['Code'] ?? '')),
+            $pageRows
+        ))));
 
         $pdo = Database::connection();
-        $latest = $this->latestPricesSql();
-
-        $s = $pdo->prepare("SELECT COUNT(*) FROM products p INNER JOIN units u ON u.id=p.unit_id{$where}");
-        $s->execute($params);
-        $total = (int) $s->fetchColumn();
-
-        $offset = ($page - 1) * $perPage;
-        $sql = "SELECT p.id,p.product_code,p.product_name,p.registered_at,p.importance,p.min_sources,p.max_sources,u.name unit_name,(SELECT MAX(lp.price_received_at) FROM ({$latest}) lp WHERE lp.product_id=p.id) latest_price_date FROM products p INNER JOIN units u ON u.id=p.unit_id{$where} ORDER BY {$order} {$dir} OFFSET :off ROWS FETCH NEXT :take ROWS ONLY";
-        $s = $pdo->prepare($sql);
-        foreach ($params as $k => $v) {
-            $s->bindValue(':' . $k, $v);
+        $productsByCode = [];
+        if ($codes) {
+            $placeholders = implode(',', array_fill(0, count($codes), '?'));
+            $s = $pdo->prepare("SELECT p.*,u.name unit_name FROM products p INNER JOIN units u ON u.id=p.unit_id WHERE p.product_code IN ($placeholders)");
+            $s->execute($codes);
+            foreach ($s->fetchAll() as $product) {
+                $productsByCode[(string) $product['product_code']] = $product;
+            }
         }
-        $s->bindValue(':off', $offset, PDO::PARAM_INT);
-        $s->bindValue(':take', $perPage, PDO::PARAM_INT);
-        $s->execute();
-        $products = $s->fetchAll();
 
-        $ids = array_column($products, 'id');
+        $ids = array_values(array_filter(array_map(
+            static fn(array $row): ?int => isset($productsByCode[(string) ($row['Code'] ?? '')]) ? (int) $productsByCode[(string) $row['Code']]['id'] : null,
+            $pageRows
+        )));
+
         $prices = [];
         if ($ids) {
+            $latest = $this->latestPricesSql();
             $in = implode(',', array_fill(0, count($ids), '?'));
             $s = $pdo->prepare("SELECT * FROM ({$latest}) lp WHERE lp.product_id IN ({$in}) ORDER BY product_id,source_no");
             $s->execute($ids);
@@ -112,35 +118,45 @@ final class PriceController
             }
         }
 
-        $codes = array_column($products, 'product_code');
-        $rahkaran = [];
-        if ($codes) {
-            try {
-                $rahkaran = RahkaranPriceService::instance()->latestByCodes($codes);
-            } catch (\Throwable $e) {
-                error_log('Rahkaran lookup skipped on prices page: ' . $e->getMessage());
-            }
-        }
+        $products = [];
+        foreach ($pageRows as $row) {
+            $code = trim((string) ($row['Code'] ?? ''));
+            $local = $productsByCode[$code] ?? null;
+            $product = [
+                'id' => $local['id'] ?? null,
+                'product_code' => $code,
+                'product_name' => (string) ($row['Name'] ?? ''),
+                'unit_name' => (string) ($row['Announcement_unit'] ?? ''),
+                'registered_at' => $local['registered_at'] ?? null,
+                'rahkaran' => $row,
+                'market_latest_date' => null,
+                'row_status' => 'neutral',
+                'required_sources' => 0,
+                'market_days' => null,
+            ];
 
-        foreach ($products as &$product) {
-            $productPrices = $prices[$product['id']] ?? [];
-            $marketDate = null;
-            foreach ($productPrices as $price) {
-                if (!$marketDate || strtotime($price['price_received_at']) > strtotime($marketDate)) {
-                    $marketDate = $price['price_received_at'];
+            if ($local) {
+                $productPrices = $prices[$local['id']] ?? [];
+                foreach ($productPrices as $price) {
+                    if (!$product['market_latest_date'] || strtotime($price['price_received_at']) > strtotime($product['market_latest_date'])) {
+                        $product['market_latest_date'] = $price['price_received_at'];
+                    }
                 }
+                $state = $this->rowStatus($product['market_latest_date'], $row);
+                $product['row_status'] = $state['status'];
+                $product['required_sources'] = $state['required_sources'];
+                $product['market_days'] = $state['market_days'];
+            } else {
+                $state = $this->rowStatus(null, $row);
+                $product['row_status'] = $state['status'];
+                $product['required_sources'] = $state['required_sources'];
             }
-            $product['market_latest_date'] = $marketDate;
-            $product['rahkaran'] = $rahkaran[(string) $product['product_code']] ?? null;
-            $state = $this->rowStatus($marketDate, $product['rahkaran']);
-            $product['row_status'] = $state['status'];
-            $product['required_sources'] = $state['required_sources'];
-            $product['market_days'] = $state['market_days'];
+
+            $products[] = $product;
         }
-        unset($product);
 
         $pages = max(1, (int) ceil($total / $perPage));
-        $data = compact('products', 'prices', 'q', 'sort', 'dir', 'page', 'pages', 'perPage', 'total');
+        $data = compact('products', 'prices', 'q', 'page', 'pages', 'perPage', 'total');
 
         if (isset($_GET['ajax'])) {
             View::render('prices/table', $data);
