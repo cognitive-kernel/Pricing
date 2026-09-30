@@ -22,25 +22,41 @@ final class PriceController
 
     private function rowStatus(?string $marketDate, ?array $rahkaran): array
     {
+        $marketDays = null;
+
         if ($marketDate) {
-            $days = max(0, (int) ((time() - strtotime($marketDate)) / 86400));
-            if ($days < 7) {
-                return ['status' => 'green', 'required_sources' => 0, 'market_days' => $days];
+            $marketDays = max(0, (int) ((time() - strtotime($marketDate)) / 86400));
+            if ($marketDays < 7) {
+                return ['status' => 'green', 'required_sources' => 0, 'market_days' => $marketDays];
             }
         }
 
-        if ($rahkaran) {
-            $days = max(0, (int) ($rahkaran['Announcement_diff'] ?? 999));
-            if ($days < 7) {
-                return ['status' => 'green', 'required_sources' => 0, 'market_days' => null];
-            }
-            if ($days <= 15) {
-                return ['status' => 'orange', 'required_sources' => 2, 'market_days' => null];
-            }
-            return ['status' => 'red', 'required_sources' => 3, 'market_days' => null];
+        if (!$rahkaran) {
+            return ['status' => 'neutral', 'required_sources' => 0, 'market_days' => $marketDays];
         }
 
-        return ['status' => 'neutral', 'required_sources' => 0, 'market_days' => null];
+        $rahkaranDays = max(0, (int) ($rahkaran['Announcement_diff'] ?? 999));
+
+        if ($marketDate === null && $rahkaranDays < 7) {
+            return ['status' => 'yellow', 'required_sources' => 1, 'market_days' => null];
+        }
+
+        if (
+            $rahkaranDays >= 7
+            && $rahkaranDays <= 15
+            && ($marketDate === null || ($marketDays !== null && $marketDays >= 7 && $marketDays <= 15))
+        ) {
+            return ['status' => 'orange', 'required_sources' => 2, 'market_days' => $marketDays];
+        }
+
+        if (
+            $rahkaranDays > 15
+            && ($marketDate === null || ($marketDays !== null && $marketDays > 15))
+        ) {
+            return ['status' => 'red', 'required_sources' => 3, 'market_days' => $marketDays];
+        }
+
+        return ['status' => 'neutral', 'required_sources' => 0, 'market_days' => $marketDays];
     }
 
     private function currentRequiredSources(array $product): int
