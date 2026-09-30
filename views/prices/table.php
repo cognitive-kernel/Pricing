@@ -91,11 +91,3 @@ use App\Support\Jalali;
 </table>
 </div>
 
-<script>
-document.querySelectorAll('.price-action-row[data-href]').forEach(function (row) {
-    row.addEventListener('click', function (event) {
-        if (event.target.closest('a,button,input,form,select,textarea')) return;
-        window.location.href = row.dataset.href;
-    });
-});
-</script>
