@@ -173,21 +173,11 @@ $(function(){
 
   });
 
-  function applyStatusFilter(){
-    const filter=document.getElementById('status-filter');
-    if(!filter) return;
-    const value=filter.value;
-    document.querySelectorAll('#price-table tbody tr[class*="status-"]').forEach(function(row){
-      row.style.display=(value==='all' || row.classList.contains('status-'+value)) ? '' : 'none';
+  const statusFilter=document.getElementById('status-filter');
+  if(statusFilter){
+    statusFilter.addEventListener('change',function(){
+      document.getElementById('filter')?.requestSubmit();
     });
-  }
-
-  function initStatusFilter(){
-    const filter=document.getElementById('status-filter');
-    if(!filter || filter._statusFilterBound) return;
-    filter._statusFilterBound=true;
-    filter.addEventListener('change',applyStatusFilter);
-    applyStatusFilter();
   }
 
   function initPriceActionRows(){
@@ -224,5 +214,4 @@ $(function(){
 
   initPriceActionRows();
   initPriceForm();
-  initStatusFilter();
 });
