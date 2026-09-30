@@ -32,7 +32,7 @@ use App\Support\Jalali;
     $marketPrices = $prices[$p['id']] ?? [];
 ?>
 <tr class="<?= Security::e($cls) ?> <?= $clickable ? 'price-action-row' : '' ?>"
-    <?php if ($clickable): ?>data-href="/pricing/public/prices/<?= (int) $p['id'] ?>/edit" title="برای ثبت رصد بازار کلیک کنید"<?php endif; ?>>
+    <?php if ($clickable): ?>data-href="/pricing/public/prices/<?= (int) $p['id'] ?>/edit" title="برای ثبت رصد بازار دوبار کلیک کنید"<?php endif; ?>>
     <td><?= Security::e((string) $p['product_code']) ?></td>
     <td><?= Security::e((string) $p['product_name']) ?></td>
 
