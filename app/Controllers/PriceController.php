@@ -117,7 +117,7 @@ final class PriceController
         if ($codes) {
             try {
                 $rahkaran = RahkaranPriceService::instance()->latestByCodes($codes);
-            } catch (\\Throwable $e) {
+            } catch (\Throwable $e) {
                 error_log('Rahkaran lookup skipped on prices page: ' . $e->getMessage());
             }
         }
