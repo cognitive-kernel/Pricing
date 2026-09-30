@@ -8,14 +8,14 @@ use App\Support\Jalali;
 <table class="table table-bordered table-hover align-middle">
 <thead>
 <tr>
-<th>کد کالا</th>
-<th>نام کالا</th>
-<th>قیمت‌های سه منبع</th>
-<th>راهکاران</th>
-<th>واحد</th>
-<th>تاریخ ثبت</th>
-<th>وضعیت</th>
-<th>عملیات</th>
+    <th>کد</th>
+    <th>نام کالا</th>
+    <th>موجودی راهکاران</th>
+    <th>اعلامیه راهکاران</th>
+    <th>فاکتور راهکاران</th>
+    <th>رصد بازار</th>
+    <th>وضعیت</th>
+    <th>عملیات</th>
 </tr>
 </thead>
 <tbody>
@@ -29,34 +29,60 @@ use App\Support\Jalali;
     $cls = 'status-' . $status;
     $rahkaran = $p['rahkaran'] ?? null;
     $required = (int) ($p['required_sources'] ?? 0);
+    $marketPrices = $prices[$p['id']] ?? [];
 ?>
-<tr class="<?=Security::e($cls)?> <?=$clickable?'price-action-row':''?>"
+<tr class="<?= Security::e($cls) ?> <?= $clickable ? 'price-action-row' : '' ?>"
     <?php if ($clickable): ?>data-href="/pricing/public/prices/<?= (int) $p['id'] ?>/edit" title="برای ثبت رصد بازار کلیک کنید"<?php endif; ?>>
-    <td><?=Security::e($p['product_code'])?></td>
-    <td><?=Security::e($p['product_name'])?></td>
-    <td>
-        <?php foreach (($prices[$p['id']] ?? []) as $pr): ?>
-        <div>
-            منبع <?= (int) $pr['source_no'] ?>:
-            <?=Security::e($pr['supplier'])?> |
-            بسته <?=number_format((float) $pr['package_price'], 2)?> |
-            واحد <?=number_format((float) $pr['unit_price'], 2)?> |
-            <?=Security::e(Jalali::fromGregorian($pr['price_received_at']))?>
-        </div>
-        <?php endforeach; ?>
-    </td>
+    <td><?= Security::e((string) $p['product_code']) ?></td>
+    <td><?= Security::e((string) $p['product_name']) ?></td>
+
     <td>
         <?php if ($rahkaran): ?>
-            <div><strong>اعلامیه:</strong> <?=number_format((float) $rahkaran['Announcement_price'], 2)?> <?=Security::e((string) $rahkaran['Announcement_unit'])?></div>
-            <div class="small text-muted"><?=Security::e((string) $rahkaran['Announcement_date'])?> · <?= (int) $rahkaran['Announcement_diff'] ?> روز</div>
-            <div><strong>فاکتور:</strong> <?= $rahkaran['invoice_price'] !== null ? number_format((float) $rahkaran['invoice_price'], 2) : '—' ?> <?=Security::e((string) ($rahkaran['invoice_unit'] ?? ''))?></div>
-            <div class="small text-muted"><?=Security::e((string) ($rahkaran['invoice_date'] ?? ''))?><?= $rahkaran['invoice_diff'] !== null ? ' · ' . (int) $rahkaran['invoice_diff'] . ' روز' : '' ?></div>
+            <?= number_format((float) ($rahkaran['MajorUnit_Remaining'] ?? 0), 2) ?>
         <?php else: ?>
             —
         <?php endif; ?>
     </td>
-    <td><?=Security::e($p['unit_name'])?></td>
-    <td><?=Security::e(Jalali::fromGregorian($p['registered_at']))?></td>
+
+    <td>
+        <?php if ($rahkaran): ?>
+            <div><strong><?= number_format((float) ($rahkaran['Announcement_price'] ?? 0), 2) ?></strong> <?= Security::e((string) ($rahkaran['Announcement_unit'] ?? '')) ?></div>
+            <div class="small text-muted">
+                <?= Security::e((string) ($rahkaran['Announcement_date'] ?? '')) ?>
+                · <?= (int) ($rahkaran['Announcement_diff'] ?? 0) ?> روز
+            </div>
+        <?php else: ?>
+            —
+        <?php endif; ?>
+    </td>
+
+    <td>
+        <?php if ($rahkaran && $rahkaran['invoice_price'] !== null): ?>
+            <div><strong><?= number_format((float) $rahkaran['invoice_price'], 2) ?></strong> <?= Security::e((string) ($rahkaran['invoice_unit'] ?? '')) ?></div>
+            <div class="small text-muted">
+                <?= Security::e((string) ($rahkaran['invoice_date'] ?? '')) ?>
+                <?php if ($rahkaran['invoice_diff'] !== null): ?> · <?= (int) $rahkaran['invoice_diff'] ?> روز<?php endif; ?>
+            </div>
+        <?php else: ?>
+            —
+        <?php endif; ?>
+    </td>
+
+    <td>
+        <?php if ($marketPrices): ?>
+            <?php foreach ($marketPrices as $pr): ?>
+                <div class="mb-1">
+                    منبع <?= (int) $pr['source_no'] ?>:
+                    <?= Security::e((string) $pr['supplier']) ?>
+                    · <?= number_format((float) $pr['unit_price'], 2) ?>
+                    · <?= Security::e(Jalali::fromGregorian($pr['price_received_at'])) ?>
+                </div>
+            <?php endforeach; ?>
+        <?php else: ?>
+            —
+        <?php endif; ?>
+    </td>
+
     <td>
         <?php if ($status === 'green'): ?>
             سبز
@@ -70,17 +96,15 @@ use App\Support\Jalali;
             —
         <?php endif; ?>
     </td>
+
     <td class="text-nowrap">
-        <?php if (PermissionService::allows(Auth::userId(), 'product.sources.view')): ?>
-            <a class="btn btn-sm btn-outline-info" href="/pricing/public/admin/product-sources/<?= (int) $p['id'] ?>">منابع</a>
-        <?php endif; ?>
         <?php if (PermissionService::allows(Auth::userId(), 'prices.edit')): ?>
-            <a class="btn btn-sm btn-outline-primary" href="/pricing/public/prices/<?= (int) $p['id'] ?>/edit">ویرایش</a>
+            <a class="btn btn-sm btn-outline-primary" href="/pricing/public/prices/<?= (int) $p['id'] ?>/edit">رصد بازار</a>
             <a class="btn btn-sm btn-outline-secondary" href="/pricing/public/prices/<?= (int) $p['id'] ?>/history">تاریخچه</a>
         <?php endif; ?>
         <?php if (PermissionService::allows(Auth::userId(), 'prices.delete')): ?>
             <form method="post" action="/pricing/public/prices/<?= (int) $p['id'] ?>/delete" class="d-inline" onsubmit="return confirm('حذف شود؟')">
-                <input type="hidden" name="_csrf" value="<?=Security::e(Security::csrf())?>">
+                <input type="hidden" name="_csrf" value="<?= Security::e(Security::csrf()) ?>">
                 <button class="btn btn-sm btn-outline-danger">حذف</button>
             </form>
         <?php endif; ?>
@@ -90,4 +114,3 @@ use App\Support\Jalali;
 </tbody>
 </table>
 </div>
-
