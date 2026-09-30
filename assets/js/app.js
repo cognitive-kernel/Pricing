@@ -178,7 +178,7 @@ $(function(){
     document.querySelectorAll('.price-action-row[data-href]').forEach(function(row){
       if(row._priceActionBound) return;
       row._priceActionBound=true;
-      row.addEventListener('click',function(event){
+      row.addEventListener('dblclick',function(event){
         if(event.target.closest('a,button,input,form,select,textarea')) return;
         window.location.href=row.dataset.href;
       });
