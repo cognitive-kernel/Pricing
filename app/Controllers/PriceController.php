@@ -113,7 +113,14 @@ final class PriceController
         }
 
         $codes = array_column($products, 'product_code');
-        $rahkaran = $codes ? RahkaranPriceService::instance()->latestByCodes($codes) : [];
+        $rahkaran = [];
+        if ($codes) {
+            try {
+                $rahkaran = RahkaranPriceService::instance()->latestByCodes($codes);
+            } catch (\\Throwable $e) {
+                error_log('Rahkaran lookup skipped on prices page: ' . $e->getMessage());
+            }
+        }
 
         foreach ($products as &$product) {
             $productPrices = $prices[$product['id']] ?? [];
