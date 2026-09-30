@@ -100,12 +100,6 @@ use App\Support\Jalali;
             <a class="btn btn-sm btn-outline-primary" href="/pricing/public/prices/<?= (int) $p['id'] ?>/edit">رصد بازار</a>
             <a class="btn btn-sm btn-outline-secondary" href="/pricing/public/prices/<?= (int) $p['id'] ?>/history">تاریخچه</a>
         <?php endif; ?>
-        <?php if (PermissionService::allows(Auth::userId(), 'prices.delete')): ?>
-            <form method="post" action="/pricing/public/prices/<?= (int) $p['id'] ?>/delete" class="d-inline" onsubmit="return confirm('حذف شود؟')">
-                <input type="hidden" name="_csrf" value="<?= Security::e(Security::csrf()) ?>">
-                <button class="btn btn-sm btn-outline-danger">حذف</button>
-            </form>
-        <?php endif; ?>
     </td>
 </tr>
 <?php endforeach; ?>
