@@ -57,53 +57,38 @@ final class RahkaranPriceService
         return self::$instance ??= new self();
     }
 
+    public function allRows(): array
+    {
+        $queryFile = BASE_PATH . '/database/queries/stock_with_latest_prices.sql';
+        $sql = (string) file_get_contents($queryFile);
+
+        $plant = (int) ($this->config['plant_ref'] ?? env('RAHKARAN_PLANT_REF', 2));
+        $ledger = (int) ($this->config['ledger_ref'] ?? env('RAHKARAN_LEDGER_REF', 1));
+        $fiscalYear = (int) ($this->config['fiscal_year_ref'] ?? env('RAHKARAN_FISCAL_YEAR_REF', 9));
+
+        $sql = preg_replace('/DECLARE\s+@PlantRef\s+BIGINT\s*=\s*\d+\s*;/i', 'DECLARE @PlantRef BIGINT = ' . $plant . ';', $sql, 1);
+        $sql = preg_replace('/DECLARE\s+@LedgerRef\s+BIGINT\s*=\s*\d+\s*;/i', 'DECLARE @LedgerRef BIGINT = ' . $ledger . ';', $sql, 1);
+        $sql = preg_replace('/DECLARE\s+@FiscalYearRef\s+BIGINT\s*=\s*\d+\s*;/i', 'DECLARE @FiscalYearRef BIGINT = ' . $fiscalYear . ';', $sql, 1);
+
+        return $this->pdo->query($sql)->fetchAll();
+    }
+
     public function latestByCodes(array $codes): array
     {
-        $codes = array_values(array_unique(array_filter(array_map(
+        $wanted = array_values(array_unique(array_filter(array_map(
             static fn($code): string => trim((string) $code),
             $codes
         ), static fn(string $code): bool => $code !== '')));
 
-        if (!$codes) {
+        if (!$wanted) {
             return [];
         }
 
-        if ($this->cache === null) {
-            $queryFile = BASE_PATH . '/database/queries/stock_with_latest_prices.sql';
-            $sql = (string) file_get_contents($queryFile);
-
-            $plant = (int) ($this->config['plant_ref'] ?? env('RAHKARAN_PLANT_REF', 2));
-            $ledger = (int) ($this->config['ledger_ref'] ?? env('RAHKARAN_LEDGER_REF', 1));
-            $fiscalYear = (int) ($this->config['fiscal_year_ref'] ?? env('RAHKARAN_FISCAL_YEAR_REF', 9));
-
-            $sql = preg_replace('/DECLARE\s+@PlantRef\s+BIGINT\s*=\s*\d+\s*;/i', 'DECLARE @PlantRef BIGINT = ' . $plant . ';', $sql, 1);
-            $sql = preg_replace('/DECLARE\s+@LedgerRef\s+BIGINT\s*=\s*\d+\s*;/i', 'DECLARE @LedgerRef BIGINT = ' . $ledger . ';', $sql, 1);
-            $sql = preg_replace('/DECLARE\s+@FiscalYearRef\s+BIGINT\s*=\s*\d+\s*;/i', 'DECLARE @FiscalYearRef BIGINT = ' . $fiscalYear . ';', $sql, 1);
-
-            $quotedCodes = implode(',', array_map(
-                static fn(string $code): string => "'" . str_replace("'", "''", $code) . "'",
-                $codes
-            ));
-            $sql = preg_replace(
-                '/ORDER BY\s+s\.PartID\s+DESC\s*;?\s*$/i',
-                'AND s.Code IN (' . $quotedCodes . ') ORDER BY s.PartID DESC;',
-                $sql,
-                1
-            );
-
-            $this->cache = [];
-            foreach ($this->pdo->query($sql)->fetchAll() as $row) {
-                $code = trim((string) ($row['Code'] ?? ''));
-                if ($code !== '') {
-                    $this->cache[$code] = $row;
-                }
-            }
-        }
-
         $result = [];
-        foreach ($codes as $code) {
-            if (isset($this->cache[$code])) {
-                $result[$code] = $this->cache[$code];
+        foreach ($this->allRows() as $row) {
+            $code = trim((string) ($row['Code'] ?? ''));
+            if ($code !== '' && in_array($code, $wanted, true)) {
+                $result[$code] = $row;
             }
         }
         return $result;
