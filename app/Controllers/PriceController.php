@@ -29,10 +29,10 @@ final class PriceController
             }
         }
 
-        if (!$marketDate && $rahkaran) {
+        if ($rahkaran) {
             $days = max(0, (int) ($rahkaran['Announcement_diff'] ?? 999));
             if ($days < 7) {
-                return ['status' => 'yellow', 'required_sources' => 1, 'market_days' => null];
+                return ['status' => 'green', 'required_sources' => 0, 'market_days' => null];
             }
             if ($days <= 15) {
                 return ['status' => 'orange', 'required_sources' => 2, 'market_days' => null];
