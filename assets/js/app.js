@@ -170,6 +170,42 @@ $(function(){
     const q=jQuery('#q').val();
     jQuery.get('/pricing/public/prices',{q:q,ajax:1},function(html){
       jQuery('#price-table').html(html);
+      initPriceActionRows();
     });
   });
+
+  function initPriceActionRows(){
+    document.querySelectorAll('.price-action-row[data-href]').forEach(function(row){
+      if(row._priceActionBound) return;
+      row._priceActionBound=true;
+      row.addEventListener('click',function(event){
+        if(event.target.closest('a,button,input,form,select,textarea')) return;
+        window.location.href=row.dataset.href;
+      });
+    });
+  }
+
+  function initPriceForm(){
+    const form=document.getElementById('price-form');
+    if(!form || form._priceValidationBound) return;
+    form._priceValidationBound=true;
+    form.addEventListener('submit',function(event){
+      const required=Number(form.dataset.requiredSources||0);
+      let filled=0;
+      for(let i=0;i<3;i++){
+        const supplier=form.querySelector('[name="prices['+i+'][supplier]"]');
+        const packagePrice=form.querySelector('[name="prices['+i+'][package_price]"]');
+        const unitPrice=form.querySelector('[name="prices['+i+'][unit_price]"]');
+        const date=form.querySelector('[name="prices['+i+'][price_received_at]"]');
+        if((supplier?.value||'').trim()!==''||(packagePrice?.value||'').trim()!==''||(unitPrice?.value||'').trim()!==''||(date?.value||'').trim()!=='') filled++;
+      }
+      if(filled<required){
+        event.preventDefault();
+        alert('برای این وضعیت حداقل '+required+' قیمت جدید بازار باید ثبت شود.');
+      }
+    });
+  }
+
+  initPriceActionRows();
+  initPriceForm();
 });
