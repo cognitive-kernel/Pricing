@@ -64,7 +64,7 @@ final class PriceController
 
         $q = trim((string) ($_GET['q'] ?? ''));
         $page = max(1, (int) ($_GET['page'] ?? 1));
-        $perPage = min(100, max(10, (int) ($_GET['per_page'] ?? 25)));
+        $perPage = 100;
 
         try {
             $rahkaranRows = RahkaranPriceService::instance()->allRows();
