@@ -148,6 +148,14 @@ final class PriceController
             $pageRows
         ))));
 
+        $ids = [];
+        foreach ($codes as $code) {
+            if (isset($productsByCode[$code])) {
+                $ids[] = (int) $productsByCode[$code]['id'];
+            }
+        }
+        $ids = array_values(array_unique($ids));
+
         $prices = [];
         if ($ids) {
             $latest = $this->latestPricesSql();
