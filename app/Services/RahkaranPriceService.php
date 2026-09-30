@@ -80,6 +80,17 @@ final class RahkaranPriceService
             $sql = preg_replace('/DECLARE\s+@LedgerRef\s+BIGINT\s*=\s*\d+\s*;/i', 'DECLARE @LedgerRef BIGINT = ' . $ledger . ';', $sql, 1);
             $sql = preg_replace('/DECLARE\s+@FiscalYearRef\s+BIGINT\s*=\s*\d+\s*;/i', 'DECLARE @FiscalYearRef BIGINT = ' . $fiscalYear . ';', $sql, 1);
 
+            $quotedCodes = implode(',', array_map(
+                static fn(string $code): string => "'" . str_replace("'", "''", $code) . "'",
+                $codes
+            ));
+            $sql = preg_replace(
+                '/ORDER BY\s+s\.PartID\s+DESC\s*;?\s*$/i',
+                'AND s.Code IN (' . $quotedCodes . ') ORDER BY s.PartID DESC;',
+                $sql,
+                1
+            );
+
             $this->cache = [];
             foreach ($this->pdo->query($sql)->fetchAll() as $row) {
                 $code = trim((string) ($row['Code'] ?? ''));
