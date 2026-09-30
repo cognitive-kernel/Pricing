@@ -168,11 +168,9 @@ $(function(){
   jQuery('#filter').on('submit',function(e){
     e.preventDefault();
     const q=jQuery('#q').val();
-    jQuery.get('/pricing/public/prices',{q:q,ajax:1},function(html){
-      jQuery('#price-table').html(html);
-      initPriceActionRows();
-      initStatusFilter();
-    });
+    const statusFilter=jQuery('#status-filter').val() || 'all';
+    window.location.href='/pricing/public/prices?q='+encodeURIComponent(q)+'&status_filter='+encodeURIComponent(statusFilter);
+
   });
 
   function applyStatusFilter(){
