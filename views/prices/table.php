@@ -80,7 +80,7 @@ use App\Support\Jalali;
 
     <td>
         <?php if ($marketPrices): ?>
-            <?php foreach ($marketPrices as $pr): ?>
+            <?php foreach ($marketPrices as $sourceIndex => $pr): ?>
                 <div class="mb-1">
                     منبع:
                     <?= Security::e((string) $pr['supplier']) ?>
