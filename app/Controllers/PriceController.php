@@ -34,8 +34,10 @@ final class PriceController
         WHERE source_no=1";
     }
 
-    private function rowStatus(?string $marketDate, ?array $rahkaran): array
+    private function rowStatus(mixed $marketDate, ?array $rahkaran): array
     {
+        $marketDate = $marketDate instanceof \DateTimeInterface ? $marketDate->format('Y-m-d H:i:s') : trim((string) ($marketDate ?? ''));
+        $marketDate = $marketDate !== '' ? $marketDate : null;
         $marketDays = null;
 
         if ($marketDate) {
@@ -76,7 +78,7 @@ final class PriceController
     private function currentRequiredSources(array $product): int
     {
         $pdo = Database::connection();
-        $s = $pdo->prepare('SELECT TOP 1 InquiryDate FROM dbo.ProductPriceMonitor WHERE ProductCode=:code ORDER BY InquiryDate DESC,PriceMonitorID DESC');
+        $s = $pdo->prepare('SELECT TOP 1 CONVERT(varchar(19), InquiryDate, 120) FROM dbo.ProductPriceMonitor WHERE ProductCode=:code ORDER BY InquiryDate DESC,PriceMonitorID DESC');
         $s->execute(['code' => (string) $product['product_code']]);
         $marketDate = $s->fetchColumn();
 
@@ -118,7 +120,7 @@ final class PriceController
         $pdo = Database::connection();
 
         $marketLatestByCode = [];
-        $s = $pdo->query('SELECT ProductCode,MAX(InquiryDate) market_latest_date FROM dbo.ProductPriceMonitor GROUP BY ProductCode');
+        $s = $pdo->query('SELECT ProductCode,CONVERT(varchar(19), MAX(InquiryDate), 120) AS market_latest_date FROM dbo.ProductPriceMonitor GROUP BY ProductCode');
         foreach ($s->fetchAll() as $r) {
             $marketLatestByCode[(string) $r['ProductCode']] = $r['market_latest_date'];
         }
@@ -143,7 +145,7 @@ final class PriceController
         $prices = [];
         if ($codes) {
             $in = implode(',', array_fill(0, count($codes), '?'));
-            $s = $pdo->prepare('SELECT m.*,m.InquiryDate price_received_at,m.Source supplier,m.Price unit_price,m.UnitID unit_id FROM dbo.ProductPriceMonitor m WHERE m.ProductCode IN (' . $in . ') ORDER BY m.ProductCode,m.InquiryDate DESC,m.PriceMonitorID DESC');
+            $s = $pdo->prepare('SELECT m.PriceMonitorID,m.ProductCode,CONVERT(varchar(19),m.InquiryDate,120) AS InquiryDate,m.Source,m.Price,m.UnitID,CONVERT(varchar(19),m.CreatedDate,120) AS CreatedDate,m.InquiryDate AS price_received_at,m.Source AS supplier,m.Price AS unit_price,m.UnitID AS unit_id FROM dbo.ProductPriceMonitor m WHERE m.ProductCode IN (' . $in . ') ORDER BY m.ProductCode,m.InquiryDate DESC,m.PriceMonitorID DESC');
             $s->execute($codes);
             foreach ($s->fetchAll() as $r) {
                 $prices[(string) $r['ProductCode']][] = $r;
@@ -253,7 +255,7 @@ final class PriceController
                 'registered_at' => null,
             ];
 
-            $s = $pdo->prepare('SELECT m.PriceMonitorID,m.ProductCode,m.InquiryDate,m.Source,m.Price,m.UnitID,m.CreatedDate,u.name unit_name FROM dbo.ProductPriceMonitor m LEFT JOIN units u ON u.id=m.UnitID WHERE m.ProductCode=:code ORDER BY m.InquiryDate DESC,m.PriceMonitorID DESC');
+            $s = $pdo->prepare('SELECT PriceMonitorID,ProductCode,CONVERT(varchar(19),InquiryDate,120) AS InquiryDate,Source,Price,UnitID,CONVERT(varchar(19),CreatedDate,120) AS CreatedDate FROM dbo.ProductPriceMonitor WHERE ProductCode=:code ORDER BY InquiryDate DESC,PriceMonitorID DESC');
             $s->execute(['code' => $productCode]);
             $prices = $s->fetchAll();
 
@@ -266,9 +268,13 @@ final class PriceController
         View::render($editing ? 'prices/edit' : 'prices/create', compact('product', 'prices', 'requiredSources'));
     }
 
-    private function requiredSourcesFromMarketDate(?string $marketDate): int
+    private function requiredSourcesFromMarketDate(mixed $marketDate): int
     {
-        if (!$marketDate) {
+        if ($marketDate instanceof \DateTimeInterface) {
+            $marketDate = $marketDate->format('Y-m-d H:i:s');
+        }
+        $marketDate = trim((string) ($marketDate ?? ''));
+        if ($marketDate === '') {
             return 1;
         }
         $days = max(0, (int) ((time() - strtotime($marketDate)) / 86400));
