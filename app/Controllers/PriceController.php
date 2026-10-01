@@ -17,7 +17,21 @@ final class PriceController
 {
     private function latestPricesSql(): string
     {
-        return "SELECT * FROM (SELECT m.*,p.id product_id,m.InquiryDate price_received_at,m.Source supplier,m.Price unit_price,m.UnitID unit_id,ROW_NUMBER() OVER(PARTITION BY m.ProductCode,m.Source ORDER BY m.InquiryDate DESC,m.PriceMonitorID DESC) source_no FROM ProductPriceMonitor m INNER JOIN products p ON p.product_code=m.ProductCode) ranked_prices WHERE source_no=1";
+        return "SELECT * FROM (
+            SELECT
+                m.*,
+                m.ProductCode product_code,
+                m.InquiryDate price_received_at,
+                m.Source supplier,
+                m.Price unit_price,
+                m.UnitID unit_id,
+                ROW_NUMBER() OVER (
+                    PARTITION BY m.ProductCode
+                    ORDER BY m.InquiryDate DESC, m.PriceMonitorID DESC
+                ) source_no
+            FROM ProductPriceMonitor m
+        ) ranked_prices
+        WHERE source_no=1";
     }
 
     private function rowStatus(?string $marketDate, ?array $rahkaran): array
@@ -62,9 +76,8 @@ final class PriceController
     private function currentRequiredSources(array $product): int
     {
         $pdo = Database::connection();
-        $latest = $this->latestPricesSql();
-        $s = $pdo->prepare("SELECT TOP 1 price_received_at FROM ({$latest}) lp WHERE lp.product_id=:id ORDER BY price_received_at DESC");
-        $s->execute(['id' => (int) $product['id']]);
+        $s = $pdo->prepare('SELECT TOP 1 InquiryDate FROM ProductPriceMonitor WHERE ProductCode=:code ORDER BY InquiryDate DESC,PriceMonitorID DESC');
+        $s->execute(['code' => (string) $product['product_code']]);
         $marketDate = $s->fetchColumn();
 
         $rahkaran = RahkaranPriceService::instance()->latestByCodes([(string) $product['product_code']]);
@@ -103,38 +116,17 @@ final class PriceController
         }
 
         $pdo = Database::connection();
-        $allCodes = array_values(array_unique(array_filter(array_map(
-            static fn(array $row): string => trim((string) ($row['Code'] ?? '')),
-            $rahkaranRows
-        ))));
 
-        $productsByCode = [];
-        if ($allCodes) {
-            $s = $pdo->query("SELECT p.*,u.name unit_name FROM products p INNER JOIN units u ON u.id=p.unit_id");
-            foreach ($s->fetchAll() as $product) {
-                $code = (string) $product['product_code'];
-                if (isset($rahkaranRows[0]) || in_array($code, $allCodes, true)) {
-                    $productsByCode[$code] = $product;
-                }
-            }
-        }
-
-        $marketLatestByProduct = [];
-        $latest = $this->latestPricesSql();
-        $s = $pdo->query("SELECT lp.product_id,lp.price_received_at FROM ({$latest}) lp ORDER BY lp.product_id,lp.price_received_at DESC");
+        $marketLatestByCode = [];
+        $s = $pdo->query('SELECT ProductCode,MAX(InquiryDate) market_latest_date FROM ProductPriceMonitor GROUP BY ProductCode');
         foreach ($s->fetchAll() as $r) {
-            $id = (int) $r['product_id'];
-            if (!isset($marketLatestByProduct[$id])) {
-                $marketLatestByProduct[$id] = $r['price_received_at'];
-            }
+            $marketLatestByCode[(string) $r['ProductCode']] = $r['market_latest_date'];
         }
 
         if ($statusFilter !== 'all') {
-            $rahkaranRows = array_values(array_filter($rahkaranRows, function (array $row) use ($productsByCode, $marketLatestByProduct, $statusFilter): bool {
+            $rahkaranRows = array_values(array_filter($rahkaranRows, function (array $row) use ($marketLatestByCode, $statusFilter): bool {
                 $code = trim((string) ($row['Code'] ?? ''));
-                $local = $productsByCode[$code] ?? null;
-                $marketDate = $local ? ($marketLatestByProduct[(int) $local['id']] ?? null) : null;
-                $state = $this->rowStatus($marketDate, $row);
+                $state = $this->rowStatus($marketLatestByCode[$code] ?? null, $row);
                 return $state['status'] === $statusFilter;
             }));
         }
@@ -148,70 +140,45 @@ final class PriceController
             $pageRows
         ))));
 
-        $ids = [];
-        foreach ($codes as $code) {
-            if (isset($productsByCode[$code])) {
-                $ids[] = (int) $productsByCode[$code]['id'];
-            }
-        }
-        $ids = array_values(array_unique($ids));
-
         $prices = [];
-        if ($ids) {
-            $latest = $this->latestPricesSql();
-            $in = implode(',', array_fill(0, count($ids), '?'));
-            $s = $pdo->prepare("SELECT * FROM ({$latest}) lp WHERE lp.product_id IN ({$in}) ORDER BY product_id,source_no");
-            $s->execute($ids);
+        if ($codes) {
+            $in = implode(',', array_fill(0, count($codes), '?'));
+            $s = $pdo->prepare('SELECT m.*,m.InquiryDate price_received_at,m.Source supplier,m.Price unit_price,m.UnitID unit_id FROM ProductPriceMonitor m WHERE m.ProductCode IN (' . $in . ') ORDER BY m.ProductCode,m.InquiryDate DESC,m.PriceMonitorID DESC');
+            $s->execute($codes);
             foreach ($s->fetchAll() as $r) {
-                $prices[$r['product_id']][] = $r;
+                $prices[(string) $r['ProductCode']][] = $r;
             }
         }
 
         $products = [];
         foreach ($pageRows as $row) {
             $code = trim((string) ($row['Code'] ?? ''));
-            $local = $productsByCode[$code] ?? null;
-            $unitId = (int) ($local['unit_id'] ?? 0);
-            $unitName = (string) ($local['unit_name'] ?? ($row['Announcement_unit'] ?? ''));
+            $marketDate = $marketLatestByCode[$code] ?? null;
+            $unitName = (string) ($row['Announcement_unit'] ?? '');
 
-            if ($unitId === 0 && $unitName !== '') {
-                $u = $pdo->prepare('SELECT TOP 1 id FROM units WHERE is_active=1 AND name=:name');
+            // ProductPriceMonitor keeps UnitID. For a new code, resolve the
+            // local UnitID by the Rahkaran unit name; products are not used.
+            $unitId = 0;
+            $u = $pdo->prepare('SELECT TOP 1 id FROM units WHERE is_active=1 AND name=:name');
+            if ($unitName !== '') {
                 $u->execute(['name' => $unitName]);
                 $unitId = (int) ($u->fetchColumn() ?: 0);
             }
 
-            $product = [
-                'id' => $local['id'] ?? null,
+            $state = $this->rowStatus($marketDate, $row);
+            $products[] = [
+                'id' => 0,
                 'product_code' => $code,
                 'product_name' => (string) ($row['Name'] ?? ''),
                 'unit_id' => $unitId,
                 'unit_name' => $unitName,
-                'registered_at' => $local['registered_at'] ?? null,
+                'registered_at' => null,
                 'rahkaran' => $row,
-                'market_latest_date' => null,
-                'row_status' => 'neutral',
-                'required_sources' => 0,
-                'market_days' => null,
+                'market_latest_date' => $marketDate,
+                'row_status' => $state['status'],
+                'required_sources' => $state['required_sources'],
+                'market_days' => $state['market_days'],
             ];
-
-            if ($local) {
-                $productPrices = $prices[$local['id']] ?? [];
-                foreach ($productPrices as $price) {
-                    if (!$product['market_latest_date'] || strtotime($price['price_received_at']) > strtotime($product['market_latest_date'])) {
-                        $product['market_latest_date'] = $price['price_received_at'];
-                    }
-                }
-                $state = $this->rowStatus($product['market_latest_date'], $row);
-                $product['row_status'] = $state['status'];
-                $product['required_sources'] = $state['required_sources'];
-                $product['market_days'] = $state['market_days'];
-            } else {
-                $state = $this->rowStatus(null, $row);
-                $product['row_status'] = $state['status'];
-                $product['required_sources'] = $state['required_sources'];
-            }
-
-            $products[] = $product;
         }
 
         $pages = max(1, (int) ceil($total / $perPage));
@@ -264,53 +231,46 @@ final class PriceController
         $requiredSources = 0;
 
         if ($editing) {
-            if ((int) $id > 0) {
-                $s = $pdo->prepare('SELECT p.*,u.name unit_name FROM products p LEFT JOIN units u ON u.id=p.unit_id WHERE p.id=:id');
-                $s->execute(['id' => (int) $id]);
-            } else {
-                $productCode = trim((string) ($_GET['product_code'] ?? ''));
-                if ($productCode === '') {
-                    http_response_code(400);
-                    exit('کد کالا ارسال نشده است.');
-                }
-                $s = $pdo->prepare('SELECT p.*,u.name unit_name FROM products p LEFT JOIN units u ON u.id=p.unit_id WHERE p.product_code=:code');
-                $s->execute(['code' => $productCode]);
+            $productCode = trim((string) ($_GET['product_code'] ?? ''));
+            if ($productCode === '') {
+                http_response_code(400);
+                exit('کد کالا ارسال نشده است.');
             }
 
-            $product = $s->fetch();
-
-            // The first page is driven by Rahkaran and may contain products
-            // that are not yet present in the local products table. In that
-            // case build the form context from the values passed by the first page.
-            if (!$product) {
-                $productCode = trim((string) ($_GET['product_code'] ?? ''));
-                $productName = trim((string) ($_GET['product_name'] ?? ''));
-                $unitId = (int) ($_GET['unit_id'] ?? 0);
-
-                if ($productCode === '' || $productName === '') {
-                    http_response_code(400);
-                    exit('اطلاعات کالا برای ثبت رصد بازار کامل نیست.');
-                }
-
-                $unitName = '';
-                if ($unitId > 0) {
-                    $u = $pdo->prepare('SELECT name FROM units WHERE id=:id AND is_active=1');
-                    $u->execute(['id' => $unitId]);
-                    $unitName = (string) ($u->fetchColumn() ?: '');
-                }
-
-                $product = [
-                    'id' => 0,
-                    'product_code' => $productCode,
-                    'product_name' => $productName,
-                    'unit_id' => $unitId,
-                    'unit_name' => $unitName,
-                    'registered_at' => null,
-                ];
+            $rahkaran = RahkaranPriceService::instance()->latestByCodes([$productCode]);
+            $row = $rahkaran[$productCode] ?? null;
+            if (!$row) {
+                http_response_code(404);
+                exit('کالای موردنظر در راهکاران یافت نشد.');
             }
+
+            $unitName = (string) ($row['Announcement_unit'] ?? '');
+            $unitId = 0;
+            if ($unitName !== '') {
+                $u = $pdo->prepare('SELECT TOP 1 id FROM units WHERE is_active=1 AND name=:name');
+                $u->execute(['name' => $unitName]);
+                $unitId = (int) ($u->fetchColumn() ?: 0);
+            }
+
+            // Keep an existing ProductPriceMonitor UnitID when one exists.
+            $u = $pdo->prepare('SELECT TOP 1 UnitID FROM ProductPriceMonitor WHERE ProductCode=:code ORDER BY InquiryDate DESC,PriceMonitorID DESC');
+            $u->execute(['code' => $productCode]);
+            $existingUnitId = (int) ($u->fetchColumn() ?: 0);
+            if ($existingUnitId > 0) {
+                $unitId = $existingUnitId;
+            }
+
+            $product = [
+                'id' => 0,
+                'product_code' => $productCode,
+                'product_name' => (string) ($row['Name'] ?? ''),
+                'unit_id' => $unitId,
+                'unit_name' => $unitName,
+                'registered_at' => null,
+            ];
 
             $s = $pdo->prepare('SELECT m.PriceMonitorID,m.ProductCode,m.InquiryDate,m.Source,m.Price,m.UnitID,m.CreatedDate,u.name unit_name FROM ProductPriceMonitor m LEFT JOIN units u ON u.id=m.UnitID WHERE m.ProductCode=:code ORDER BY m.InquiryDate DESC,m.PriceMonitorID DESC');
-            $s->execute(['code' => (string) $product['product_code']]);
+            $s->execute(['code' => $productCode]);
             $prices = $s->fetchAll();
 
             $requiredSources = $this->currentRequiredSources($product);
@@ -322,55 +282,37 @@ final class PriceController
     public function save(?int $id = null): void
     {
         Auth::requireLogin();
-        PermissionService::require(Auth::userId(), $id ? 'prices.edit' : 'prices.create');
+        PermissionService::require(Auth::userId(), 'prices.edit');
         Security::verifyCsrf();
 
-        if (!$id) {
-            http_response_code(400);
-            exit('ثبت رصد بازار باید از طریق کالای مشخص انجام شود.');
-        }
-
         $pdo = Database::connection();
-        $product = null;
-
-        if ((int) $id > 0) {
-            $s = $pdo->prepare('SELECT id,product_code,product_name,unit_id FROM products WHERE id=:id');
-            $s->execute(['id' => (int) $id]);
-            $product = $s->fetch();
-            if (!$product) {
-                http_response_code(404);
-                exit('کالای موردنظر یافت نشد.');
-            }
-        } else {
-            $postedCode = trim((string) ($_POST['product_code'] ?? ''));
-            $postedName = trim((string) ($_POST['product_name'] ?? ''));
-            $postedUnitId = (int) ($_POST['product_unit_id'] ?? 0);
-
-            if ($postedCode === '' || $postedName === '' || $postedUnitId < 1) {
-                http_response_code(422);
-                exit('کد کالا، نام کالا و واحد سنجش الزامی است.');
-            }
-
-            $s = $pdo->prepare('SELECT id,product_code,product_name,unit_id FROM products WHERE product_code=:code');
-            $s->execute(['code' => $postedCode]);
-            $product = $s->fetch();
-
-            if (!$product) {
-                $product = [
-                    'id' => 0,
-                    'product_code' => $postedCode,
-                    'product_name' => $postedName,
-                    'unit_id' => $postedUnitId,
-                ];
-            }
-        }
-
         $postedCode = trim((string) ($_POST['product_code'] ?? ''));
-        $rows = $_POST['prices'] ?? [];
-        if ($postedCode !== (string) $product['product_code']) {
+        if ($postedCode === '') {
             http_response_code(422);
-            exit('کد کالا با کالای انتخاب‌شده مطابقت ندارد.');
+            exit('کد کالا الزامی است.');
         }
+
+        $rahkaran = RahkaranPriceService::instance()->latestByCodes([$postedCode]);
+        $rahkaranRow = $rahkaran[$postedCode] ?? null;
+        if (!$rahkaranRow) {
+            http_response_code(404);
+            exit('کالای موردنظر در راهکاران یافت نشد.');
+        }
+
+        $unitId = (int) ($_POST['product_unit_id'] ?? 0);
+        if ($unitId < 1) {
+            $u = $pdo->prepare('SELECT TOP 1 UnitID FROM ProductPriceMonitor WHERE ProductCode=:code ORDER BY InquiryDate DESC,PriceMonitorID DESC');
+            $u->execute(['code' => $postedCode]);
+            $unitId = (int) ($u->fetchColumn() ?: 0);
+        }
+        if ($unitId < 1) {
+            $unitName = (string) ($rahkaranRow['Announcement_unit'] ?? '');
+            $u = $pdo->prepare('SELECT TOP 1 id FROM units WHERE is_active=1 AND name=:name');
+            $u->execute(['name' => $unitName]);
+            $unitId = (int) ($u->fetchColumn() ?: 0);
+        }
+
+        $rows = $_POST['prices'] ?? [];
         if (!is_array($rows) || count($rows) > 3) {
             http_response_code(422);
             exit('حداکثر سه رصد جدید در هر ثبت مجاز است.');
@@ -380,16 +322,16 @@ final class PriceController
         foreach ($rows as $row) {
             $source = trim((string) ($row['source'] ?? ''));
             $price = trim((string) ($row['price'] ?? ''));
-            $unitId = (int) ($row['unit_id'] ?? 0);
+            $rowUnitId = (int) ($row['unit_id'] ?? 0);
             $date = trim((string) ($row['inquiry_date'] ?? ''));
 
-            if ($source === '' && $price === '' && $unitId === 0 && $date === '') {
+            if ($source === '' && $price === '' && $rowUnitId === 0 && $date === '') {
                 continue;
             }
 
-            if ($source === '' || $price === '' || $unitId < 1 || $date === '') {
+            if ($source === '' || $price === '' || $date === '') {
                 http_response_code(422);
-                exit('هر رصد قیمت باید منبع، قیمت، واحد و تاریخ داشته باشد.');
+                exit('هر رصد قیمت باید منبع، قیمت و تاریخ داشته باشد.');
             }
 
             if (!is_numeric($price) || (float) $price < 0) {
@@ -404,55 +346,52 @@ final class PriceController
                 exit('تاریخ رصد نامعتبر است.');
             }
 
-            $valid[] = [$source, (float) $price, $unitId, $gregorianDate];
+            $valid[] = [$source, (float) $price, $unitId > 0 ? $unitId : $rowUnitId, $gregorianDate];
         }
 
-        $requiredSources = $product['id']
-            ? $this->currentRequiredSources($product)
-            : (int) ($this->rowStatus(null, RahkaranPriceService::instance()->latestByCodes([(string) $product['product_code']])[(string) $product['product_code']] ?? null)['required_sources'] ?? 0);
+        if (!$valid) {
+            http_response_code(422);
+            exit('حداقل یک رصد قیمت باید ثبت شود.');
+        }
+
+        $requiredSources = $this->currentRequiredSources([
+            'product_code' => $postedCode,
+        ]);
 
         if ($requiredSources > 0 && count($valid) < $requiredSources) {
             http_response_code(422);
             exit('برای این وضعیت حداقل ' . $requiredSources . ' قیمت جدید بازار باید ثبت شود.');
         }
 
-        foreach ($valid as $row) {
-            $s = $pdo->prepare('SELECT id FROM units WHERE id=:id AND is_active=1');
-            $s->execute(['id' => $row[2]]);
-            if (!$s->fetchColumn()) {
-                http_response_code(422);
-                exit('یکی از واحدهای انتخاب‌شده معتبر نیست.');
-            }
+        if ($unitId < 1) {
+            http_response_code(422);
+            exit('واحد سنجش کالا در اطلاعات راهکاران/سوابق رصد مشخص نیست.');
+        }
+
+        $s = $pdo->prepare('SELECT id FROM units WHERE id=:id AND is_active=1');
+        $s->execute(['id' => $unitId]);
+        if (!$s->fetchColumn()) {
+            http_response_code(422);
+            exit('واحد سنجش معتبر نیست.');
         }
 
         $s = $pdo->prepare('INSERT INTO ProductPriceMonitor(ProductCode,InquiryDate,Source,Price,UnitID,CreatedDate) VALUES(:code,:date,:source,:price,:unit,GETDATE())');
-
         foreach ($valid as $row) {
             $s->execute([
-                'code' => (string) $product['product_code'],
+                'code' => $postedCode,
                 'date' => $row[3],
                 'source' => $row[0],
                 'price' => $row[1],
-                'unit' => $row[2],
+                'unit' => $unitId,
             ]);
         }
 
-        AuditService::log(Auth::userId(), 'price.monitor.create', 'ProductPriceMonitor', (string) $product['product_code'], null, [
-            'code' => (string) $product['product_code'],
+        AuditService::log(Auth::userId(), 'price.monitor.create', 'ProductPriceMonitor', $postedCode, null, [
+            'code' => $postedCode,
             'count' => count($valid),
         ]);
 
         Security::redirect('/prices');
     }
 
-    public function delete(int $id): void
-    {
-        Auth::requireLogin();
-        PermissionService::require(Auth::userId(), 'prices.delete');
-        Security::verifyCsrf();
-        $s = Database::connection()->prepare("UPDATE products SET status='inactive',is_active=0,updated_at=GETDATE() WHERE id=:id");
-        $s->execute(['id' => $id]);
-        AuditService::log(Auth::userId(), 'product.archive', 'product', (string) $id);
-        Security::redirect('/prices');
-    }
-}
+
