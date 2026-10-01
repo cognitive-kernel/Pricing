@@ -158,14 +158,9 @@ final class PriceController
             $code = trim((string) ($row['Code'] ?? ''));
             $marketDate = $marketLatestByCode[$code] ?? null;
             $unitName = (string) ($row['Announcement_unit'] ?? '');
-
-            // ProductPriceMonitor keeps UnitID. For a new code, resolve the
-            // local UnitID by the Rahkaran unit name; products are not used.
             $unitId = 0;
-            $u = $pdo->prepare('SELECT TOP 1 id FROM units WHERE is_active=1 AND name=:name');
-            if ($unitName !== '') {
-                $u->execute(['name' => $unitName]);
-                $unitId = (int) ($u->fetchColumn() ?: 0);
+            if (!empty($prices[$code][0]['unit_id'])) {
+                $unitId = (int) $prices[$code][0]['unit_id'];
             }
 
             $state = $this->rowStatus($marketDate, $row);
