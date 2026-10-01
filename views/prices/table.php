@@ -30,9 +30,13 @@ use App\Support\Jalali;
     $rahkaran = $p['rahkaran'] ?? null;
     $required = (int) ($p['required_sources'] ?? 0);
     $marketPrices = $prices[$p['id']] ?? [];
+    $marketObservationUrl = '/pricing/public/prices/0/edit?product_code='
+        . rawurlencode((string) $p['product_code'])
+        . '&product_name='
+        . rawurlencode((string) $p['product_name']);
 ?>
 <tr class="<?= Security::e($cls) ?> <?= $clickable ? 'price-action-row' : '' ?>"
-    <?php if ($clickable): ?>data-href="/pricing/public/prices/<?= (int) $p['id'] ?>/edit" title="برای ثبت رصد بازار دوبار کلیک کنید"<?php endif; ?>>
+    <?php if ($clickable): ?>data-href="<?= Security::e($marketObservationUrl) ?>" title="برای ثبت رصد بازار دوبار کلیک کنید"<?php endif; ?>>
     <td><?= Security::e((string) $p['product_code']) ?></td>
     <td><?= Security::e((string) $p['product_name']) ?></td>
 
@@ -97,7 +101,7 @@ use App\Support\Jalali;
 
     <td class="text-nowrap">
         <?php if (PermissionService::allows(Auth::userId(), 'prices.edit')): ?>
-            <a class="btn btn-sm btn-outline-primary" href="/pricing/public/prices/<?= (int) $p['id'] ?>/edit">رصد بازار</a>
+            <a class="btn btn-sm btn-outline-primary" href="<?= Security::e($marketObservationUrl) ?>">رصد بازار</a>
             <a class="btn btn-sm btn-outline-secondary" href="/pricing/public/prices/<?= (int) $p['id'] ?>/history">تاریخچه</a>
         <?php endif; ?>
     </td>
