@@ -268,9 +268,35 @@ final class PriceController
             }
 
             $product = $s->fetch();
+
+            // The first page is driven by Rahkaran and may contain products
+            // that are not yet present in the local products table. In that
+            // case build the form context from the values passed by the first page.
             if (!$product) {
-                http_response_code(404);
-                exit('کالای موردنظر در محصولات ثبت نشده است.');
+                $productCode = trim((string) ($_GET['product_code'] ?? ''));
+                $productName = trim((string) ($_GET['product_name'] ?? ''));
+                $unitId = (int) ($_GET['unit_id'] ?? 0);
+
+                if ($productCode === '' || $productName === '') {
+                    http_response_code(400);
+                    exit('اطلاعات کالا برای ثبت رصد بازار کامل نیست.');
+                }
+
+                $unitName = '';
+                if ($unitId > 0) {
+                    $u = $pdo->prepare('SELECT name FROM units WHERE id=:id AND is_active=1');
+                    $u->execute(['id' => $unitId]);
+                    $unitName = (string) ($u->fetchColumn() ?: '');
+                }
+
+                $product = [
+                    'id' => 0,
+                    'product_code' => $productCode,
+                    'product_name' => $productName,
+                    'unit_id' => $unitId,
+                    'unit_name' => $unitName,
+                    'registered_at' => null,
+                ];
             }
 
             $s = $pdo->prepare('SELECT m.PriceMonitorID,m.ProductCode,m.InquiryDate,m.Source,m.Price,m.UnitID,m.CreatedDate,u.name unit_name FROM ProductPriceMonitor m LEFT JOIN units u ON u.id=m.UnitID WHERE m.ProductCode=:code ORDER BY m.InquiryDate DESC,m.PriceMonitorID DESC');
@@ -295,12 +321,38 @@ final class PriceController
         }
 
         $pdo = Database::connection();
-        $s = $pdo->prepare('SELECT id,product_code,product_name,unit_id FROM products WHERE id=:id');
-        $s->execute(['id' => (int) $id]);
-        $product = $s->fetch();
-        if (!$product) {
-            http_response_code(404);
-            exit('کالای موردنظر یافت نشد.');
+        $product = null;
+
+        if ((int) $id > 0) {
+            $s = $pdo->prepare('SELECT id,product_code,product_name,unit_id FROM products WHERE id=:id');
+            $s->execute(['id' => (int) $id]);
+            $product = $s->fetch();
+            if (!$product) {
+                http_response_code(404);
+                exit('کالای موردنظر یافت نشد.');
+            }
+        } else {
+            $postedCode = trim((string) ($_POST['product_code'] ?? ''));
+            $postedName = trim((string) ($_POST['product_name'] ?? ''));
+            $postedUnitId = (int) ($_POST['product_unit_id'] ?? 0);
+
+            if ($postedCode === '' || $postedName === '' || $postedUnitId < 1) {
+                http_response_code(422);
+                exit('کد کالا، نام کالا و واحد سنجش الزامی است.');
+            }
+
+            $s = $pdo->prepare('SELECT id,product_code,product_name,unit_id FROM products WHERE product_code=:code');
+            $s->execute(['code' => $postedCode]);
+            $product = $s->fetch();
+
+            if (!$product) {
+                $product = [
+                    'id' => 0,
+                    'product_code' => $postedCode,
+                    'product_name' => $postedName,
+                    'unit_id' => $postedUnitId,
+                ];
+            }
         }
 
         $postedCode = trim((string) ($_POST['product_code'] ?? ''));
@@ -345,10 +397,9 @@ final class PriceController
             $valid[] = [$source, (float) $price, $unitId, $gregorianDate];
         }
 
-        $requiredSources = $this->currentRequiredSources([
-            'id' => (int) $product['id'],
-            'product_code' => (string) $product['product_code'],
-        ]);
+        $requiredSources = $product['id']
+            ? $this->currentRequiredSources($product)
+            : (int) ($this->rowStatus(null, RahkaranPriceService::instance()->latestByCodes([(string) $product['product_code']])[(string) $product['product_code']] ?? null)['required_sources'] ?? 0);
 
         if ($requiredSources > 0 && count($valid) < $requiredSources) {
             http_response_code(422);
