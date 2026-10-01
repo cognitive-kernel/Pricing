@@ -337,7 +337,7 @@ final class PriceController
         $valid = [];
         foreach ($rows as $row) {
             $source = trim((string) ($row['source'] ?? ''));
-            $price = trim((string) ($row['price'] ?? ''));
+            $price = str_replace(',', '', trim((string) ($row['price'] ?? '')));
             $rowUnitId = (int) ($row['unit_id'] ?? 0);
             $date = trim((string) ($row['inquiry_date'] ?? ''));
 
