@@ -377,11 +377,6 @@ final class PriceController
             exit('برای این وضعیت حداقل ' . $requiredSources . ' قیمت جدید بازار باید ثبت شود.');
         }
 
-        if ($unitId < 1) {
-            http_response_code(422);
-            exit('واحد سنجش کالا در اطلاعات راهکاران/سوابق رصد مشخص نیست.');
-        }
-
         $s = $pdo->prepare('INSERT INTO ProductPriceMonitor(ProductCode,InquiryDate,Source,Price,UnitID,CreatedDate) VALUES(:code,:date,:source,:price,:unit,GETDATE())');
         foreach ($valid as $row) {
             $s->execute([
@@ -389,7 +384,7 @@ final class PriceController
                 'date' => $row[3],
                 'source' => $row[0],
                 'price' => $row[1],
-                'unit' => $unitId,
+                'unit' => $unitId > 0 ? $unitId : null,
             ]);
         }
 
