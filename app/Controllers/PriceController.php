@@ -373,11 +373,13 @@ final class PriceController
             exit('برای این وضعیت حداقل ' . $requiredSources . ' قیمت جدید بازار باید ثبت شود.');
         }
 
-        $s = $pdo->prepare('INSERT INTO ProductPriceMonitor(ProductCode,InquiryDate,Source,Price,UnitID,CreatedDate) VALUES(:code,CONVERT(date,:date,23),:source,:price,:unit,GETDATE())');
+        $s = $pdo->prepare('INSERT INTO ProductPriceMonitor(ProductCode,InquiryDate,Source,Price,UnitID,CreatedDate) VALUES(:code,DATEFROMPARTS(:year,:month,:day),:source,:price,:unit,GETDATE())');
         foreach ($valid as $row) {
             $s->execute([
                 'code' => $postedCode,
-                'date' => $row[3],
+                'year' => (int) substr($row[3], 0, 4),
+                'month' => (int) substr($row[3], 5, 2),
+                'day' => (int) substr($row[3], 8, 2),
                 'source' => $row[0],
                 'price' => $row[1],
                 'unit' => $unitId > 0 ? $unitId : null,
