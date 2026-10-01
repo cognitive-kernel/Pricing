@@ -237,7 +237,14 @@ final class PriceController
                 exit('کد کالا ارسال نشده است.');
             }
 
-            $rahkaran = RahkaranPriceService::instance()->latestByCodes([$productCode]);
+            try {
+                $rahkaran = RahkaranPriceService::instance()->latestByCodes([$productCode]);
+            } catch (\Throwable $e) {
+                error_log('Rahkaran market form lookup failed: ' . $e->getMessage());
+                http_response_code(500);
+                exit('دریافت اطلاعات کالا از راهکاران ناموفق بود.');
+            }
+
             $row = $rahkaran[$productCode] ?? null;
             if (!$row) {
                 http_response_code(404);
@@ -245,15 +252,15 @@ final class PriceController
             }
 
             $unitName = (string) ($row['Announcement_unit'] ?? '');
-            $unitId = 0;
-            if ($unitName !== '') {
+            $unitId = (int) ($_GET['unit_id'] ?? 0);
+            if ($unitId < 1 && $unitName !== '') {
                 $u = $pdo->prepare('SELECT TOP 1 id FROM units WHERE is_active=1 AND name=:name');
                 $u->execute(['name' => $unitName]);
                 $unitId = (int) ($u->fetchColumn() ?: 0);
             }
 
             // Keep an existing ProductPriceMonitor UnitID when one exists.
-            $u = $pdo->prepare('SELECT TOP 1 UnitID FROM ProductPriceMonitor WHERE ProductCode=:code ORDER BY InquiryDate DESC,PriceMonitorID DESC');
+            $u = $pdo->prepare('SELECT TOP 1 UnitID FROM ProductPriceMonitor WHERE ProductCode=:code AND UnitID IS NOT NULL ORDER BY InquiryDate DESC,PriceMonitorID DESC');
             $u->execute(['code' => $productCode]);
             $existingUnitId = (int) ($u->fetchColumn() ?: 0);
             if ($existingUnitId > 0) {
