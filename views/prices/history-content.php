@@ -1,1 +1,26 @@
-<?php use App\Core\Security;?><div class="d-flex justify-content-between align-items-center mb-3"><div><h4>تاریخچه قیمت</h4><div><?=Security::e($product['product_code'])?> - <?=Security::e($product['product_name'])?></div></div><a class="btn btn-outline-secondary" href="/pricing/public/prices/<?= (int)$product['id']?>/edit">ویرایش</a></div><div class="table-responsive"><table class="table table-bordered"><thead><tr><th>منبع</th><th>تأمین‌کننده</th><th>قیمت بسته</th><th>قیمت واحد</th><th>تاریخ دریافت</th><th>ثبت</th></tr></thead><tbody><?php foreach($history as $r):?><tr><td><?= (int)$r['source_no']?></td><td><?=Security::e($r['supplier'])?></td><td><?=number_format((float)$r['package_price'],2)?></td><td><?=number_format((float)$r['unit_price'],2)?></td><td><?=Security::e(\App\Support\Jalali::fromGregorian($r['price_received_at']))?></td><td><?=Security::e($r['created_at'])?></td></tr><?php endforeach;?></tbody></table></div>
+<?php use App\Core\Security; ?>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4>تاریخچه رصد قیمت</h4>
+        <div><?=Security::e($product['product_code'])?> - <?=Security::e($product['product_name'])?></div>
+    </div>
+    <a class="btn btn-outline-secondary" href="/pricing/public/prices/<?= (int)$product['id']?>/edit">رصد بازار</a>
+</div>
+<div class="table-responsive">
+<table class="table table-bordered align-middle text-center">
+<thead><tr><th>شناسه</th><th>کد کالا</th><th>تاریخ رصد</th><th>منبع</th><th>قیمت</th><th>واحد</th><th>تاریخ ایجاد</th></tr></thead>
+<tbody>
+<?php foreach($history as $r):?>
+<tr>
+<td><?= (int)$r['PriceMonitorID']?></td>
+<td><?=Security::e($r['ProductCode'])?></td>
+<td><?=Security::e(\App\Support\Jalali::fromGregorian($r['InquiryDate']))?></td>
+<td><?=Security::e($r['Source'])?></td>
+<td><?=number_format((float)$r['Price'],2)?></td>
+<td><?=Security::e((string)($r['unit_name'] ?? $r['UnitID']))?></td>
+<td><?=Security::e(\App\Support\Jalali::fromGregorian($r['CreatedDate']))?></td>
+</tr>
+<?php endforeach;?>
+</tbody>
+</table>
+</div>
