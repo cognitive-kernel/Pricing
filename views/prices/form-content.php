@@ -30,6 +30,8 @@
                         <label class="form-label">کد کالا</label>
                         <input class="form-control" value="<?=Security::e((string) $product['product_code'])?>" readonly>
                         <input type="hidden" name="product_code" value="<?=Security::e((string) $product['product_code'])?>">
+                <input type="hidden" name="product_name" value="<?=Security::e((string) ($product['product_name'] ?? ''))?>">
+                <input type="hidden" name="product_unit_id" value="<?= (int) ($product['unit_id'] ?? 0) ?>">
                     </div>
                     <div class="col-md-5">
                         <label class="form-label">نام کالا</label>
