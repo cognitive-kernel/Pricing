@@ -107,7 +107,7 @@ document.querySelectorAll('.price-input').forEach(function (input) {
         const parts = value.split('.');
         const integerPart = parts[0] || '';
         const decimalPart = parts.length > 1 ? '.' + parts.slice(1).join('').slice(0, 2) : '';
-        this.value = integerPart.replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',') + decimalPart;
+        this.value = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + decimalPart;
     });
 });
 
