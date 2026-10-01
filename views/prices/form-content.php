@@ -51,7 +51,7 @@
                                 <td><?= $i + 1 ?></td>
                                 <td><input name="prices[<?= $i ?>][inquiry_date]" class="form-control jalali-date" data-jalali-picker="true" autocomplete="off" inputmode="numeric" placeholder="1405/01/01"></td>
                                 <td><input name="prices[<?= $i ?>][source]" class="form-control" maxlength="255" placeholder="نام منبع"></td>
-                                <td><input name="prices[<?= $i ?>][price]" type="number" min="0" step="0.01" class="form-control" placeholder="قیمت"></td>
+                                <td><input name="prices[<?= $i ?>][price]" type="text" inputmode="decimal" class="form-control price-input" autocomplete="off" placeholder="قیمت"></td>
                                 <td>
                                     <input type="hidden" name="prices[<?= $i ?>][unit_id]" value="<?= (int) ($product['unit_id'] ?? 0) ?>">
                                     <input class="form-control" value="<?=Security::e((string) ($product['unit_name'] ?? ('کد ' . (int) ($product['unit_id'] ?? 0))))?>" readonly>
@@ -99,3 +99,21 @@
             <?php endif; ?>
     </div>
 </div>
+
+<script>
+document.querySelectorAll('.price-input').forEach(function (input) {
+    input.addEventListener('input', function () {
+        const value = this.value.replace(/,/g, '').replace(/[^0-9.]/g, '');
+        const parts = value.split('.');
+        const integerPart = parts[0] || '';
+        const decimalPart = parts.length > 1 ? '.' + parts.slice(1).join('').slice(0, 2) : '';
+        this.value = integerPart.replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',') + decimalPart;
+    });
+});
+
+document.getElementById('price-form')?.addEventListener('submit', function () {
+    this.querySelectorAll('.price-input').forEach(function (input) {
+        input.value = input.value.replace(/,/g, '');
+    });
+});
+</script>
