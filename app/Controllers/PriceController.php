@@ -255,7 +255,7 @@ final class PriceController
 
         if ($editing) {
             if ((int) $id > 0) {
-                $s = $pdo->prepare('SELECT p.*,u.name unit_name FROM products p INNER JOIN units u ON u.id=p.unit_id WHERE p.id=:id');
+                $s = $pdo->prepare('SELECT p.*,u.name unit_name FROM products p LEFT JOIN units u ON u.id=p.unit_id WHERE p.id=:id');
                 $s->execute(['id' => (int) $id]);
             } else {
                 $productCode = trim((string) ($_GET['product_code'] ?? ''));
@@ -263,7 +263,7 @@ final class PriceController
                     http_response_code(400);
                     exit('کد کالا ارسال نشده است.');
                 }
-                $s = $pdo->prepare('SELECT p.*,u.name unit_name FROM products p INNER JOIN units u ON u.id=p.unit_id WHERE p.product_code=:code');
+                $s = $pdo->prepare('SELECT p.*,u.name unit_name FROM products p LEFT JOIN units u ON u.id=p.unit_id WHERE p.product_code=:code');
                 $s->execute(['code' => $productCode]);
             }
 
@@ -295,7 +295,7 @@ final class PriceController
         }
 
         $pdo = Database::connection();
-        $s = $pdo->prepare('SELECT id,product_code,product_name FROM products WHERE id=:id');
+        $s = $pdo->prepare('SELECT id,product_code,product_name,unit_id FROM products WHERE id=:id');
         $s->execute(['id' => (int) $id]);
         $product = $s->fetch();
         if (!$product) {
