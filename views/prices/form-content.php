@@ -25,7 +25,21 @@
             <form data-required-sources="<?= (int) $requiredSources ?>" method="post"
                   action="/pricing/public/prices/<?= (int) $product['id'] ?>" id="price-form">
                 <input type="hidden" name="_csrf" value="<?=Security::e(Security::csrf())?>">
-                <input type="hidden" name="product_code" value="<?=Security::e((string) $product['product_code'])?>">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">کد کالا</label>
+                        <input class="form-control" value="<?=Security::e((string) $product['product_code'])?>" readonly>
+                        <input type="hidden" name="product_code" value="<?=Security::e((string) $product['product_code'])?>">
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label">نام کالا</label>
+                        <input class="form-control" value="<?=Security::e((string) ($product['product_name'] ?? ''))?>" readonly>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">واحد سنجش</label>
+                        <input class="form-control" value="<?=Security::e((string) ($product['unit_name'] ?? ('کد ' . (int) ($product['unit_id'] ?? 0))))?>" readonly>
+                    </div>
+                </div>
 
                 <div class="table-responsive">
                     <table class="table table-bordered align-middle text-center">
@@ -42,14 +56,8 @@
                                 <td><input name="prices[<?= $i ?>][source]" class="form-control" maxlength="255" placeholder="نام منبع"></td>
                                 <td><input name="prices[<?= $i ?>][price]" type="number" min="0" step="0.01" class="form-control" placeholder="قیمت"></td>
                                 <td>
-                                    <select name="prices[<?= $i ?>][unit_id]" class="form-select">
-                                        <option value="0">انتخاب واحد</option>
-                                        <?php foreach ($units as $u): ?>
-                                            <option value="<?= (int) $u['id'] ?>" <?= ((int) ($product['unit_id'] ?? 0) === (int) $u['id']) ? 'selected' : '' ?>>
-                                                <?=Security::e($u['name'])?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
+                                    <input type="hidden" name="prices[<?= $i ?>][unit_id]" value="<?= (int) ($product['unit_id'] ?? 0) ?>">
+                                    <input class="form-control" value="<?=Security::e((string) ($product['unit_name'] ?? ('کد ' . (int) ($product['unit_id'] ?? 0))))?>" readonly>
                                 </td>
                             </tr>
                         <?php endfor; ?>
