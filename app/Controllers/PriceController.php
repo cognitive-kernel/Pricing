@@ -29,7 +29,7 @@ final class PriceController
                     PARTITION BY m.ProductCode
                     ORDER BY m.InquiryDate DESC, m.PriceMonitorID DESC
                 ) source_no
-            FROM ProductPriceMonitor m
+            FROM dbo.ProductPriceMonitor m
         ) ranked_prices
         WHERE source_no=1";
     }
@@ -76,7 +76,7 @@ final class PriceController
     private function currentRequiredSources(array $product): int
     {
         $pdo = Database::connection();
-        $s = $pdo->prepare('SELECT TOP 1 InquiryDate FROM ProductPriceMonitor WHERE ProductCode=:code ORDER BY InquiryDate DESC,PriceMonitorID DESC');
+        $s = $pdo->prepare('SELECT TOP 1 InquiryDate FROM dbo.ProductPriceMonitor WHERE ProductCode=:code ORDER BY InquiryDate DESC,PriceMonitorID DESC');
         $s->execute(['code' => (string) $product['product_code']]);
         $marketDate = $s->fetchColumn();
 
@@ -118,7 +118,7 @@ final class PriceController
         $pdo = Database::connection();
 
         $marketLatestByCode = [];
-        $s = $pdo->query('SELECT ProductCode,MAX(InquiryDate) market_latest_date FROM ProductPriceMonitor GROUP BY ProductCode');
+        $s = $pdo->query('SELECT ProductCode,MAX(InquiryDate) market_latest_date FROM dbo.ProductPriceMonitor GROUP BY ProductCode');
         foreach ($s->fetchAll() as $r) {
             $marketLatestByCode[(string) $r['ProductCode']] = $r['market_latest_date'];
         }
@@ -143,7 +143,7 @@ final class PriceController
         $prices = [];
         if ($codes) {
             $in = implode(',', array_fill(0, count($codes), '?'));
-            $s = $pdo->prepare('SELECT m.*,m.InquiryDate price_received_at,m.Source supplier,m.Price unit_price,m.UnitID unit_id FROM ProductPriceMonitor m WHERE m.ProductCode IN (' . $in . ') ORDER BY m.ProductCode,m.InquiryDate DESC,m.PriceMonitorID DESC');
+            $s = $pdo->prepare('SELECT m.*,m.InquiryDate price_received_at,m.Source supplier,m.Price unit_price,m.UnitID unit_id FROM dbo.ProductPriceMonitor m WHERE m.ProductCode IN (' . $in . ') ORDER BY m.ProductCode,m.InquiryDate DESC,m.PriceMonitorID DESC');
             $s->execute($codes);
             foreach ($s->fetchAll() as $r) {
                 $prices[(string) $r['ProductCode']][] = $r;
@@ -155,14 +155,9 @@ final class PriceController
             $code = trim((string) ($row['Code'] ?? ''));
             $marketDate = $marketLatestByCode[$code] ?? null;
             $unitName = (string) ($row['Announcement_unit'] ?? '');
-
-            // ProductPriceMonitor keeps UnitID. For a new code, resolve the
-            // local UnitID by the Rahkaran unit name; products are not used.
             $unitId = 0;
-            $u = $pdo->prepare('SELECT TOP 1 id FROM units WHERE is_active=1 AND name=:name');
-            if ($unitName !== '') {
-                $u->execute(['name' => $unitName]);
-                $unitId = (int) ($u->fetchColumn() ?: 0);
+            if (!empty($prices[$code][0]['unit_id'])) {
+                $unitId = (int) $prices[$code][0]['unit_id'];
             }
 
             $state = $this->rowStatus($marketDate, $row);
@@ -212,7 +207,7 @@ final class PriceController
             http_response_code(404);
             exit('رکورد یافت نشد.');
         }
-        $s = $pdo->prepare('SELECT m.PriceMonitorID,m.ProductCode,m.InquiryDate,m.Source,m.Price,m.UnitID,m.CreatedDate,u.name unit_name FROM ProductPriceMonitor m LEFT JOIN units u ON u.id=m.UnitID WHERE m.ProductCode=:code ORDER BY m.InquiryDate DESC,m.PriceMonitorID DESC');
+        $s = $pdo->prepare('SELECT m.PriceMonitorID,m.ProductCode,m.InquiryDate,m.Source,m.Price,m.UnitID,m.CreatedDate,u.name unit_name FROM dbo.ProductPriceMonitor m LEFT JOIN units u ON u.id=m.UnitID WHERE m.ProductCode=:code ORDER BY m.InquiryDate DESC,m.PriceMonitorID DESC');
         $s->execute(['code' => (string) $product['product_code']]);
         $history = $s->fetchAll();
         View::render('prices/history', compact('product', 'history'));
@@ -244,7 +239,7 @@ final class PriceController
             }
 
             if ($unitId < 1) {
-                $u = $pdo->prepare('SELECT TOP 1 UnitID FROM ProductPriceMonitor WHERE ProductCode=:code AND UnitID IS NOT NULL ORDER BY InquiryDate DESC,PriceMonitorID DESC');
+                $u = $pdo->prepare('SELECT TOP 1 UnitID FROM dbo.ProductPriceMonitor WHERE ProductCode=:code AND UnitID IS NOT NULL ORDER BY InquiryDate DESC,PriceMonitorID DESC');
                 $u->execute(['code' => $productCode]);
                 $unitId = (int) ($u->fetchColumn() ?: 0);
             }
@@ -258,7 +253,7 @@ final class PriceController
                 'registered_at' => null,
             ];
 
-            $s = $pdo->prepare('SELECT m.PriceMonitorID,m.ProductCode,m.InquiryDate,m.Source,m.Price,m.UnitID,m.CreatedDate,u.name unit_name FROM ProductPriceMonitor m LEFT JOIN units u ON u.id=m.UnitID WHERE m.ProductCode=:code ORDER BY m.InquiryDate DESC,m.PriceMonitorID DESC');
+            $s = $pdo->prepare('SELECT m.PriceMonitorID,m.ProductCode,m.InquiryDate,m.Source,m.Price,m.UnitID,m.CreatedDate,u.name unit_name FROM dbo.ProductPriceMonitor m LEFT JOIN units u ON u.id=m.UnitID WHERE m.ProductCode=:code ORDER BY m.InquiryDate DESC,m.PriceMonitorID DESC');
             $s->execute(['code' => $productCode]);
             $prices = $s->fetchAll();
 
@@ -301,7 +296,7 @@ final class PriceController
 
         $unitId = (int) ($_POST['product_unit_id'] ?? 0);
         if ($unitId < 1) {
-            $u = $pdo->prepare('SELECT TOP 1 UnitID FROM ProductPriceMonitor WHERE ProductCode=:code ORDER BY InquiryDate DESC,PriceMonitorID DESC');
+            $u = $pdo->prepare('SELECT TOP 1 UnitID FROM dbo.ProductPriceMonitor WHERE ProductCode=:code ORDER BY InquiryDate DESC,PriceMonitorID DESC');
             $u->execute(['code' => $postedCode]);
             $unitId = (int) ($u->fetchColumn() ?: 0);
         }
@@ -359,7 +354,7 @@ final class PriceController
             exit('واحد سنجش کالا در اطلاعات راهکاران/سوابق رصد مشخص نیست.');
         }
 
-        $s = $pdo->prepare('INSERT INTO ProductPriceMonitor(ProductCode,InquiryDate,Source,Price,UnitID,CreatedDate) VALUES(:code,:date,:source,:price,:unit,GETDATE())');
+        $s = $pdo->prepare('INSERT INTO dbo.ProductPriceMonitor(ProductCode,InquiryDate,Source,Price,UnitID,CreatedDate) VALUES(:code,:date,:source,:price,:unit,GETDATE())');
         foreach ($valid as $row) {
             $s->execute([
                 'code' => $postedCode,
