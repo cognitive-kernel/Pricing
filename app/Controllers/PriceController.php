@@ -73,19 +73,16 @@ final class PriceController
         return ['status' => 'neutral', 'required_sources' => 0, 'market_days' => $marketDays];
     }
 
-    private function currentRequiredSources(array $product, ?array $rahkaranRow = null): int
+    private function currentRequiredSources(array $product): int
     {
         $pdo = Database::connection();
         $s = $pdo->prepare('SELECT TOP 1 InquiryDate FROM ProductPriceMonitor WHERE ProductCode=:code ORDER BY InquiryDate DESC,PriceMonitorID DESC');
         $s->execute(['code' => (string) $product['product_code']]);
         $marketDate = $s->fetchColumn();
 
-        if ($rahkaranRow === null) {
-            $rahkaran = RahkaranPriceService::instance()->latestByCodes([(string) $product['product_code']]);
-            $rahkaranRow = $rahkaran[(string) $product['product_code']] ?? null;
-        }
+        $rahkaran = RahkaranPriceService::instance()->latestByCodes([(string) $product['product_code']]);
+        $row = $this->rowStatus($marketDate ?: null, $rahkaran[(string) $product['product_code']] ?? null);
 
-        $row = $this->rowStatus($marketDate ?: null, $rahkaranRow);
         return $row['required_sources'];
     }
 
@@ -121,9 +118,9 @@ final class PriceController
         $pdo = Database::connection();
 
         $marketLatestByCode = [];
-        $s = $pdo->query('SELECT ProductCode, MAX(InquiryDate) AS market_latest_date FROM ProductPriceMonitor GROUP BY ProductCode');
+        $s = $pdo->query('SELECT ProductCode,MAX(InquiryDate) market_latest_date FROM ProductPriceMonitor GROUP BY ProductCode');
         foreach ($s->fetchAll() as $r) {
-            $marketLatestByCode[trim((string) $r['ProductCode'])] = $r['market_latest_date'];
+            $marketLatestByCode[(string) $r['ProductCode']] = $r['market_latest_date'];
         }
 
         if ($statusFilter !== 'all') {
@@ -146,14 +143,10 @@ final class PriceController
         $prices = [];
         if ($codes) {
             $in = implode(',', array_fill(0, count($codes), '?'));
-            $s = $pdo->prepare('SELECT PriceMonitorID,ProductCode,InquiryDate,Source,Price,UnitID,CreatedDate FROM ProductPriceMonitor WHERE ProductCode IN (' . $in . ') ORDER BY ProductCode,InquiryDate DESC,PriceMonitorID DESC');
+            $s = $pdo->prepare('SELECT m.*,m.InquiryDate price_received_at,m.Source supplier,m.Price unit_price,m.UnitID unit_id FROM ProductPriceMonitor m WHERE m.ProductCode IN (' . $in . ') ORDER BY m.ProductCode,m.InquiryDate DESC,m.PriceMonitorID DESC');
             $s->execute($codes);
             foreach ($s->fetchAll() as $r) {
-                $r['price_received_at'] = $r['InquiryDate'];
-                $r['supplier'] = $r['Source'];
-                $r['unit_price'] = $r['Price'];
-                $r['unit_id'] = $r['UnitID'];
-                $prices[trim((string) $r['ProductCode'])][] = $r;
+                $prices[(string) $r['ProductCode']][] = $r;
             }
         }
 
@@ -162,9 +155,14 @@ final class PriceController
             $code = trim((string) ($row['Code'] ?? ''));
             $marketDate = $marketLatestByCode[$code] ?? null;
             $unitName = (string) ($row['Announcement_unit'] ?? '');
+
+            // ProductPriceMonitor keeps UnitID. For a new code, resolve the
+            // local UnitID by the Rahkaran unit name; products are not used.
             $unitId = 0;
-            if (!empty($prices[$code][0]['unit_id'])) {
-                $unitId = (int) $prices[$code][0]['unit_id'];
+            $u = $pdo->prepare('SELECT TOP 1 id FROM units WHERE is_active=1 AND name=:name');
+            if ($unitName !== '') {
+                $u->execute(['name' => $unitName]);
+                $unitId = (int) ($u->fetchColumn() ?: 0);
             }
 
             $state = $this->rowStatus($marketDate, $row);
