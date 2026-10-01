@@ -29,7 +29,7 @@ use App\Support\Jalali;
     $cls = 'status-' . $status;
     $rahkaran = $p['rahkaran'] ?? null;
     $required = (int) ($p['required_sources'] ?? 0);
-    $marketPrices = $prices[$p['id']] ?? [];
+    $marketPrices = $prices[(string) $p['product_code']] ?? [];
     $marketObservationUrl = '/pricing/public/prices/0/edit?product_code='
         . rawurlencode((string) $p['product_code'])
         . '&product_name='
