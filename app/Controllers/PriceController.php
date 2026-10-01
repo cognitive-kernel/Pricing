@@ -234,46 +234,35 @@ final class PriceController
         $requiredSources = 0;
 
         if ($editing) {
+            // This form is intentionally independent of products/Rahkaran relations.
+            // The first page passes the product context directly in the URL.
             $productCode = trim((string) ($_GET['product_code'] ?? ''));
-            if ($productCode === '') {
-                http_response_code(400);
-                exit('کد کالا ارسال نشده است.');
-            }
-
-            try {
-                $rahkaran = RahkaranPriceService::instance()->latestByCodes([$productCode]);
-            } catch (\Throwable $e) {
-                error_log('Rahkaran market form lookup failed: ' . $e->getMessage());
-                http_response_code(500);
-                exit('دریافت اطلاعات کالا از راهکاران ناموفق بود.');
-            }
-
-            $row = $rahkaran[$productCode] ?? null;
-            if (!$row) {
-                http_response_code(404);
-                exit('کالای موردنظر در راهکاران یافت نشد.');
-            }
-
-            $unitName = (string) ($row['Announcement_unit'] ?? '');
+            $productName = trim((string) ($_GET['product_name'] ?? ''));
             $unitId = (int) ($_GET['unit_id'] ?? 0);
-            if ($unitId < 1 && $unitName !== '') {
-                $u = $pdo->prepare('SELECT TOP 1 id FROM units WHERE is_active=1 AND name=:name');
-                $u->execute(['name' => $unitName]);
+            $unitName = trim((string) ($_GET['unit_name'] ?? ''));
+            $requiredSources = max(0, min(3, (int) ($_GET['required_sources'] ?? 0)));
+
+            if ($productCode === '' || $productName === '') {
+                http_response_code(400);
+                exit('اطلاعات کالا ارسال نشده است.');
+            }
+
+            if ($unitId < 1) {
+                $u = $pdo->prepare('SELECT TOP 1 UnitID FROM ProductPriceMonitor WHERE ProductCode=:code AND UnitID IS NOT NULL ORDER BY InquiryDate DESC,PriceMonitorID DESC');
+                $u->execute(['code' => $productCode]);
                 $unitId = (int) ($u->fetchColumn() ?: 0);
             }
 
-            // Keep an existing ProductPriceMonitor UnitID when one exists.
-            $u = $pdo->prepare('SELECT TOP 1 UnitID FROM ProductPriceMonitor WHERE ProductCode=:code AND UnitID IS NOT NULL ORDER BY InquiryDate DESC,PriceMonitorID DESC');
-            $u->execute(['code' => $productCode]);
-            $existingUnitId = (int) ($u->fetchColumn() ?: 0);
-            if ($existingUnitId > 0) {
-                $unitId = $existingUnitId;
+            if ($unitName === '' && $unitId > 0) {
+                $u = $pdo->prepare('SELECT TOP 1 name FROM units WHERE id=:id');
+                $u->execute(['id' => $unitId]);
+                $unitName = (string) ($u->fetchColumn() ?: '');
             }
 
             $product = [
                 'id' => 0,
                 'product_code' => $productCode,
-                'product_name' => (string) ($row['Name'] ?? ''),
+                'product_name' => $productName,
                 'unit_id' => $unitId,
                 'unit_name' => $unitName,
                 'registered_at' => null,
@@ -283,10 +272,28 @@ final class PriceController
             $s->execute(['code' => $productCode]);
             $prices = $s->fetchAll();
 
-            $requiredSources = $this->currentRequiredSources($product, $row);
+            if ($requiredSources === 0) {
+                $marketDate = $prices[0]['InquiryDate'] ?? null;
+                $requiredSources = $this->requiredSourcesFromMarketDate($marketDate);
+            }
         }
 
         View::render($editing ? 'prices/edit' : 'prices/create', compact('units', 'product', 'prices', 'requiredSources'));
+    }
+
+    private function requiredSourcesFromMarketDate(?string $marketDate): int
+    {
+        if (!$marketDate) {
+            return 1;
+        }
+        $days = max(0, (int) ((time() - strtotime($marketDate)) / 86400));
+        if ($days < 7) {
+            return 0;
+        }
+        if ($days <= 15) {
+            return 2;
+        }
+        return 3;
     }
 
     public function save(?int $id = null): void
