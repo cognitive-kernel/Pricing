@@ -34,8 +34,16 @@ final class PriceController
         WHERE source_no=1";
     }
 
-    private function rowStatus(?string $marketDate, ?array $rahkaran): array
+    private function rowStatus($marketDate, ?array $rahkaran): array
     {
+        if ($marketDate instanceof \DateTimeInterface) {
+            $marketDate = $marketDate->format('Y-m-d H:i:s');
+        } elseif ($marketDate !== null && $marketDate !== false) {
+            $marketDate = (string) $marketDate;
+        } else {
+            $marketDate = null;
+        }
+
         $marketDays = null;
 
         if ($marketDate) {
@@ -128,7 +136,15 @@ final class PriceController
         $marketLatestByCode = [];
         $s = $pdo->query('SELECT ProductCode, MAX(InquiryDate) AS market_latest_date FROM ProductPriceMonitor GROUP BY ProductCode');
         foreach ($s->fetchAll() as $r) {
-            $marketLatestByCode[trim((string) $r['ProductCode'])] = $r['market_latest_date'];
+            $marketDate = $r['market_latest_date'] ?? null;
+            if ($marketDate instanceof \DateTimeInterface) {
+                $marketDate = $marketDate->format('Y-m-d H:i:s');
+            } elseif ($marketDate !== null && $marketDate !== false) {
+                $marketDate = (string) $marketDate;
+            } else {
+                $marketDate = null;
+            }
+            $marketLatestByCode[trim((string) $r['ProductCode'])] = $marketDate;
         }
 
         if ($statusFilter !== 'all') {
