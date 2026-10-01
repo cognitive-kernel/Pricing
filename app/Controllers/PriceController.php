@@ -341,7 +341,7 @@ final class PriceController
             $rowUnitId = (int) ($row['unit_id'] ?? 0);
             $date = trim((string) ($row['inquiry_date'] ?? ''));
 
-            if ($source === '' && $price === '' && $rowUnitId === 0 && $date === '') {
+            if ($source === '' && $price === '' && $date === '') {
                 continue;
             }
 
