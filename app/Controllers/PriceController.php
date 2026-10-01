@@ -120,7 +120,7 @@ final class PriceController
         $pdo = Database::connection();
 
         $marketLatestByCode = [];
-        $s = $pdo->query('SELECT ProductCode,CONVERT(varchar(19), MAX(InquiryDate), 120) AS market_latest_date FROM dbo.ProductPriceMonitor GROUP BY ProductCode');
+        $s = $pdo->query('SELECT ProductCode,MAX(InquiryDate) market_latest_date FROM ProductPriceMonitor GROUP BY ProductCode');
         foreach ($s->fetchAll() as $r) {
             $marketLatestByCode[(string) $r['ProductCode']] = $r['market_latest_date'];
         }
@@ -145,7 +145,7 @@ final class PriceController
         $prices = [];
         if ($codes) {
             $in = implode(',', array_fill(0, count($codes), '?'));
-            $s = $pdo->prepare('SELECT m.PriceMonitorID,m.ProductCode,CONVERT(varchar(19),m.InquiryDate,120) AS InquiryDate,m.Source,m.Price,m.UnitID,CONVERT(varchar(19),m.CreatedDate,120) AS CreatedDate,m.InquiryDate AS price_received_at,m.Source AS supplier,m.Price AS unit_price,m.UnitID AS unit_id FROM dbo.ProductPriceMonitor m WHERE m.ProductCode IN (' . $in . ') ORDER BY m.ProductCode,m.InquiryDate DESC,m.PriceMonitorID DESC');
+            $s = $pdo->prepare('SELECT m.*,m.InquiryDate price_received_at,m.Source supplier,m.Price unit_price,m.UnitID unit_id FROM ProductPriceMonitor m WHERE m.ProductCode IN (' . $in . ') ORDER BY m.ProductCode,m.InquiryDate DESC,m.PriceMonitorID DESC');
             $s->execute($codes);
             foreach ($s->fetchAll() as $r) {
                 $prices[(string) $r['ProductCode']][] = $r;
@@ -157,9 +157,14 @@ final class PriceController
             $code = trim((string) ($row['Code'] ?? ''));
             $marketDate = $marketLatestByCode[$code] ?? null;
             $unitName = (string) ($row['Announcement_unit'] ?? '');
+
+            // ProductPriceMonitor keeps UnitID. For a new code, resolve the
+            // local UnitID by the Rahkaran unit name; products are not used.
             $unitId = 0;
-            if (!empty($prices[$code][0]['unit_id'])) {
-                $unitId = (int) $prices[$code][0]['unit_id'];
+            $u = $pdo->prepare('SELECT TOP 1 id FROM units WHERE is_active=1 AND name=:name');
+            if ($unitName !== '') {
+                $u->execute(['name' => $unitName]);
+                $unitId = (int) ($u->fetchColumn() ?: 0);
             }
 
             $state = $this->rowStatus($marketDate, $row);
