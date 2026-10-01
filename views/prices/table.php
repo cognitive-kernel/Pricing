@@ -35,7 +35,11 @@ use App\Support\Jalali;
         . '&product_name='
         . rawurlencode((string) $p['product_name'])
         . '&unit_id='
-        . rawurlencode((string) ($p['unit_id'] ?? 0));
+        . rawurlencode((string) ($p['unit_id'] ?? 0))
+        . '&unit_name='
+        . rawurlencode((string) ($p['unit_name'] ?? ''))
+        . '&required_sources='
+        . rawurlencode((string) $required);
 ?>
 <tr class="<?= Security::e($cls) ?> <?= $clickable ? 'price-action-row' : '' ?>"
     <?php if ($clickable): ?>data-href="<?= Security::e($marketObservationUrl) ?>" title="برای ثبت رصد بازار دوبار کلیک کنید"<?php endif; ?>>
