@@ -265,7 +265,7 @@ final class PriceController
                 'registered_at' => null,
             ];
 
-            $s = $pdo->prepare('SELECT m.PriceMonitorID,m.ProductCode,m.InquiryDate,m.Source,m.Price,m.UnitID,m.CreatedDate,u.name unit_name FROM ProductPriceMonitor m LEFT JOIN units u ON u.id=m.UnitID WHERE m.ProductCode=:code ORDER BY m.InquiryDate DESC,m.PriceMonitorID DESC');
+            $s = $pdo->prepare('SELECT m.PriceMonitorID,m.ProductCode,CONVERT(varchar(19),m.InquiryDate,120) AS InquiryDate,m.Source,m.Price,m.UnitID,CONVERT(varchar(19),m.CreatedDate,120) AS CreatedDate FROM dbo.ProductPriceMonitor m WHERE m.ProductCode=:code ORDER BY m.InquiryDate DESC,m.PriceMonitorID DESC');
             $s->execute(['code' => $productCode]);
             $prices = $s->fetchAll();
 
