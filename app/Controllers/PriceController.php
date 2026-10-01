@@ -17,7 +17,7 @@ final class PriceController
 {
     private function latestPricesSql(): string
     {
-        return "SELECT * FROM (SELECT pp.*,ROW_NUMBER() OVER(PARTITION BY pp.product_id,pp.source_no ORDER BY pp.price_received_at DESC,pp.id DESC) rn FROM product_prices pp) ranked_prices WHERE rn=1";
+        return "SELECT * FROM (SELECT m.*,p.id product_id,m.InquiryDate price_received_at,m.Source supplier,m.Price unit_price,m.UnitID unit_id,ROW_NUMBER() OVER(PARTITION BY m.ProductCode,m.Source ORDER BY m.InquiryDate DESC,m.PriceMonitorID DESC) source_no FROM ProductPriceMonitor m INNER JOIN products p ON p.product_code=m.ProductCode) ranked_prices WHERE source_no=1";
     }
 
     private function rowStatus(?string $marketDate, ?array $rahkaran): array
@@ -235,8 +235,8 @@ final class PriceController
             http_response_code(404);
             exit('رکورد یافت نشد.');
         }
-        $s = $pdo->prepare('SELECT * FROM product_prices WHERE product_id=:id ORDER BY price_received_at DESC,id DESC');
-        $s->execute(['id' => $id]);
+        $s = $pdo->prepare('SELECT m.PriceMonitorID,m.ProductCode,m.InquiryDate,m.Source,m.Price,m.UnitID,m.CreatedDate,u.name unit_name FROM ProductPriceMonitor m LEFT JOIN units u ON u.id=m.UnitID WHERE m.ProductCode=:code ORDER BY m.InquiryDate DESC,m.PriceMonitorID DESC');
+        $s->execute(['code' => (string) $product['product_code']]);
         $history = $s->fetchAll();
         View::render('prices/history', compact('product', 'history'));
     }
@@ -246,15 +246,16 @@ final class PriceController
         Auth::requireLogin();
         $editing = $id !== null;
         PermissionService::require(Auth::userId(), $editing ? 'prices.edit' : 'prices.create');
+
         $pdo = Database::connection();
         $units = $pdo->query('SELECT id,name FROM units WHERE is_active=1 ORDER BY name')->fetchAll();
-        $categories = $pdo->query('SELECT id,name FROM product_categories WHERE is_active=1 ORDER BY name')->fetchAll();
         $product = null;
         $prices = [];
         $requiredSources = 0;
+
         if ($editing) {
             if ((int) $id > 0) {
-                $s = $pdo->prepare('SELECT * FROM products WHERE id=:id');
+                $s = $pdo->prepare('SELECT p.*,u.name unit_name FROM products p INNER JOIN units u ON u.id=p.unit_id WHERE p.id=:id');
                 $s->execute(['id' => (int) $id]);
             } else {
                 $productCode = trim((string) ($_GET['product_code'] ?? ''));
@@ -262,7 +263,7 @@ final class PriceController
                     http_response_code(400);
                     exit('کد کالا ارسال نشده است.');
                 }
-                $s = $pdo->prepare('SELECT * FROM products WHERE product_code=:code');
+                $s = $pdo->prepare('SELECT p.*,u.name unit_name FROM products p INNER JOIN units u ON u.id=p.unit_id WHERE p.product_code=:code');
                 $s->execute(['code' => $productCode]);
             }
 
@@ -272,14 +273,14 @@ final class PriceController
                 exit('کالای موردنظر در محصولات ثبت نشده است.');
             }
 
-            $latest = $this->latestPricesSql();
-            $s = $pdo->prepare("SELECT * FROM ({$latest}) lp WHERE product_id=:id ORDER BY source_no");
-            $s->execute(['id' => (int) $product['id']]);
+            $s = $pdo->prepare('SELECT m.PriceMonitorID,m.ProductCode,m.InquiryDate,m.Source,m.Price,m.UnitID,m.CreatedDate,u.name unit_name FROM ProductPriceMonitor m LEFT JOIN units u ON u.id=m.UnitID WHERE m.ProductCode=:code ORDER BY m.InquiryDate DESC,m.PriceMonitorID DESC');
+            $s->execute(['code' => (string) $product['product_code']]);
             $prices = $s->fetchAll();
+
             $requiredSources = $this->currentRequiredSources($product);
         }
 
-        View::render($editing ? 'prices/edit' : 'prices/create', compact('units', 'categories', 'product', 'prices', 'requiredSources'));
+        View::render($editing ? 'prices/edit' : 'prices/create', compact('units', 'product', 'prices', 'requiredSources'));
     }
 
     public function save(?int $id = null): void
@@ -288,127 +289,96 @@ final class PriceController
         PermissionService::require(Auth::userId(), $id ? 'prices.edit' : 'prices.create');
         Security::verifyCsrf();
 
-        $code = trim((string) ($_POST['product_code'] ?? ''));
-        $name = trim((string) ($_POST['product_name'] ?? ''));
-        $unit = (int) ($_POST['unit_id'] ?? 0);
-        $importance = max(1, min(3, (int) ($_POST['importance'] ?? 1)));
-        $category = (int) ($_POST['category_id'] ?? 0);
-        $minSources = max(1, min(3, (int) ($_POST['min_sources'] ?? 2)));
-        $maxSources = max($minSources, min(3, (int) ($_POST['max_sources'] ?? 3)));
-        $status = in_array((string) ($_POST['status'] ?? 'active'), ['active', 'inactive', 'draft'], true) ? (string) $_POST['status'] : 'active';
-        $rows = $_POST['prices'] ?? [];
-        $valid = [];
-
-        if ($code === '' || mb_strlen($code) > 100 || $name === '' || mb_strlen($name) > 255 || $unit < 1) {
-            http_response_code(422);
-            exit('اطلاعات کالا نامعتبر است.');
-        }
-        if (!is_array($rows) || count($rows) > 3) {
-            http_response_code(422);
-            exit('حداکثر سه منبع مجاز است.');
-        }
-
-        foreach ($rows as $row) {
-            $supplier = trim((string) ($row['supplier'] ?? ''));
-            $package = $row['package_price'] ?? '';
-            $unitPrice = $row['unit_price'] ?? '';
-            $date = trim((string) ($row['price_received_at'] ?? ''));
-            if ($supplier === '' && $package === '' && $unitPrice === '' && $date === '') {
-                continue;
-            }
-            if ($supplier === '' || $package === '' || $unitPrice === '' || $date === '') {
-                exit('هر منبع باید کامل باشد.');
-            }
-            if (!is_numeric($package) || !is_numeric($unitPrice) || $package < 0 || $unitPrice < 0) {
-                exit('قیمت نامعتبر است.');
-            }
-            $valid[] = [$supplier, (float) $package, (float) $unitPrice, Jalali::toGregorian($date)];
-        }
-
-        if ($id) {
-            $s = Database::connection()->prepare('SELECT id,product_code FROM products WHERE id=:id');
-            $s->execute(['id' => $id]);
-            $existing = $s->fetch();
-            if (!$existing) {
-                http_response_code(404);
-                exit('رکورد یافت نشد.');
-            }
-
-            $requiredSources = $this->currentRequiredSources([
-                'id' => $id,
-                'product_code' => (string) $existing['product_code'],
-            ]);
-            if ($requiredSources > 0 && count($valid) < $requiredSources) {
-                http_response_code(422);
-                exit('برای این وضعیت حداقل ' . $requiredSources . ' قیمت جدید بازار باید ثبت شود.');
-            }
+        if (!$id) {
+            http_response_code(400);
+            exit('ثبت رصد بازار باید از طریق کالای مشخص انجام شود.');
         }
 
         $pdo = Database::connection();
-        $s = $pdo->prepare('SELECT id FROM units WHERE id=:id AND is_active=1');
-        $s->execute(['id' => $unit]);
-        if (!$s->fetchColumn()) {
-            exit('واحد انتخاب‌شده معتبر نیست.');
+        $s = $pdo->prepare('SELECT id,product_code,product_name FROM products WHERE id=:id');
+        $s->execute(['id' => (int) $id]);
+        $product = $s->fetch();
+        if (!$product) {
+            http_response_code(404);
+            exit('کالای موردنظر یافت نشد.');
         }
 
-        $category = $category > 0 ? (int) $category : null;
-        $before = null;
+        $postedCode = trim((string) ($_POST['product_code'] ?? ''));
+        $rows = $_POST['prices'] ?? [];
+        if ($postedCode !== (string) $product['product_code']) {
+            http_response_code(422);
+            exit('کد کالا با کالای انتخاب‌شده مطابقت ندارد.');
+        }
+        if (!is_array($rows) || count($rows) > 3) {
+            http_response_code(422);
+            exit('حداکثر سه رصد جدید در هر ثبت مجاز است.');
+        }
 
-        Database::transaction(function (PDO $pdo) use ($id, $code, $name, $unit, $importance, $category, $minSources, $maxSources, $status, $valid, &$before): void {
-            if ($id) {
-                $s = $pdo->prepare('SELECT * FROM products WHERE id=:id');
-                $s->execute(['id' => $id]);
-                $before = $s->fetch();
+        $valid = [];
+        foreach ($rows as $row) {
+            $source = trim((string) ($row['source'] ?? ''));
+            $price = trim((string) ($row['price'] ?? ''));
+            $unitId = (int) ($row['unit_id'] ?? 0);
+            $date = trim((string) ($row['inquiry_date'] ?? ''));
 
-                $s = $pdo->prepare('UPDATE products SET product_code=:code,product_name=:name,unit_id=:unit,importance=:importance,category_id=:category,min_sources=:min_sources,max_sources=:max_sources,expected_sources=:max_sources,status=:status,is_active=:is_active,updated_at=GETDATE() WHERE id=:id');
-                $s->execute([
-                    'code' => $code,
-                    'name' => $name,
-                    'unit' => $unit,
-                    'importance' => $importance,
-                    'category' => $category,
-                    'min_sources' => $minSources,
-                    'max_sources' => $maxSources,
-                    'status' => $status,
-                    'is_active' => $status === 'active' ? 1 : 0,
-                    'id' => $id
-                ]);
-                $productId = $id;
-            } else {
-                $s = $pdo->prepare('INSERT INTO products(product_code,product_name,unit_id,importance,category_id,min_sources,max_sources,expected_sources,status,is_active,registered_at,created_at,updated_at) OUTPUT INSERTED.id VALUES(:code,:name,:unit,:importance,:category,:min_sources,:max_sources,:expected_sources,:status,:is_active,GETDATE(),GETDATE(),GETDATE())');
-                $s->execute([
-                    'code' => $code,
-                    'name' => $name,
-                    'unit' => $unit,
-                    'importance' => $importance,
-                    'category' => $category,
-                    'min_sources' => $minSources,
-                    'max_sources' => $maxSources,
-                    'expected_sources' => $maxSources,
-                    'status' => $status,
-                    'is_active' => $status === 'active' ? 1 : 0
-                ]);
-                $productId = (int) $s->fetchColumn();
+            if ($source === '' && $price === '' && $unitId === 0 && $date === '') {
+                continue;
             }
 
-            $s = $pdo->prepare('INSERT INTO product_prices(product_id,source_no,supplier,package_price,unit_price,price_received_at,created_at,updated_at) VALUES(:pid,:no,:supplier,:package,:unit,:date,GETDATE(),GETDATE())');
-            foreach ($valid as $i => $r) {
-                $s->execute([
-                    'pid' => $productId,
-                    'no' => $i + 1,
-                    'supplier' => $r[0],
-                    'package' => $r[1],
-                    'unit' => $r[2],
-                    'date' => $r[3]
-                ]);
+            if ($source === '' || $price === '' || $unitId < 1 || $date === '') {
+                http_response_code(422);
+                exit('هر رصد قیمت باید منبع، قیمت، واحد و تاریخ داشته باشد.');
             }
-        });
 
-        AuditService::log(Auth::userId(), $id ? 'product.update' : 'product.create', 'product', (string) ($id ?? $productId), $before, [
-            'code' => $code,
-            'name' => $name,
-            'importance' => $importance,
-            'category_id' => $category
+            if (!is_numeric($price) || (float) $price < 0) {
+                http_response_code(422);
+                exit('قیمت نامعتبر است.');
+            }
+
+            try {
+                $gregorianDate = Jalali::toGregorian($date);
+            } catch (\Throwable $e) {
+                http_response_code(422);
+                exit('تاریخ رصد نامعتبر است.');
+            }
+
+            $valid[] = [$source, (float) $price, $unitId, $gregorianDate];
+        }
+
+        $requiredSources = $this->currentRequiredSources([
+            'id' => (int) $product['id'],
+            'product_code' => (string) $product['product_code'],
+        ]);
+
+        if ($requiredSources > 0 && count($valid) < $requiredSources) {
+            http_response_code(422);
+            exit('برای این وضعیت حداقل ' . $requiredSources . ' قیمت جدید بازار باید ثبت شود.');
+        }
+
+        foreach ($valid as $row) {
+            $s = $pdo->prepare('SELECT id FROM units WHERE id=:id AND is_active=1');
+            $s->execute(['id' => $row[2]]);
+            if (!$s->fetchColumn()) {
+                http_response_code(422);
+                exit('یکی از واحدهای انتخاب‌شده معتبر نیست.');
+            }
+        }
+
+        $s = $pdo->prepare('INSERT INTO ProductPriceMonitor(ProductCode,InquiryDate,Source,Price,UnitID,CreatedDate) VALUES(:code,:date,:source,:price,:unit,GETDATE())');
+
+        foreach ($valid as $row) {
+            $s->execute([
+                'code' => (string) $product['product_code'],
+                'date' => $row[3],
+                'source' => $row[0],
+                'price' => $row[1],
+                'unit' => $row[2],
+            ]);
+        }
+
+        AuditService::log(Auth::userId(), 'price.monitor.create', 'ProductPriceMonitor', (string) $product['product_code'], null, [
+            'code' => (string) $product['product_code'],
+            'count' => count($valid),
         ]);
 
         Security::redirect('/prices');
