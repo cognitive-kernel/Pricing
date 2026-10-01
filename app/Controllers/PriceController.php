@@ -171,11 +171,21 @@ final class PriceController
         foreach ($pageRows as $row) {
             $code = trim((string) ($row['Code'] ?? ''));
             $local = $productsByCode[$code] ?? null;
+            $unitId = (int) ($local['unit_id'] ?? 0);
+            $unitName = (string) ($local['unit_name'] ?? ($row['Announcement_unit'] ?? ''));
+
+            if ($unitId === 0 && $unitName !== '') {
+                $u = $pdo->prepare('SELECT TOP 1 id FROM units WHERE is_active=1 AND name=:name');
+                $u->execute(['name' => $unitName]);
+                $unitId = (int) ($u->fetchColumn() ?: 0);
+            }
+
             $product = [
                 'id' => $local['id'] ?? null,
                 'product_code' => $code,
                 'product_name' => (string) ($row['Name'] ?? ''),
-                'unit_name' => (string) ($row['Announcement_unit'] ?? ''),
+                'unit_id' => $unitId,
+                'unit_name' => $unitName,
                 'registered_at' => $local['registered_at'] ?? null,
                 'rahkaran' => $row,
                 'market_latest_date' => null,
