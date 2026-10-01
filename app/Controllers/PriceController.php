@@ -244,15 +244,14 @@ final class PriceController
     public function form(?int $id = null): void
     {
         Auth::requireLogin();
-        PermissionService::require(Auth::userId(), $id ? 'prices.edit' : 'prices.create');
+        $editing = $id !== null;
+        PermissionService::require(Auth::userId(), $editing ? 'prices.edit' : 'prices.create');
         $pdo = Database::connection();
         $units = $pdo->query('SELECT id,name FROM units WHERE is_active=1 ORDER BY name')->fetchAll();
         $categories = $pdo->query('SELECT id,name FROM product_categories WHERE is_active=1 ORDER BY name')->fetchAll();
         $product = null;
         $prices = [];
         $requiredSources = 0;
-        $editing = $id !== null;
-
         if ($editing) {
             if ((int) $id > 0) {
                 $s = $pdo->prepare('SELECT * FROM products WHERE id=:id');
