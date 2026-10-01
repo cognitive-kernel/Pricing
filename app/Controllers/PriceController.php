@@ -73,16 +73,19 @@ final class PriceController
         return ['status' => 'neutral', 'required_sources' => 0, 'market_days' => $marketDays];
     }
 
-    private function currentRequiredSources(array $product): int
+    private function currentRequiredSources(array $product, ?array $rahkaranRow = null): int
     {
         $pdo = Database::connection();
         $s = $pdo->prepare('SELECT TOP 1 InquiryDate FROM ProductPriceMonitor WHERE ProductCode=:code ORDER BY InquiryDate DESC,PriceMonitorID DESC');
         $s->execute(['code' => (string) $product['product_code']]);
         $marketDate = $s->fetchColumn();
 
-        $rahkaran = RahkaranPriceService::instance()->latestByCodes([(string) $product['product_code']]);
-        $row = $this->rowStatus($marketDate ?: null, $rahkaran[(string) $product['product_code']] ?? null);
+        if ($rahkaranRow === null) {
+            $rahkaran = RahkaranPriceService::instance()->latestByCodes([(string) $product['product_code']]);
+            $rahkaranRow = $rahkaran[(string) $product['product_code']] ?? null;
+        }
 
+        $row = $this->rowStatus($marketDate ?: null, $rahkaranRow);
         return $row['required_sources'];
     }
 
@@ -280,7 +283,7 @@ final class PriceController
             $s->execute(['code' => $productCode]);
             $prices = $s->fetchAll();
 
-            $requiredSources = $this->currentRequiredSources($product);
+            $requiredSources = $this->currentRequiredSources($product, $row);
         }
 
         View::render($editing ? 'prices/edit' : 'prices/create', compact('units', 'product', 'prices', 'requiredSources'));
