@@ -309,13 +309,6 @@ final class PriceController
             exit('کد کالا الزامی است.');
         }
 
-        $rahkaran = RahkaranPriceService::instance()->latestByCodes([$postedCode]);
-        $rahkaranRow = $rahkaran[$postedCode] ?? null;
-        if (!$rahkaranRow) {
-            http_response_code(404);
-            exit('کالای موردنظر در راهکاران یافت نشد.');
-        }
-
         $unitId = (int) ($_POST['product_unit_id'] ?? 0);
         if ($unitId < 1) {
             $u = $pdo->prepare('SELECT TOP 1 UnitID FROM ProductPriceMonitor WHERE ProductCode=:code ORDER BY InquiryDate DESC,PriceMonitorID DESC');
@@ -323,10 +316,12 @@ final class PriceController
             $unitId = (int) ($u->fetchColumn() ?: 0);
         }
         if ($unitId < 1) {
-            $unitName = (string) ($rahkaranRow['Announcement_unit'] ?? '');
-            $u = $pdo->prepare('SELECT TOP 1 id FROM units WHERE is_active=1 AND name=:name');
-            $u->execute(['name' => $unitName]);
-            $unitId = (int) ($u->fetchColumn() ?: 0);
+            $unitName = trim((string) ($_POST['product_unit_name'] ?? ''));
+            if ($unitName !== '') {
+                $u = $pdo->prepare('SELECT TOP 1 id FROM units WHERE is_active=1 AND name=:name');
+                $u->execute(['name' => $unitName]);
+                $unitId = (int) ($u->fetchColumn() ?: 0);
+            }
         }
 
         $rows = $_POST['prices'] ?? [];
@@ -371,9 +366,7 @@ final class PriceController
             exit('حداقل یک رصد قیمت باید ثبت شود.');
         }
 
-        $requiredSources = $this->currentRequiredSources([
-            'product_code' => $postedCode,
-        ]);
+        $requiredSources = max(0, min(3, (int) ($_POST['required_sources'] ?? 0)));
 
         if ($requiredSources > 0 && count($valid) < $requiredSources) {
             http_response_code(422);
