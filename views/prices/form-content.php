@@ -32,6 +32,8 @@
                         <input type="hidden" name="product_code" value="<?=Security::e((string) $product['product_code'])?>">
                 <input type="hidden" name="product_name" value="<?=Security::e((string) ($product['product_name'] ?? ''))?>">
                 <input type="hidden" name="product_unit_id" value="<?= (int) ($product['unit_id'] ?? 0) ?>">
+                <input type="hidden" name="product_unit_name" value="<?=Security::e((string) ($product['unit_name'] ?? ''))?>">
+                <input type="hidden" name="required_sources" value="<?= (int) $requiredSources ?>">
                     </div>
                     <div class="col-md-5">
                         <label class="form-label">نام کالا</label>
