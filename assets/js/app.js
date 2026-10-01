@@ -199,11 +199,12 @@ $(function(){
       const required=Number(form.dataset.requiredSources||0);
       let filled=0;
       for(let i=0;i<3;i++){
-        const supplier=form.querySelector('[name="prices['+i+'][supplier]"]');
-        const packagePrice=form.querySelector('[name="prices['+i+'][package_price]"]');
-        const unitPrice=form.querySelector('[name="prices['+i+'][unit_price]"]');
-        const date=form.querySelector('[name="prices['+i+'][price_received_at]"]');
-        if((supplier?.value||'').trim()!==''||(packagePrice?.value||'').trim()!==''||(unitPrice?.value||'').trim()!==''||(date?.value||'').trim()!=='') filled++;
+        const source=form.querySelector('[name="prices['+i+'][source]"]');
+        const price=form.querySelector('[name="prices['+i+'][price]"]');
+        const unit=form.querySelector('[name="prices['+i+'][unit_id]"]');
+        const date=form.querySelector('[name="prices['+i+'][inquiry_date]"]');
+        const hasAny=(source?.value||'').trim()!==''||(price?.value||'').trim()!==''||(unit?.value||'0')!=='0'||(date?.value||'').trim()!=='';
+        if(hasAny) filled++;
       }
       if(filled<required){
         event.preventDefault();
