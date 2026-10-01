@@ -251,24 +251,36 @@ final class PriceController
         $product = null;
         $prices = [];
         $requiredSources = 0;
+        $editing = $id !== null;
 
-        if ($id) {
-            $s = $pdo->prepare('SELECT * FROM products WHERE id=:id');
-            $s->execute(['id' => $id]);
+        if ($editing) {
+            if ((int) $id > 0) {
+                $s = $pdo->prepare('SELECT * FROM products WHERE id=:id');
+                $s->execute(['id' => (int) $id]);
+            } else {
+                $productCode = trim((string) ($_GET['product_code'] ?? ''));
+                if ($productCode === '') {
+                    http_response_code(400);
+                    exit('کد کالا ارسال نشده است.');
+                }
+                $s = $pdo->prepare('SELECT * FROM products WHERE product_code=:code');
+                $s->execute(['code' => $productCode]);
+            }
+
             $product = $s->fetch();
             if (!$product) {
                 http_response_code(404);
-                exit('رکورد یافت نشد.');
+                exit('کالای موردنظر در محصولات ثبت نشده است.');
             }
 
             $latest = $this->latestPricesSql();
             $s = $pdo->prepare("SELECT * FROM ({$latest}) lp WHERE product_id=:id ORDER BY source_no");
-            $s->execute(['id' => $id]);
+            $s->execute(['id' => (int) $product['id']]);
             $prices = $s->fetchAll();
             $requiredSources = $this->currentRequiredSources($product);
         }
 
-        View::render($id ? 'prices/edit' : 'prices/create', compact('units', 'categories', 'product', 'prices', 'requiredSources'));
+        View::render($editing ? 'prices/edit' : 'prices/create', compact('units', 'categories', 'product', 'prices', 'requiredSources'));
     }
 
     public function save(?int $id = null): void
