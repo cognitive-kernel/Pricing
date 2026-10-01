@@ -15,14 +15,7 @@
             <?php if ($editing && (int) $requiredSources > 0): ?>
                 <span class="badge text-bg-warning">حداقل <?= (int) $requiredSources ?> رصد جدید لازم است</span>
             <?php endif; ?>
-        </div>
-
-        <?php if ($editing): ?>
-            <div class="alert alert-info">
-                این فرم بر اساس جدول <strong>ProductPriceMonitor</strong> است. رکوردهای قبلی حفظ می‌شوند و ثبت جدید فقط رکوردهای جدید ایجاد می‌کند.
-            </div>
-
-            <form data-required-sources="<?= (int) $requiredSources ?>" method="post"
+        </div>            <form data-required-sources="<?= (int) $requiredSources ?>" method="post"
                   action="/pricing/public/prices/<?= (int) $product['id'] ?>" id="price-form">
                 <input type="hidden" name="_csrf" value="<?=Security::e(Security::csrf())?>">
                 <div class="row g-3 mb-3">
