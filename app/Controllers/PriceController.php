@@ -223,7 +223,6 @@ final class PriceController
         PermissionService::require(Auth::userId(), $editing ? 'prices.edit' : 'prices.create');
 
         $pdo = Database::connection();
-        $units = $pdo->query('SELECT id,name FROM units WHERE is_active=1 ORDER BY name')->fetchAll();
         $product = null;
         $prices = [];
         $requiredSources = 0;
@@ -248,12 +247,6 @@ final class PriceController
                 $unitId = (int) ($u->fetchColumn() ?: 0);
             }
 
-            if ($unitName === '' && $unitId > 0) {
-                $u = $pdo->prepare('SELECT TOP 1 name FROM units WHERE id=:id');
-                $u->execute(['id' => $unitId]);
-                $unitName = (string) ($u->fetchColumn() ?: '');
-            }
-
             $product = [
                 'id' => 0,
                 'product_code' => $productCode,
@@ -273,7 +266,7 @@ final class PriceController
             }
         }
 
-        View::render($editing ? 'prices/edit' : 'prices/create', compact('units', 'product', 'prices', 'requiredSources'));
+        View::render($editing ? 'prices/edit' : 'prices/create', compact('product', 'prices', 'requiredSources'));
     }
 
     private function requiredSourcesFromMarketDate(?string $marketDate): int
@@ -310,15 +303,6 @@ final class PriceController
             $u->execute(['code' => $postedCode]);
             $unitId = (int) ($u->fetchColumn() ?: 0);
         }
-        if ($unitId < 1) {
-            $unitName = trim((string) ($_POST['product_unit_name'] ?? ''));
-            if ($unitName !== '') {
-                $u = $pdo->prepare('SELECT TOP 1 id FROM units WHERE is_active=1 AND name=:name');
-                $u->execute(['name' => $unitName]);
-                $unitId = (int) ($u->fetchColumn() ?: 0);
-            }
-        }
-
         $rows = $_POST['prices'] ?? [];
         if (!is_array($rows) || count($rows) > 3) {
             http_response_code(422);
@@ -371,13 +355,6 @@ final class PriceController
         if ($unitId < 1) {
             http_response_code(422);
             exit('واحد سنجش کالا در اطلاعات راهکاران/سوابق رصد مشخص نیست.');
-        }
-
-        $s = $pdo->prepare('SELECT id FROM units WHERE id=:id AND is_active=1');
-        $s->execute(['id' => $unitId]);
-        if (!$s->fetchColumn()) {
-            http_response_code(422);
-            exit('واحد سنجش معتبر نیست.');
         }
 
         $s = $pdo->prepare('INSERT INTO ProductPriceMonitor(ProductCode,InquiryDate,Source,Price,UnitID,CreatedDate) VALUES(:code,:date,:source,:price,:unit,GETDATE())');
