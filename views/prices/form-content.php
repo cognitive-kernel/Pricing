@@ -1,67 +1,97 @@
 <?php use App\Core\Security; ?>
+
 <div class="card">
-<div class="card-body">
-<h4><?=$editing?'ویرایش رصد قیمت':'ثبت رصد قیمت'?></h4>
-<?php if ($editing && (int) $requiredSources > 0): ?>
-<div class="alert alert-warning">
-    برای وضعیت فعلی این کالا، ثبت حداقل <strong><?= (int) $requiredSources ?> قیمت جدید بازار</strong> الزامی است.
-</div>
-<?php endif; ?>
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h4 class="mb-1">رصد قیمت بازار</h4>
+                <div class="text-muted">
+                    <?=Security::e((string) ($product['product_name'] ?? ''))?>
+                    <span class="mx-2">|</span>
+                    کد کالا:
+                    <strong><?=Security::e((string) ($product['product_code'] ?? ''))?></strong>
+                </div>
+            </div>
+            <?php if ($editing && (int) $requiredSources > 0): ?>
+                <span class="badge text-bg-warning">حداقل <?= (int) $requiredSources ?> رصد جدید لازم است</span>
+            <?php endif; ?>
+        </div>
 
-<form data-required-sources="<?= (int) $requiredSources ?>" method="post" action="/pricing/public/prices<?= $editing?'/'.(int)$product['id']:''?>" id="price-form">
-<input type="hidden" name="_csrf" value="<?=Security::e(Security::csrf())?>">
-<div class="row g-3">
-<div class="col-md-3"><label>کد کالا</label><input name="product_code" value="<?=Security::e($product['product_code']??'')?>" class="form-control" maxlength="100" required></div>
-<div class="col-md-5"><label>نام کالا</label><input name="product_name" value="<?=Security::e($product['product_name']??'')?>" class="form-control" maxlength="255" required></div>
-<div class="col-md-2"><label>اهمیت</label><select name="importance" class="form-select"><option value="1" <?=((int)($product['importance']??1)===1)?'selected':''?>>عادی</option><option value="2" <?=((int)($product['importance']??1)===2)?'selected':''?>>مهم</option><option value="3" <?=((int)($product['importance']??1)===3)?'selected':''?>>بحرانی</option></select></div>
-<div class="col-md-2"><label>حداقل منابع</label><input type="number" min="1" max="3" name="min_sources" value="<?=Security::e($product['min_sources']??2)?>" class="form-control"></div>
-<div class="col-md-2"><label>حداکثر منابع</label><input type="number" min="1" max="3" name="max_sources" value="<?=Security::e($product['max_sources']??3)?>" class="form-control"></div>
-<div class="col-md-2"><label>وضعیت</label><select name="status" class="form-select"><option value="active" <?=($product['status']??'active')==='active'?'selected':''?>>فعال</option><option value="draft" <?=($product['status']??'')==='draft'?'selected':''?>>پیش‌نویس</option><option value="inactive" <?=($product['status']??'')==='inactive'?'selected':''?>>غیرفعال</option></select></div>
-<div class="col-md-2"><label>دسته</label><select name="category_id" class="form-select"><option value="0">بدون دسته</option><?php foreach($categories as $cat):?><option value="<?=(int)$cat['id']?>" <?=((int)($product['category_id']??0)===(int)$cat['id'])?'selected':''?>><?=Security::e($cat['name'])?></option><?php endforeach;?></select></div>
-<div class="col-md-2"><label>واحد</label><select name="unit_id" class="form-select" required><?php foreach($units as $u):?><option value="<?=(int)$u['id']?>" <?=((int)($product['unit_id']??0)===(int)$u['id'])?'selected':''?>><?=Security::e($u['name'])?></option><?php endforeach;?></select></div>
-<?php if($editing && !empty($product['registered_at'])):?>
-<div class="col-md-2"><label>تاریخ ثبت</label><input value="<?=Security::e(\App\Support\Jalali::fromGregorian($product['registered_at']))?>" class="form-control" readonly tabindex="-1" aria-readonly="true"></div>
-<?php endif;?>
-</div>
-<hr>
-<div class="row g-3">
-<?php for($i=0;$i<3;$i++):$p=$prices[$i]??null;?>
-<div class="col-md-4">
-<div class="border rounded p-3">
-<h6>منبع <?=$i+1?></h6>
-<input name="prices[<?=$i?>][supplier]" value="<?=Security::e($p['supplier']??'')?>" class="form-control mb-2" placeholder="تأمین‌کننده">
-<input name="prices[<?=$i?>][package_price]" value="<?=Security::e($p['package_price']??'')?>" type="number" min="0" step="0.01" class="form-control mb-2" placeholder="قیمت بسته">
-<input name="prices[<?=$i?>][unit_price]" value="<?=Security::e($p['unit_price']??'')?>" type="number" min="0" step="0.01" class="form-control mb-2" placeholder="قیمت واحد">
-<input name="prices[<?=$i?>][price_received_at]" value="<?=$p?Security::e(\App\Support\Jalali::fromGregorian($p['price_received_at'])):''?>" class="form-control jalali-date" data-jalali-picker="true" autocomplete="off" inputmode="numeric" placeholder="تاریخ دریافت قیمت">
-</div>
-</div>
-<?php endfor;?>
-</div>
-<div class="mt-3">
-<button class="btn btn-primary"><?=$editing?'ذخیره':'ثبت'?></button>
-<a href="/pricing/public/prices" class="btn btn-secondary">انصراف</a>
-<?php if($editing):?><a href="/pricing/public/admin/product-sources/<?= (int)$product["id"]?>" class="btn btn-outline-info">منابع مجاز محصول</a><?php endif;?>
-</div>
-</form>
-</div>
-</div>
+        <?php if ($editing): ?>
+            <div class="alert alert-info">
+                این فرم بر اساس جدول <strong>ProductPriceMonitor</strong> است. رکوردهای قبلی حفظ می‌شوند و ثبت جدید فقط رکوردهای جدید ایجاد می‌کند.
+            </div>
 
-<?php if ($editing && (int) $requiredSources > 0): ?>
-<script>
-document.getElementById('price-form').addEventListener('submit', function (event) {
-    const required = <?= (int) $requiredSources ?>;
-    let filled = 0;
-    for (let i = 0; i < 3; i++) {
-        const supplier = document.querySelector('[name="prices[' + i + '][supplier]"]').value.trim();
-        const packagePrice = document.querySelector('[name="prices[' + i + '][package_price]"]').value.trim();
-        const unitPrice = document.querySelector('[name="prices[' + i + '][unit_price]"]').value.trim();
-        const date = document.querySelector('[name="prices[' + i + '][price_received_at]"]').value.trim();
-        if (supplier !== '' || packagePrice !== '' || unitPrice !== '' || date !== '') filled++;
-    }
-    if (filled < required) {
-        event.preventDefault();
-        alert('برای این وضعیت حداقل ' + required + ' قیمت جدید بازار باید ثبت شود.');
-    }
-});
-</script>
-<?php endif; ?>
+            <form data-required-sources="<?= (int) $requiredSources ?>" method="post"
+                  action="/pricing/public/prices/<?= (int) $product['id'] ?>" id="price-form">
+                <input type="hidden" name="_csrf" value="<?=Security::e(Security::csrf())?>">
+                <input type="hidden" name="product_code" value="<?=Security::e((string) $product['product_code'])?>">
+
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle text-center">
+                        <thead class="table-light">
+                        <tr>
+                            <th>ردیف</th><th>تاریخ رصد</th><th>منبع</th><th>قیمت</th><th>واحد</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <?php for ($i = 0; $i < 3; $i++): ?>
+                            <tr>
+                                <td><?= $i + 1 ?></td>
+                                <td><input name="prices[<?= $i ?>][inquiry_date]" class="form-control jalali-date" data-jalali-picker="true" autocomplete="off" inputmode="numeric" placeholder="1405/01/01"></td>
+                                <td><input name="prices[<?= $i ?>][source]" class="form-control" maxlength="255" placeholder="نام منبع"></td>
+                                <td><input name="prices[<?= $i ?>][price]" type="number" min="0" step="0.01" class="form-control" placeholder="قیمت"></td>
+                                <td>
+                                    <select name="prices[<?= $i ?>][unit_id]" class="form-select">
+                                        <option value="0">انتخاب واحد</option>
+                                        <?php foreach ($units as $u): ?>
+                                            <option value="<?= (int) $u['id'] ?>" <?= ((int) ($product['unit_id'] ?? 0) === (int) $u['id']) ? 'selected' : '' ?>>
+                                                <?=Security::e($u['name'])?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </td>
+                            </tr>
+                        <?php endfor; ?>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn btn-primary" type="submit">ثبت رصدهای جدید</button>
+                    <a href="/pricing/public/prices" class="btn btn-secondary">انصراف</a>
+                </div>
+            </form>
+
+            <hr class="my-4">
+            <h5 class="mb-3">سوابق رصد قیمت</h5>
+
+            <?php if ($prices): ?>
+                <div class="table-responsive">
+                    <table class="table table-striped table-bordered align-middle text-center">
+                        <thead class="table-light">
+                        <tr>
+                            <th>شناسه</th><th>کد کالا</th><th>تاریخ رصد</th><th>منبع</th><th>قیمت</th><th>واحد</th><th>تاریخ ایجاد</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($prices as $price): ?>
+                            <tr>
+                                <td><?= (int) $price['PriceMonitorID'] ?></td>
+                                <td><?=Security::e((string) $price['ProductCode'])?></td>
+                                <td><?=Security::e(Jalali::fromGregorian($price['InquiryDate']))?></td>
+                                <td><?=Security::e((string) ($price['Source'] ?? ''))?></td>
+                                <td><?=Security::e(number_format((float) $price['Price'], 2))?></td>
+                                <td><?=Security::e((string) ($price['unit_name'] ?? $price['UnitID']))?></td>
+                                <td><?=Security::e(Jalali::fromGregorian($price['CreatedDate']))?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php else: ?>
+                <div class="alert alert-secondary mb-0">برای این کالا هنوز رکوردی در ProductPriceMonitor ثبت نشده است.</div>
+            <?php endif; ?>
+        <?php endif; ?>
+    </div>
+</div>
