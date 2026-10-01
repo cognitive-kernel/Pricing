@@ -33,7 +33,9 @@ use App\Support\Jalali;
     $marketObservationUrl = '/pricing/public/prices/0/edit?product_code='
         . rawurlencode((string) $p['product_code'])
         . '&product_name='
-        . rawurlencode((string) $p['product_name']);
+        . rawurlencode((string) $p['product_name'])
+        . '&unit_id='
+        . rawurlencode((string) ($p['unit_id'] ?? 0));
 ?>
 <tr class="<?= Security::e($cls) ?> <?= $clickable ? 'price-action-row' : '' ?>"
     <?php if ($clickable): ?>data-href="<?= Security::e($marketObservationUrl) ?>" title="برای ثبت رصد بازار دوبار کلیک کنید"<?php endif; ?>>
