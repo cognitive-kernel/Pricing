@@ -78,7 +78,7 @@ use App\Support\Jalali;
         <?php if ($marketPrices): ?>
             <?php foreach ($marketPrices as $pr): ?>
                 <div class="mb-1">
-                    منبع <?= (int) $pr['source_no'] ?>:
+                    منبع:
                     <?= Security::e((string) $pr['supplier']) ?>
                     · <?= number_format((float) $pr['unit_price'], 2) ?>
                     · <?= Security::e(Jalali::fromGregorian($pr['price_received_at'])) ?>
