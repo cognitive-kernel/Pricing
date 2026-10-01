@@ -97,6 +97,5 @@
             <?php else: ?>
                 <div class="alert alert-secondary mb-0">برای این کالا هنوز رکوردی در ProductPriceMonitor ثبت نشده است.</div>
             <?php endif; ?>
-        <?php endif; ?>
     </div>
 </div>
