@@ -322,12 +322,8 @@ final class PriceController
             exit('کد کالا الزامی است.');
         }
 
+        // ProductPriceMonitor is standalone; UnitID is optional for market observations.
         $unitId = (int) ($_POST['product_unit_id'] ?? 0);
-        if ($unitId < 1) {
-            $u = $pdo->prepare('SELECT TOP 1 UnitID FROM ProductPriceMonitor WHERE ProductCode=:code ORDER BY InquiryDate DESC,PriceMonitorID DESC');
-            $u->execute(['code' => $postedCode]);
-            $unitId = (int) ($u->fetchColumn() ?: 0);
-        }
         $rows = $_POST['prices'] ?? [];
         if (!is_array($rows) || count($rows) > 3) {
             http_response_code(422);
