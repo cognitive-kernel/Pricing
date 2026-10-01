@@ -79,6 +79,11 @@ final class PriceController
         $s = $pdo->prepare('SELECT TOP 1 InquiryDate FROM ProductPriceMonitor WHERE ProductCode=:code ORDER BY InquiryDate DESC,PriceMonitorID DESC');
         $s->execute(['code' => (string) $product['product_code']]);
         $marketDate = $s->fetchColumn();
+        if ($marketDate instanceof \DateTimeInterface) {
+            $marketDate = $marketDate->format('Y-m-d H:i:s');
+        } elseif ($marketDate !== false && $marketDate !== null) {
+            $marketDate = (string) $marketDate;
+        }
 
         if ($rahkaranRow === null) {
             $rahkaran = RahkaranPriceService::instance()->latestByCodes([(string) $product['product_code']]);
