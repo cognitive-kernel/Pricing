@@ -121,9 +121,9 @@ final class PriceController
         $pdo = Database::connection();
 
         $marketLatestByCode = [];
-        $s = $pdo->query('SELECT ProductCode,MAX(InquiryDate) market_latest_date FROM ProductPriceMonitor GROUP BY ProductCode');
+        $s = $pdo->query('SELECT ProductCode, MAX(InquiryDate) AS market_latest_date FROM ProductPriceMonitor GROUP BY ProductCode');
         foreach ($s->fetchAll() as $r) {
-            $marketLatestByCode[(string) $r['ProductCode']] = $r['market_latest_date'];
+            $marketLatestByCode[trim((string) $r['ProductCode'])] = $r['market_latest_date'];
         }
 
         if ($statusFilter !== 'all') {
@@ -146,10 +146,14 @@ final class PriceController
         $prices = [];
         if ($codes) {
             $in = implode(',', array_fill(0, count($codes), '?'));
-            $s = $pdo->prepare('SELECT m.*,m.InquiryDate price_received_at,m.Source supplier,m.Price unit_price,m.UnitID unit_id FROM ProductPriceMonitor m WHERE m.ProductCode IN (' . $in . ') ORDER BY m.ProductCode,m.InquiryDate DESC,m.PriceMonitorID DESC');
+            $s = $pdo->prepare('SELECT PriceMonitorID,ProductCode,InquiryDate,Source,Price,UnitID,CreatedDate FROM ProductPriceMonitor WHERE ProductCode IN (' . $in . ') ORDER BY ProductCode,InquiryDate DESC,PriceMonitorID DESC');
             $s->execute($codes);
             foreach ($s->fetchAll() as $r) {
-                $prices[(string) $r['ProductCode']][] = $r;
+                $r['price_received_at'] = $r['InquiryDate'];
+                $r['supplier'] = $r['Source'];
+                $r['unit_price'] = $r['Price'];
+                $r['unit_id'] = $r['UnitID'];
+                $prices[trim((string) $r['ProductCode'])][] = $r;
             }
         }
 
