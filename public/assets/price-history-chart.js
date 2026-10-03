@@ -28,13 +28,13 @@ document.addEventListener('DOMContentLoaded', function () {
             const rect = canvas.getBoundingClientRect();
             const dpr = window.devicePixelRatio || 1;
             const width = Math.max(700, Math.floor(rect.width || 900));
-            const height = 360;
+            const height = 390;
             canvas.width = width * dpr;
             canvas.height = height * dpr;
             canvas.style.height = height + 'px';
             ctx.scale(dpr, dpr);
 
-            const pad = { left: 70, right: 25, top: 25, bottom: 55 };
+            const pad = { left: 70, right: 25, top: 25, bottom: 80 };
             const chartW = width - pad.left - pad.right;
             const chartH = height - pad.top - pad.bottom;
             const prices = points.map(function (p) { return Number(p.price) || 0; });
@@ -87,8 +87,7 @@ document.addEventListener('DOMContentLoaded', function () {
             for (let i = 0; i < labels; i++) {
                 const index = labels === 1 ? 0 : Math.round(i * (points.length - 1) / (labels - 1));
                 const x = pad.left + (points.length === 1 ? chartW / 2 : chartW * index / (points.length - 1));
-                const parts = String(points[index].date).slice(0, 10).split('-');
-                ctx.fillText(parts.length === 3 ? parts[2] + '/' + parts[1] + '/' + parts[0] : points[index].date, x, height - 20);
+                ctx.fillText(String(points[index].date), x, height - 30);
             }
         })
         .catch(function () {
@@ -149,7 +148,6 @@ function drawBarChart(canvas, points, yMin, yMax) {
     for (let i = 0; i < labels; i++) {
         const index = labels === 1 ? 0 : Math.round(i * (visible.length - 1) / (labels - 1));
         const x = pad.left + index * (barWidth + gap) + barWidth / 2;
-        const parts = String(visible[index].date).slice(0, 10).split('-');
-        ctx.fillText(parts.length === 3 ? parts[2] + '/' + parts[1] + '/' + parts[0] : visible[index].date, x, height - 20);
+        ctx.fillText(String(visible[index].date), x, height - 30);
     }
 }
