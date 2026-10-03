@@ -1,4 +1,4 @@
-<?php use App\Core\Security; ?>
+<?php use App\Core\Security; use App\Support\Jalali; ?>
 
 <div class="card">
     <div class="card-body">
