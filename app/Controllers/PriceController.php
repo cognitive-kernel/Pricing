@@ -227,18 +227,87 @@ final class PriceController
     {
         Auth::requireLogin();
         PermissionService::require(Auth::userId(), 'prices.history.view');
+
         $pdo = Database::connection();
-        $s = $pdo->prepare('SELECT p.*,u.name unit_name FROM products p JOIN units u ON u.id=p.unit_id WHERE p.id=:id');
-        $s->execute(['id' => $id]);
-        $product = $s->fetch();
-        if (!$product) {
-            http_response_code(404);
-            exit('رکورد یافت نشد.');
+        $productCode = trim((string) ($_GET['product_code'] ?? ''));
+        if ($productCode === '') {
+            http_response_code(400);
+            exit('کد کالا ارسال نشده است.');
         }
-        $s = $pdo->prepare('SELECT m.PriceMonitorID,m.ProductCode,CONVERT(varchar(19),m.InquiryDate,120) AS InquiryDate,m.Source,m.Price,m.UnitID,CONVERT(varchar(19),m.CreatedDate,120) AS CreatedDate FROM dbo.ProductPriceMonitor m WHERE m.ProductCode=:code ORDER BY m.InquiryDate DESC,m.PriceMonitorID DESC');
-        $s->execute(['code' => (string) $product['product_code']]);
+
+        $product = [
+            'id' => 0,
+            'product_code' => $productCode,
+            'product_name' => trim((string) ($_GET['product_name'] ?? '')),
+            'unit_id' => (int) ($_GET['unit_id'] ?? 0),
+            'unit_name' => trim((string) ($_GET['unit_name'] ?? '')),
+            'registered_at' => null,
+        ];
+
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $perPage = 50;
+
+        $count = $pdo->prepare('SELECT COUNT(*) FROM dbo.ProductPriceMonitor WHERE ProductCode=:code');
+        $count->execute(['code' => $productCode]);
+        $total = (int) $count->fetchColumn();
+        $pages = max(1, (int) ceil($total / $perPage));
+        if ($page > $pages) {
+            $page = $pages;
+        }
+        $offset = ($page - 1) * $perPage;
+
+        $s = $pdo->prepare(
+            'SELECT PriceMonitorID,ProductCode,
+                    CONVERT(varchar(19),InquiryDate,120) AS InquiryDate,
+                    Source,Price,UnitID,
+                    CONVERT(varchar(19),CreatedDate,120) AS CreatedDate
+             FROM dbo.ProductPriceMonitor
+             WHERE ProductCode=:code
+             ORDER BY InquiryDate DESC,PriceMonitorID DESC
+             OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY'
+        );
+        $s->bindValue(':code', $productCode, PDO::PARAM_STR);
+        $s->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $s->bindValue(':limit', $perPage, PDO::PARAM_INT);
+        $s->execute();
         $history = $s->fetchAll();
-        View::render('prices/history', compact('product', 'history'));
+
+        View::render('prices/history', compact('product', 'history', 'page', 'pages', 'perPage', 'total'));
+    }
+
+    public function historyChart(): void
+    {
+        Auth::requireLogin();
+        PermissionService::require(Auth::userId(), 'prices.history.view');
+
+        $productCode = trim((string) ($_GET['product_code'] ?? ''));
+        if ($productCode === '') {
+            http_response_code(400);
+            header('Content-Type: application/json; charset=UTF-8');
+            echo json_encode(['error' => 'کد کالا ارسال نشده است.'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $pdo = Database::connection();
+        $s = $pdo->prepare(
+            'SELECT CONVERT(varchar(19),InquiryDate,120) AS InquiryDate,
+                    Price
+             FROM dbo.ProductPriceMonitor
+             WHERE ProductCode=:code
+             ORDER BY InquiryDate ASC,PriceMonitorID ASC'
+        );
+        $s->execute(['code' => $productCode]);
+
+        $points = [];
+        foreach ($s->fetchAll() as $row) {
+            $points[] = [
+                'date' => (string) $row['InquiryDate'],
+                'price' => (float) $row['Price'],
+            ];
+        }
+
+        header('Content-Type: application/json; charset=UTF-8');
+        echo json_encode(['points' => $points], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
     public function form(?int $id = null): void
