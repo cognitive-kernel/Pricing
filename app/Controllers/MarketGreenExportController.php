@@ -79,9 +79,12 @@ final class MarketGreenExportController
                 (string) ($r['Name'] ?? ''),
                 '',
                 (string) ($r['Announcement_unit'] ?? ''),
-                '', '', '', '', '', '', '',
+                '', '', '', '', '', '',
+                '',
                 (string) ($market['Price'] ?? ''),
-                '', '', ''
+                'قطعی',
+                '0.',
+                '0.'
             ];
 
             $xml .= '<Row>';
