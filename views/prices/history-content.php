@@ -43,10 +43,21 @@
 
 <div class="mt-4">
     <h5>نمودار سوابق قیمت</h5>
-    <div class="history-chart-wrap">
-        <canvas id="price-history-chart" aria-label="نمودار سوابق قیمت"></canvas>
-        <div id="price-history-chart-empty" class="text-muted text-center py-4 d-none">داده‌ای برای نمایش نمودار وجود ندارد.</div>
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <div class="border rounded p-3">
+                <div class="small text-muted mb-2">روند قیمت</div>
+                <canvas id="price-history-chart" aria-label="نمودار روند قیمت"></canvas>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="border rounded p-3">
+                <div class="small text-muted mb-2">نمودار میله‌ای قیمت</div>
+                <canvas id="price-history-bar-chart" aria-label="نمودار میله‌ای سوابق قیمت"></canvas>
+            </div>
+        </div>
     </div>
+    <div id="price-history-chart-empty" class="text-muted text-center py-4 d-none">داده‌ای برای نمایش نمودار وجود ندارد.</div>
 </div>
 
 <script src="/pricing/public/assets/price-history-chart.js" defer></script>
