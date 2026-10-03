@@ -301,7 +301,7 @@ final class PriceController
         $points = [];
         foreach ($s->fetchAll() as $row) {
             $points[] = [
-                'date' => (string) $row['InquiryDate'],
+                'date' => Jalali::fromGregorian((string) $row['InquiryDate']),
                 'price' => (float) $row['Price'],
             ];
         }
