@@ -46,6 +46,11 @@ final class MarketGreenExportController
         $xml = '<?xml version="1.0" encoding="UTF-8"?>';
         $xml .= '<?mso-application progid="Excel.Sheet"?>';
         $xml .= '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">';
+        $xml .= '<Styles>';
+        $xml .= '<Style ss:ID="Tolerance">';
+        $xml .= '<NumberFormat ss:Format="#,##0.######"/>';
+        $xml .= '</Style>';
+        $xml .= '</Styles>';
         $xml .= '<Worksheet ss:Name="رصد بازار"><Table><Row>';
 
         foreach ($headers as $header) {
@@ -83,14 +88,15 @@ final class MarketGreenExportController
                 '',
                 (string) ($market['Price'] ?? ''),
                 'قطعی',
-                '0.',
-                '0.'
+                0,
+                0
             ];
 
             $xml .= '<Row>';
-            foreach ($values as $value) {
+            foreach ($values as $index => $value) {
                 $type = is_numeric($value) && $value !== '' ? 'Number' : 'String';
-                $xml .= '<Cell><Data ss:Type="' . $type . '">' . htmlspecialchars((string) $value, ENT_XML1 | ENT_QUOTES, 'UTF-8') . '</Data></Cell>';
+                $style = ($index === 13 || $index === 14) ? ' ss:StyleID="Tolerance"' : '';
+                $xml .= '<Cell' . $style . '><Data ss:Type="' . $type . '">' . htmlspecialchars((string) $value, ENT_XML1 | ENT_QUOTES, 'UTF-8') . '</Data></Cell>';
             }
             $xml .= '</Row>';
         }
