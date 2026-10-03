@@ -100,7 +100,7 @@ function drawBarChart(canvas, points, yMin, yMax) {
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     const width = Math.max(420, Math.floor(rect.width || 600));
-    const height = 360;
+    const height = 390;
     canvas.width = width * dpr;
     canvas.height = height * dpr;
     canvas.style.height = height + 'px';
@@ -108,7 +108,7 @@ function drawBarChart(canvas, points, yMin, yMax) {
     const ctx = canvas.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const pad = { left: 70, right: 25, top: 25, bottom: 55 };
+    const pad = { left: 70, right: 25, top: 25, bottom: 85 };
     const chartW = width - pad.left - pad.right;
     const chartH = height - pad.top - pad.bottom;
 
@@ -148,6 +148,6 @@ function drawBarChart(canvas, points, yMin, yMax) {
     for (let i = 0; i < labels; i++) {
         const index = labels === 1 ? 0 : Math.round(i * (visible.length - 1) / (labels - 1));
         const x = pad.left + index * (barWidth + gap) + barWidth / 2;
-        ctx.fillText(String(visible[index].date), x, height - 30);
+        ctx.fillText(String(visible[index].date), x, height - 38);
     }
 }
