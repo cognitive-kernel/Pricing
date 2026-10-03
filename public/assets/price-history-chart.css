@@ -1,0 +1,9 @@
+.history-chart-wrap {
+    position: relative;
+    width: 100%;
+    min-height: 360px;
+}
+#price-history-chart {
+    width: 100%;
+    display: block;
+}
