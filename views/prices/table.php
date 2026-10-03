@@ -40,6 +40,14 @@ use App\Support\Jalali;
         . rawurlencode((string) ($p['unit_name'] ?? ''))
         . '&required_sources='
         . rawurlencode((string) $required);
+    $marketHistoryUrl = '/pricing/public/prices/0/history?product_code='
+        . rawurlencode((string) $p['product_code'])
+        . '&product_name='
+        . rawurlencode((string) $p['product_name'])
+        . '&unit_id='
+        . rawurlencode((string) ($p['unit_id'] ?? 0))
+        . '&unit_name='
+        . rawurlencode((string) ($p['unit_name'] ?? ''));
 ?>
 <tr class="<?= Security::e($cls) ?> <?= $clickable ? 'price-action-row' : '' ?>"
     <?php if ($clickable): ?>data-href="<?= Security::e($marketObservationUrl) ?>" title="برای ثبت رصد بازار دوبار کلیک کنید"<?php endif; ?>>
@@ -108,7 +116,7 @@ use App\Support\Jalali;
     <td class="text-nowrap">
         <?php if (PermissionService::allows(Auth::userId(), 'prices.edit')): ?>
             <a class="btn btn-sm btn-outline-primary" href="<?= Security::e($marketObservationUrl) ?>">رصد بازار</a>
-            <a class="btn btn-sm btn-outline-secondary" href="/pricing/public/prices/<?= (int) $p['id'] ?>/history">تاریخچه</a>
+            <a class="btn btn-sm btn-outline-secondary" href="<?= Security::e($marketHistoryUrl) ?>">تاریخچه</a>
         <?php endif; ?>
     </td>
 </tr>
