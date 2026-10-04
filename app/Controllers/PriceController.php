@@ -326,6 +326,7 @@ final class PriceController
         $product = null;
         $prices = [];
         $requiredSources = 0;
+        $paymentAgreements = [];
 
         if ($editing) {
             // This form is intentionally independent of products/Rahkaran relations.
@@ -335,6 +336,13 @@ final class PriceController
             $unitId = (int) ($_GET['unit_id'] ?? 0);
             $unitName = trim((string) ($_GET['unit_name'] ?? ''));
             $requiredSources = max(0, min(3, (int) ($_GET['required_sources'] ?? 0)));
+            try {
+                $paymentAgreements = RahkaranPriceService::instance()->paymentAgreements();
+            } catch (\Throwable $e) {
+                error_log('Payment agreement lookup failed: ' . $e->getMessage());
+                http_response_code(500);
+                exit('دریافت فهرست توافق پرداخت ناموفق بود.');
+            }
 
             if ($productCode === '' || $productName === '') {
                 http_response_code(400);
@@ -356,7 +364,7 @@ final class PriceController
                 'registered_at' => null,
             ];
 
-            $s = $pdo->prepare('SELECT m.PriceMonitorID,m.ProductCode,CONVERT(varchar(19),m.InquiryDate,120) AS InquiryDate,m.Source,m.Price,m.UnitID,CONVERT(varchar(19),m.CreatedDate,120) AS CreatedDate FROM dbo.ProductPriceMonitor m WHERE m.ProductCode=:code ORDER BY m.InquiryDate DESC,m.PriceMonitorID DESC');
+            $s = $pdo->prepare('SELECT m.PriceMonitorID,m.ProductCode,CONVERT(varchar(19),m.InquiryDate,120) AS InquiryDate,m.Source,m.Price,m.UnitID,m.PaymentAgreementID,CONVERT(varchar(19),m.CreatedDate,120) AS CreatedDate FROM dbo.ProductPriceMonitor m WHERE m.ProductCode=:code ORDER BY m.InquiryDate DESC,m.PriceMonitorID DESC');
             $s->execute(['code' => $productCode]);
             $prices = $s->fetchAll();
 
@@ -366,7 +374,7 @@ final class PriceController
             }
         }
 
-        View::render($editing ? 'prices/edit' : 'prices/create', compact('product', 'prices', 'requiredSources'));
+        View::render($editing ? 'prices/edit' : 'prices/create', compact('product', 'prices', 'requiredSources', 'paymentAgreements'));
     }
 
     private function requiredSourcesFromMarketDate(?string $marketDate): int
@@ -403,6 +411,12 @@ final class PriceController
             http_response_code(422);
             exit('واحد کالا در راهکاران پیدا نشد.');
         }
+        $paymentAgreementId = (int) ($_POST['payment_agreement_id'] ?? 0);
+        if ($paymentAgreementId < 1) {
+            http_response_code(422);
+            exit('توافق پرداخت الزامی است.');
+        }
+
         $rows = $_POST['prices'] ?? [];
         if (!is_array($rows) || count($rows) > 3) {
             http_response_code(422);
@@ -454,7 +468,7 @@ final class PriceController
             exit('برای این وضعیت حداقل ' . $requiredSources . ' قیمت جدید بازار باید ثبت شود.');
         }
 
-        $s = $pdo->prepare('INSERT INTO ProductPriceMonitor(ProductCode,InquiryDate,Source,Price,UnitID,CreatedDate) VALUES(:code,DATEFROMPARTS(:year,:month,:day),:source,:price,:unit,GETDATE())');
+        $s = $pdo->prepare('INSERT INTO ProductPriceMonitor(ProductCode,InquiryDate,Source,Price,UnitID,CreatedDate) VALUES(:code,DATEFROMPARTS(:year,:month,:day),:source,:price,:unit,:payment_agreement_id,GETDATE())');
         foreach ($valid as $row) {
             $s->execute([
                 'code' => $postedCode,
@@ -464,6 +478,7 @@ final class PriceController
                 'source' => $row[0],
                 'price' => $row[1],
                 'unit' => $unitId,
+                'payment_agreement_id' => $paymentAgreementId,
             ]);
         }
 
