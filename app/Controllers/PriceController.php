@@ -167,7 +167,7 @@ final class PriceController
         $prices = [];
         if ($codes) {
             $in = implode(',', array_fill(0, count($codes), '?'));
-            $s = $pdo->prepare('SELECT PriceMonitorID,ProductCode,InquiryDate,Source,Price,UnitID,CreatedDate FROM ProductPriceMonitor WHERE ProductCode IN (' . $in . ') ORDER BY ProductCode,InquiryDate DESC,PriceMonitorID DESC');
+            $s = $pdo->prepare('SELECT PriceMonitorID,ProductCode,InquiryDate,Source,Price,UnitID,CreatedDate,PaymentAgreementID,discountperc,grossprice,opration,netamount,payagrementperc FROM ProductPriceMonitor WHERE ProductCode IN (' . $in . ') ORDER BY ProductCode,InquiryDate DESC,PriceMonitorID DESC');
             $s->execute($codes);
             foreach ($s->fetchAll() as $r) {
                 $r['price_received_at'] = $r['InquiryDate'];
@@ -266,13 +266,14 @@ final class PriceController
             'SELECT PriceMonitorID,ProductCode,
                     CONVERT(varchar(19),InquiryDate,120) AS InquiryDate,
                     Source,Price,UnitID,PaymentAgreementID,
+                    discountperc,grossprice,opration,netamount,payagrementperc,
                     CONVERT(varchar(19),CreatedDate,120) AS CreatedDate
              FROM dbo.ProductPriceMonitor
              WHERE ProductCode=:code
              ORDER BY InquiryDate DESC,PriceMonitorID DESC
              OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY'
         );
-        $s->bindValue(':code', $productCode, PDO::PARAM_STR);
+        $s->bindValue(':code', $productCode, PDO::PARAM_INT);
         $s->bindValue(':offset', $offset, PDO::PARAM_INT);
         $s->bindValue(':limit', $perPage, PDO::PARAM_INT);
         $s->execute();
@@ -525,8 +526,10 @@ final class PriceController
                 ProductCode,InquiryDate,Source,Price,UnitID,PaymentAgreementID,
                 discountperc,grossprice,opration,netamount,payagrementperc,CreatedDate
             ) VALUES(
-                CONVERT(bigint,:code),DATEFROMPARTS(:year,:month,:day),:source,:price,:unit,:payment_agreement_id,
-                :discountperc,:grossprice,:opration,:netamount,:payagrementperc,GETDATE()
+                CONVERT(bigint,:code),DATEFROMPARTS(:year,:month,:day),:source,:price,
+                CONVERT(bigint,:unit),CONVERT(bigint,:payment_agreement_id),
+                CONVERT(int,:discountperc),CONVERT(bigint,:grossprice),CONVERT(bit,:opration),
+                CONVERT(bigint,:netamount),CONVERT(int,:payagrementperc),GETDATE()
             )');
         foreach ($valid as $row) {
             $s->bindValue(':code', $postedCode, PDO::PARAM_STR);
