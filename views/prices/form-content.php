@@ -136,4 +136,4 @@
 
 
 <link rel="stylesheet" href="/pricing/public/assets/price-input.css">
-<script src="/pricing/public/assets/price-input.js?v=2" defer></script>
+<script src="/pricing/public/assets/price-input.js?v=3" defer></script>
