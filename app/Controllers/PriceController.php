@@ -493,10 +493,10 @@ final class PriceController
             }
 
             $priceValue = (float) $price;
-            $grossPrice = $priceValue - ($priceValue * $discountPercent / 100);
-            $netAmount = $operation === 1
+            $grossPrice = (int) round($priceValue - ($priceValue * $discountPercent / 100));
+            $netAmount = (int) round($operation === 1
                 ? $grossPrice + ($grossPrice * $paymentAgreementPercent / 100)
-                : $grossPrice - ($grossPrice * $paymentAgreementPercent / 100);
+                : $grossPrice - ($grossPrice * $paymentAgreementPercent / 100));
 
             $valid[] = [
                 $source,
@@ -540,11 +540,11 @@ final class PriceController
             $s->bindValue(':price', $row[1]);
             $s->bindValue(':unit', $unitId, PDO::PARAM_INT);
             $s->bindValue(':payment_agreement_id', $paymentAgreementId, PDO::PARAM_INT);
-            $s->bindValue(':discountperc', $row[4]);
-            $s->bindValue(':grossprice', $row[5]);
-            $s->bindValue(':opration', $row[6], PDO::PARAM_INT);
-            $s->bindValue(':netamount', $row[7]);
-            $s->bindValue(':payagrementperc', $paymentAgreementPercent);
+            $s->bindValue(':discountperc', (int) round($row[4]), PDO::PARAM_INT);
+            $s->bindValue(':grossprice', (int) $row[5], PDO::PARAM_INT);
+            $s->bindValue(':opration', (int) $row[6], PDO::PARAM_INT);
+            $s->bindValue(':netamount', (int) $row[7], PDO::PARAM_INT);
+            $s->bindValue(':payagrementperc', (int) round($paymentAgreementPercent), PDO::PARAM_INT);
             $s->execute();
         }
 
