@@ -558,6 +558,17 @@ final class PriceController
             'count' => count($valid),
         ]);
 
+        $saveAction = (string) ($_POST['save_action'] ?? 'back');
+        if ($saveAction === 'stay') {
+            $query = http_build_query([
+                'product_code' => $postedCode,
+                'product_name' => (string) ($_POST['product_name'] ?? ''),
+                'unit_id' => $unitId,
+                'unit_name' => (string) ($_POST['product_unit_name'] ?? ''),
+            ]);
+            Security::redirect('/prices/0/edit?' . $query);
+        }
+
         Security::redirect('/prices');
     }
 
