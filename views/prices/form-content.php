@@ -45,7 +45,7 @@
                         <select name="payment_agreement_id" class="form-select" required>
                             <option value="">انتخاب توافق پرداخت</option>
                             <?php foreach (($paymentAgreements ?? []) as $agreement): ?>
-                                <option value="<?= (int) $agreement['PaymentAgreementID'] ?>">
+                                <option value="<?= (int) $agreement['PaymentAgreementID'] ?>" <?= (int) $selectedPaymentAgreementId === (int) $agreement['PaymentAgreementID'] ? 'selected' : '' ?>>
                                     <?= Security::e((string) $agreement['Title']) ?>
                                 </option>
                             <?php endforeach; ?>
