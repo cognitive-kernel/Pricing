@@ -435,6 +435,12 @@ final class PriceController
             exit('توافق پرداخت الزامی است.');
         }
 
+        $paymentAgreementPercent = (float) ($_POST['payment_agreement_percent'] ?? 0);
+        if ($paymentAgreementPercent < 0) {
+            http_response_code(422);
+            exit('درصد توافق پرداخت نامعتبر است.');
+        }
+
         $rows = $_POST['prices'] ?? [];
         if (!is_array($rows) || count($rows) > 3) {
             http_response_code(422);
@@ -446,7 +452,20 @@ final class PriceController
             $source = trim((string) ($row['source'] ?? ''));
             $price = str_replace(',', '', trim((string) ($row['price'] ?? '')));
             $rowUnitId = (int) ($row['unit_id'] ?? 0);
+            $discountPercent = (float) ($row['discount_percent'] ?? 0);
+            $operation = (int) ($row['payment_operation'] ?? 1);
             $date = trim((string) ($row['inquiry_date'] ?? ''));
+
+            if ($discountPercent < 0 || $discountPercent > 100) {
+                http_response_code(422);
+                exit('درصد تخفیف باید بین صفر تا صد باشد.');
+            }
+
+            // SQL Server column opration is BIT: 1 = جمع، 0 = منها.
+            if ($operation !== 0 && $operation !== 1) {
+                http_response_code(422);
+                exit('عملیات نامعتبر است.');
+            }
 
             // Optional rows have today's date prefilled, so an untouched row
             // must still be considered empty when source and price are both blank.
@@ -471,7 +490,22 @@ final class PriceController
                 exit('تاریخ رصد نامعتبر است.');
             }
 
-            $valid[] = [$source, (float) $price, $unitId > 0 ? $unitId : $rowUnitId, $gregorianDate];
+            $priceValue = (float) $price;
+            $grossPrice = $priceValue - ($priceValue * $discountPercent / 100);
+            $netAmount = $operation === 1
+                ? $grossPrice + ($grossPrice * $paymentAgreementPercent / 100)
+                : $grossPrice - ($grossPrice * $paymentAgreementPercent / 100);
+
+            $valid[] = [
+                $source,
+                $priceValue,
+                $unitId > 0 ? $unitId : $rowUnitId,
+                $gregorianDate,
+                $discountPercent,
+                $grossPrice,
+                $operation,
+                $netAmount,
+            ];
         }
 
         if (!$valid) {
@@ -486,7 +520,13 @@ final class PriceController
             exit('برای این وضعیت حداقل ' . $requiredSources . ' قیمت جدید بازار باید ثبت شود.');
         }
 
-        $s = $pdo->prepare('INSERT INTO ProductPriceMonitor(ProductCode,InquiryDate,Source,Price,UnitID,PaymentAgreementID,CreatedDate) VALUES(:code,DATEFROMPARTS(:year,:month,:day),:source,:price,:unit,:payment_agreement_id,GETDATE())');
+        $s = $pdo->prepare('INSERT INTO ProductPriceMonitor(
+                ProductCode,InquiryDate,Source,Price,UnitID,PaymentAgreementID,
+                discountperc,grossprice,opration,netamount,payagrementperc,CreatedDate
+            ) VALUES(
+                :code,DATEFROMPARTS(:year,:month,:day),:source,:price,:unit,:payment_agreement_id,
+                :discountperc,:grossprice,:opration,:netamount,:payagrementperc,GETDATE()
+            )');
         foreach ($valid as $row) {
             $s->execute([
                 'code' => $postedCode,
@@ -497,6 +537,11 @@ final class PriceController
                 'price' => $row[1],
                 'unit' => $unitId,
                 'payment_agreement_id' => $paymentAgreementId,
+                'discountperc' => $row[4],
+                'grossprice' => $row[5],
+                'opration' => $row[6],
+                'netamount' => $row[7],
+                'payagrementperc' => $paymentAgreementPercent,
             ]);
         }
 
