@@ -1,4 +1,5 @@
 <?php use App\Core\Security; use App\Support\Jalali; ?>
+<?php $todayJalali = Jalali::fromGregorian(date('Y-m-d')); ?>
 
 <div class="card">
     <div class="card-body">
@@ -15,7 +16,7 @@
             <?php if ($editing && (int) $requiredSources > 0): ?>
                 <span class="badge text-bg-warning">حداقل <?= (int) $requiredSources ?> رصد جدید لازم است</span>
             <?php endif; ?>
-        </div>            <form data-required-sources="<?= (int) $requiredSources ?>" method="post"
+        </div>            <form data-required-sources="<?= (int) $requiredSources ?>" method="post" novalidate
                   action="/pricing/public/prices/<?= (int) $product['id'] ?>" id="price-form">
                 <input type="hidden" name="_csrf" value="<?=Security::e(Security::csrf())?>">
                 <div class="row g-3 mb-3">
@@ -49,9 +50,9 @@
                         <?php for ($i = 0; $i < 3; $i++): ?>
                             <tr>
                                 <td><?= $i + 1 ?></td>
-                                <td><input name="prices[<?= $i ?>][inquiry_date]" class="form-control jalali-date" data-jalali-picker="true" autocomplete="off" inputmode="numeric" placeholder="1405/01/01"></td>
-                                <td><input name="prices[<?= $i ?>][source]" class="form-control" maxlength="255" placeholder="نام منبع"></td>
-                                <td><input name="prices[<?= $i ?>][price]" type="text" inputmode="decimal" class="form-control price-input" autocomplete="off" placeholder="قیمت"></td>
+                                <td><input name="prices[<?= $i ?>][inquiry_date]" value="<?= Security::e($todayJalali) ?>" class="form-control jalali-date" data-jalali-picker="true" autocomplete="off" inputmode="numeric" placeholder="1405/01/01" <?= $i < (int) $requiredSources ? 'required' : '' ?>></td>
+                                <td><input name="prices[<?= $i ?>][source]" class="form-control" maxlength="255" placeholder="نام منبع" <?= $i < (int) $requiredSources ? 'required' : '' ?>></td>
+                                <td><input name="prices[<?= $i ?>][price]" type="text" inputmode="decimal" class="form-control price-input" autocomplete="off" placeholder="قیمت" <?= $i < (int) $requiredSources ? 'required' : '' ?>></td>
                                 <td>
                                     <input type="hidden" name="prices[<?= $i ?>][unit_id]" value="<?= (int) ($product['unit_id'] ?? 0) ?>">
                                     <input class="form-control" value="<?=Security::e((string) ($product['unit_name'] ?? ('کد ' . (int) ($product['unit_id'] ?? 0))))?>" readonly>
