@@ -76,8 +76,8 @@
                                 <td><input type="text" class="form-control gross-price" readonly></td>
                                 <td>
                                     <select name="prices[<?= $i ?>][payment_operation]" class="form-select payment-operation">
-                                        <option value="add">جمع</option>
-                                        <option value="subtract">منها</option>
+                                        <option value="1">جمع</option>
+                                        <option value="0">منها</option>
                                     </select>
                                 </td>
                                 <td><input type="text" class="form-control final-price" readonly></td>
