@@ -92,7 +92,7 @@ use App\Support\Jalali;
                 <div class="mb-1">
                     منبع:
                     <?= Security::e((string) $pr['supplier']) ?>
-                    · <?= number_format((float) $pr['unit_price'], 2) ?>
+                    · <?= number_format((float) $pr['unit_price'], 2) ?> <?= Security::e((string) ($p['unit_name'] ?? '')) ?>
                     · <?= Security::e(Jalali::fromGregorian($pr['price_received_at'])) ?>
                 </div>
             <?php endforeach; ?>
