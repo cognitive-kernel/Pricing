@@ -92,7 +92,8 @@
                 </div>
 
                 <div class="d-flex gap-2 mt-3">
-                    <button class="btn btn-primary" type="submit">ثبت رصدهای جدید</button>
+                    <button class="btn btn-primary" type="submit" name="save_action" value="back">ثبت و بازگشت به صفحه اصلی</button>
+                    <button class="btn btn-success" type="submit" name="save_action" value="stay">ثبت و ماندن در صفحه</button>
                     <a href="/pricing/public/prices" class="btn btn-secondary">انصراف</a>
                 </div>
             </form>
