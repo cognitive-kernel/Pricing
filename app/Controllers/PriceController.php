@@ -183,8 +183,9 @@ final class PriceController
             $code = trim((string) ($row['Code'] ?? ''));
             $marketDate = $marketLatestByCode[$code] ?? null;
             $unitName = (string) ($row['Announcement_unit'] ?? '');
-            $unitId = 0;
-            if (!empty($prices[$code][0]['unit_id'])) {
+            // UnitID must come from Rahkaran's Product.UnitRef, not from prior market rows.
+            $unitId = (int) ($row['Announcement_unit_id'] ?? 0);
+            if ($unitId < 1 && !empty($prices[$code][0]['unit_id'])) {
                 $unitId = (int) $prices[$code][0]['unit_id'];
             }
 
