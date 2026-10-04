@@ -39,6 +39,20 @@
                     </div>
                 </div>
 
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">توافق پرداخت</label>
+                        <select name="payment_agreement_id" class="form-select" required>
+                            <option value="">انتخاب توافق پرداخت</option>
+                            <?php foreach (($paymentAgreements ?? []) as $agreement): ?>
+                                <option value="<?= (int) $agreement['PaymentAgreementID'] ?>">
+                                    <?= Security::e((string) $agreement['Title']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="table-responsive">
                     <table class="table table-bordered align-middle text-center">
                         <thead class="table-light">
@@ -77,7 +91,7 @@
                     <table class="table table-striped table-bordered align-middle text-center">
                         <thead class="table-light">
                         <tr>
-                            <th>شناسه</th><th>کد کالا</th><th>تاریخ رصد</th><th>منبع</th><th>قیمت</th><th>واحد</th><th>تاریخ ایجاد</th>
+                            <th>شناسه</th><th>کد کالا</th><th>تاریخ رصد</th><th>منبع</th><th>قیمت</th><th>واحد</th><th>توافق پرداخت</th><th>تاریخ ایجاد</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -89,6 +103,7 @@
                                 <td><?=Security::e((string) ($price['Source'] ?? ''))?></td>
                                 <td><?=Security::e(number_format((float) $price['Price'], 2))?></td>
                                 <td><?=Security::e((string) ($product['unit_name'] ?? ''))?></td>
+                                <td><?=Security::e((string) ($price['PaymentAgreementTitle'] ?? ''))?></td>
                                 <td><?=Security::e(Jalali::fromGregorian($price['CreatedDate']))?></td>
                             </tr>
                         <?php endforeach; ?>
