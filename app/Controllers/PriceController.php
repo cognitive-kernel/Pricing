@@ -525,7 +525,7 @@ final class PriceController
                 ProductCode,InquiryDate,Source,Price,UnitID,PaymentAgreementID,
                 discountperc,grossprice,opration,netamount,payagrementperc,CreatedDate
             ) VALUES(
-                :code,DATEFROMPARTS(:year,:month,:day),:source,:price,:unit,:payment_agreement_id,
+                CONVERT(bigint,:code),DATEFROMPARTS(:year,:month,:day),:source,:price,:unit,:payment_agreement_id,
                 :discountperc,:grossprice,:opration,:netamount,:payagrementperc,GETDATE()
             )');
         foreach ($valid as $row) {
