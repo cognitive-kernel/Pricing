@@ -392,8 +392,12 @@ final class PriceController
             exit('کد کالا الزامی است.');
         }
 
-        // ProductPriceMonitor is standalone; UnitID is optional for market observations.
-        $unitId = (int) ($_POST['product_unit_id'] ?? 0);
+        // UnitID must be read from Rahkaran at save time; never allow a NULL market UnitID.
+        $unitId = RahkaranPriceService::instance()->unitIdByCode($postedCode);
+        if ($unitId === null) {
+            http_response_code(422);
+            exit('واحد کالا در راهکاران پیدا نشد.');
+        }
         $rows = $_POST['prices'] ?? [];
         if (!is_array($rows) || count($rows) > 3) {
             http_response_code(422);
@@ -454,7 +458,7 @@ final class PriceController
                 'day' => (int) substr($row[3], 8, 2),
                 'source' => $row[0],
                 'price' => $row[1],
-                'unit' => $unitId > 0 ? $unitId : null,
+                'unit' => $unitId,
             ]);
         }
 
