@@ -265,7 +265,7 @@ final class PriceController
         $s = $pdo->prepare(
             'SELECT PriceMonitorID,ProductCode,
                     CONVERT(varchar(19),InquiryDate,120) AS InquiryDate,
-                    Source,Price,UnitID,
+                    Source,Price,UnitID,PaymentAgreementID,
                     CONVERT(varchar(19),CreatedDate,120) AS CreatedDate
              FROM dbo.ProductPriceMonitor
              WHERE ProductCode=:code
@@ -277,6 +277,13 @@ final class PriceController
         $s->bindValue(':limit', $perPage, PDO::PARAM_INT);
         $s->execute();
         $history = $s->fetchAll();
+        $agreementIds = array_values(array_unique(array_map(static fn(array $row): int => (int) ($row['PaymentAgreementID'] ?? 0), $history)));
+        $agreementTitles = RahkaranPriceService::instance()->paymentAgreementTitlesByIds($agreementIds);
+        foreach ($history as &$historyRow) {
+            $agreementId = (int) ($historyRow['PaymentAgreementID'] ?? 0);
+            $historyRow['PaymentAgreementTitle'] = $agreementTitles[$agreementId] ?? '';
+        }
+        unset($historyRow);
 
         View::render('prices/history', compact('product', 'history', 'page', 'pages', 'perPage', 'total'));
     }
@@ -327,6 +334,7 @@ final class PriceController
         $prices = [];
         $requiredSources = 0;
         $paymentAgreements = [];
+        $selectedPaymentAgreementId = 0;
 
         if ($editing) {
             // This form is intentionally independent of products/Rahkaran relations.
@@ -367,6 +375,16 @@ final class PriceController
             $s = $pdo->prepare('SELECT m.PriceMonitorID,m.ProductCode,CONVERT(varchar(19),m.InquiryDate,120) AS InquiryDate,m.Source,m.Price,m.UnitID,m.PaymentAgreementID,CONVERT(varchar(19),m.CreatedDate,120) AS CreatedDate FROM dbo.ProductPriceMonitor m WHERE m.ProductCode=:code ORDER BY m.InquiryDate DESC,m.PriceMonitorID DESC');
             $s->execute(['code' => $productCode]);
             $prices = $s->fetchAll();
+            $agreementIds = array_values(array_unique(array_map(static fn(array $row): int => (int) ($row['PaymentAgreementID'] ?? 0), $prices)));
+            $agreementTitles = RahkaranPriceService::instance()->paymentAgreementTitlesByIds($agreementIds);
+            foreach ($prices as &$priceRow) {
+                $agreementId = (int) ($priceRow['PaymentAgreementID'] ?? 0);
+                $priceRow['PaymentAgreementTitle'] = $agreementTitles[$agreementId] ?? '';
+                if ($selectedPaymentAgreementId < 1 && $agreementId > 0) {
+                    $selectedPaymentAgreementId = $agreementId;
+                }
+            }
+            unset($priceRow);
 
             if ($requiredSources === 0) {
                 $marketDate = $prices[0]['InquiryDate'] ?? null;
@@ -374,7 +392,7 @@ final class PriceController
             }
         }
 
-        View::render($editing ? 'prices/edit' : 'prices/create', compact('product', 'prices', 'requiredSources', 'paymentAgreements'));
+        View::render($editing ? 'prices/edit' : 'prices/create', compact('product', 'prices', 'requiredSources', 'paymentAgreements', 'selectedPaymentAgreementId'));
     }
 
     private function requiredSourcesFromMarketDate(?string $marketDate): int
