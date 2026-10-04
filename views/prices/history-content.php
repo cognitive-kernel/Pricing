@@ -9,10 +9,10 @@
 
 <div class="table-responsive">
 <table class="table table-bordered align-middle text-center">
-<thead><tr><th>شناسه</th><th>کد کالا</th><th>تاریخ رصد</th><th>منبع</th><th>قیمت</th><th>واحد</th><th>تاریخ ایجاد</th></tr></thead>
+<thead><tr><th>شناسه</th><th>کد کالا</th><th>تاریخ رصد</th><th>منبع</th><th>قیمت</th><th>واحد</th><th>توافق پرداخت</th><th>تاریخ ایجاد</th></tr></thead>
 <tbody>
 <?php if (!$history): ?>
-<tr><td colspan="7" class="text-center">سابقه‌ای برای این کالا ثبت نشده است.</td></tr>
+<tr><td colspan="8" class="text-center">سابقه‌ای برای این کالا ثبت نشده است.</td></tr>
 <?php endif; ?>
 <?php foreach($history as $r):?>
 <tr>
@@ -22,6 +22,7 @@
 <td><?=Security::e($r['Source'])?></td>
 <td><?=number_format((float)$r['Price'],2)?></td>
 <td><?=Security::e((string)($product['unit_name'] ?? ''))?></td>
+<td><?=Security::e((string)($r['PaymentAgreementTitle'] ?? ''))?></td>
 <td><?=Security::e(\App\Support\Jalali::fromGregorian($r['CreatedDate']))?></td>
 </tr>
 <?php endforeach;?>
