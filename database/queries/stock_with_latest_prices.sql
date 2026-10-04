@@ -18,8 +18,7 @@ DECLARE @FiscalYearRef BIGINT = 9;
     INNER JOIN LGS3.InventoryVoucher AS v
         ON v.InventoryVoucherID = i.InventoryVoucherRef
     INNER JOIN LGS3.InventoryVoucherSpecification AS s
-        ON s.InventoryVoucherSpecificationID =
-           v.InventoryVoucherSpecificationRef
+        ON s.InventoryVoucherSpecificationID = v.InventoryVoucherSpecificationRef
     INNER JOIN LGS3.Store AS st
         ON st.StoreID = i.StoreRef
     INNER JOIN LGS3.Part AS p
@@ -38,18 +37,13 @@ DECLARE @FiscalYearRef BIGINT = 9;
             OR i.ReturnableVoucherItemRef IS NULL
             OR i.FiscalYearRef = @FiscalYearRef
         )
-    GROUP BY
-        p.PartID,
-        p.Code,
-        p.Name
-    HAVING
-        SUM(
-            CASE
-                WHEN s.Direction = 1
-                    THEN ISNULL(i.MajorUnitQuantity, 0)
-                ELSE -ISNULL(i.MajorUnitQuantity, 0)
-            END
-        ) > 0
+    GROUP BY p.PartID, p.Code, p.Name
+    HAVING SUM(
+        CASE
+            WHEN s.Direction = 1 THEN ISNULL(i.MajorUnitQuantity, 0)
+            ELSE -ISNULL(i.MajorUnitQuantity, 0)
+        END
+    ) > 0
 ),
 cte_Price_Announcement AS (
     SELECT
@@ -65,12 +59,9 @@ cte_Price_Announcement AS (
         sys3.fn_DateToShamsiDate(pl.StartDate) AS [date],
         DATEDIFF(DAY, pl.StartDate, GETDATE()) AS diffdate
     FROM SLS3.PriceListItem AS pli
-    LEFT JOIN SLS3.PriceList AS pl
-        ON pli.PriceListRef = pl.PriceListID
-    LEFT JOIN SLS3.Product AS p
-        ON pli.ProductRef = p.ProductID
-    LEFT JOIN gnr3.Unit AS u
-        ON p.UnitRef = u.UnitID
+    LEFT JOIN SLS3.PriceList AS pl ON pli.PriceListRef = pl.PriceListID
+    LEFT JOIN SLS3.Product AS p ON pli.ProductRef = p.ProductID
+    LEFT JOIN gnr3.Unit AS u ON p.UnitRef = u.UnitID
 ),
 cte_Price_invoice AS (
     SELECT
@@ -85,10 +76,8 @@ cte_Price_invoice AS (
         sys3.fn_DateToShamsiDate(ii.[Date]) AS [date],
         DATEDIFF(DAY, ii.[Date], GETDATE()) AS diffdate
     FROM SLS3.InvoiceItem AS ii
-    LEFT JOIN SLS3.Product AS p
-        ON ii.ProductRef = p.ProductID
-    LEFT JOIN gnr3.Unit AS u
-        ON p.UnitRef = u.UnitID
+    LEFT JOIN SLS3.Product AS p ON ii.ProductRef = p.ProductID
+    LEFT JOIN gnr3.Unit AS u ON p.UnitRef = u.UnitID
 ),
 cte_price AS (
     SELECT
@@ -105,10 +94,8 @@ cte_price AS (
         pin.diffdate AS invoice_diff
     FROM cte_Price_Announcement AS cpa
     LEFT JOIN cte_Price_invoice AS pin
-        ON cpa.Number = pin.Number
-        AND pin.rn_pi = 1
-    WHERE
-        cpa.rn_pa = 1
+        ON cpa.Number = pin.Number AND pin.rn_pi = 1
+    WHERE cpa.rn_pa = 1
 )
 SELECT
     s.PartID,
@@ -118,13 +105,12 @@ SELECT
     p.Announcement_date,
     p.Announcement_price,
     p.Announcement_unit,
+    p.Announcement_unit_id,
     p.Announcement_diff,
     p.invoice_date,
     p.invoice_price,
     p.invoice_unit,
     p.invoice_diff
 FROM cte_stock AS s
-LEFT JOIN cte_price AS p
-    ON s.Code = p.code
-ORDER BY
-    s.PartID DESC;
+LEFT JOIN cte_price AS p ON s.Code = p.code
+ORDER BY s.PartID DESC;
