@@ -373,7 +373,7 @@ final class PriceController
                 'registered_at' => null,
             ];
 
-            $s = $pdo->prepare('SELECT m.PriceMonitorID,m.ProductCode,CONVERT(varchar(19),m.InquiryDate,120) AS InquiryDate,m.Source,m.Price,m.UnitID,m.PaymentAgreementID,CONVERT(varchar(19),m.CreatedDate,120) AS CreatedDate FROM dbo.ProductPriceMonitor m WHERE m.ProductCode=:code ORDER BY m.InquiryDate DESC,m.PriceMonitorID DESC');
+            $s = $pdo->prepare('SELECT m.PriceMonitorID,m.ProductCode,CONVERT(varchar(19),m.InquiryDate,120) AS InquiryDate,m.Source,m.Price,m.UnitID,m.PaymentAgreementID,m.discountperc,m.grossprice,m.opration,m.netamount,m.payagrementperc,CONVERT(varchar(19),m.CreatedDate,120) AS CreatedDate FROM dbo.ProductPriceMonitor m WHERE m.ProductCode=:code ORDER BY m.InquiryDate DESC,m.PriceMonitorID DESC');
             $s->execute(['code' => $productCode]);
             $prices = $s->fetchAll();
             $agreementIds = array_values(array_unique(array_map(static fn(array $row): int => (int) ($row['PaymentAgreementID'] ?? 0), $prices)));
