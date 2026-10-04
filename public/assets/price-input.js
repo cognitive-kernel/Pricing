@@ -1,4 +1,32 @@
 document.addEventListener('DOMContentLoaded', function () {
+    function numericValue(input) {
+        return Number(String(input?.value || '').replace(/,/g, '')) || 0;
+    }
+
+    function formatNumber(value) {
+        return Number.isFinite(value) ? value.toLocaleString('en-US', { maximumFractionDigits: 6 }) : '';
+    }
+
+    function recalculateRow(row) {
+        const price = numericValue(row.querySelector('.price-input'));
+        const discount = numericValue(row.querySelector('.discount-percent'));
+        const gross = Math.max(0, price - (price * discount / 100));
+        const agreementPercent = numericValue(document.getElementById('payment-agreement-percent'));
+        const operation = row.querySelector('.payment-operation')?.value || 'add';
+        const finalPrice = operation === 'subtract'
+            ? gross - (gross * agreementPercent / 100)
+            : gross + (gross * agreementPercent / 100);
+
+        const grossInput = row.querySelector('.gross-price');
+        const finalInput = row.querySelector('.final-price');
+        if (grossInput) grossInput.value = formatNumber(gross);
+        if (finalInput) finalInput.value = formatNumber(Math.max(0, finalPrice));
+    }
+
+    function recalculateAllRows() {
+        document.querySelectorAll('#price-form tbody tr').forEach(recalculateRow);
+    }
+
     document.querySelectorAll('.price-input').forEach(function (input) {
         input.style.textAlign = 'left';
         input.dir = 'ltr';
@@ -11,6 +39,19 @@ document.addEventListener('DOMContentLoaded', function () {
             this.value = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + decimalPart;
         });
     });
+
+    document.querySelectorAll('#price-form .price-input, #price-form .discount-percent, #price-form .payment-operation').forEach(function (input) {
+        input.addEventListener('input', function () {
+            recalculateRow(this.closest('tr'));
+        });
+        input.addEventListener('change', function () {
+            recalculateRow(this.closest('tr'));
+        });
+    });
+
+    document.getElementById('payment-agreement-percent')?.addEventListener('input', recalculateAllRows);
+    document.getElementById('payment-agreement-percent')?.addEventListener('change', recalculateAllRows);
+    recalculateAllRows();
 
     document.getElementById('price-form')?.addEventListener('submit', function (event) {
         const form = this;
