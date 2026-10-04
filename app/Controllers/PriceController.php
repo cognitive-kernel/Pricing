@@ -167,7 +167,7 @@ final class PriceController
         $prices = [];
         if ($codes) {
             $in = implode(',', array_fill(0, count($codes), '?'));
-            $s = $pdo->prepare('SELECT PriceMonitorID,ProductCode,InquiryDate,Source,Price,UnitID,CreatedDate,PaymentAgreementID,discountperc,grossprice,opration,netamount,payagrementperc FROM ProductPriceMonitor WHERE ProductCode IN (' . $in . ') ORDER BY ProductCode,InquiryDate DESC,PriceMonitorID DESC');
+            $s = $pdo->prepare('SELECT m.PriceMonitorID,m.ProductCode,m.InquiryDate,m.Source,m.Price,m.UnitID,m.CreatedDate,m.PaymentAgreementID,m.discountperc,m.grossprice,m.opration,m.netamount,m.payagrementperc FROM ProductPriceMonitor m INNER JOIN (SELECT ProductCode,MAX(InquiryDate) AS latest_date FROM ProductPriceMonitor WHERE ProductCode IN (' . $in . ') GROUP BY ProductCode) latest ON latest.ProductCode=m.ProductCode AND latest.latest_date=m.InquiryDate ORDER BY m.ProductCode,m.InquiryDate DESC,m.PriceMonitorID DESC');
             $s->execute($codes);
             foreach ($s->fetchAll() as $r) {
                 $r['price_received_at'] = $r['InquiryDate'];
