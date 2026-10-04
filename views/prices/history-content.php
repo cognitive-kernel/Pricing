@@ -1,4 +1,4 @@
-<?php use App\Core\Security; ?>
+<?php use App\\Core\\Security; ?>
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
         <h4>تاریخچه رصد قیمت</h4>
@@ -21,7 +21,7 @@
 <td><?=Security::e(\App\Support\Jalali::fromGregorian($r['InquiryDate']))?></td>
 <td><?=Security::e($r['Source'])?></td>
 <td><?=number_format((float)$r['Price'],2)?></td>
-<td><?=Security::e((string)($r['UnitID'] ?? ''))?></td>
+<td><?=Security::e((string)($product['unit_name'] ?? ''))?></td>
 <td><?=Security::e(\App\Support\Jalali::fromGregorian($r['CreatedDate']))?></td>
 </tr>
 <?php endforeach;?>
