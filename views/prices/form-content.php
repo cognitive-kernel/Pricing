@@ -16,7 +16,7 @@
             <?php if ($editing && (int) $requiredSources > 0): ?>
                 <span class="badge text-bg-warning">حداقل <?= (int) $requiredSources ?> رصد جدید لازم است</span>
             <?php endif; ?>
-        </div>            <form data-required-sources="<?= (int) $requiredSources ?>" method="post" novalidate
+        </div>            <form data-required-sources="<?= (int) $requiredSources ?>" method="post"
                   action="/pricing/public/prices/<?= (int) $product['id'] ?>" id="price-form">
                 <input type="hidden" name="_csrf" value="<?=Security::e(Security::csrf())?>">
                 <div class="row g-3 mb-3">
