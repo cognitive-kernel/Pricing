@@ -70,6 +70,26 @@ final class RahkaranPriceService
         return $this->pdo->query($sql)->fetchAll();
     }
 
+    public function unitIdByCode(string $code): ?int
+    {
+        $code = trim($code);
+        if ($code === '') {
+            return null;
+        }
+
+        $s = $this->pdo->prepare(
+            'SELECT TOP 1 p.UnitRef
+             FROM SLS3.Product AS p
+             WHERE p.Number = :code'
+        );
+        $s->execute(['code' => $code]);
+        $value = $s->fetchColumn();
+
+        return ($value !== false && $value !== null && (int) $value > 0)
+            ? (int) $value
+            : null;
+    }
+
     public function latestByCodes(array $codes): array
     {
         $wanted = array_values(array_unique(array_filter(array_map(
