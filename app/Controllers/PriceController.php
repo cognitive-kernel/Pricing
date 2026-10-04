@@ -525,25 +525,24 @@ final class PriceController
                 ProductCode,InquiryDate,Source,Price,UnitID,PaymentAgreementID,
                 discountperc,grossprice,opration,netamount,payagrementperc,CreatedDate
             ) VALUES(
-                :code,DATEFROMPARTS(:year,:month,:day),:source,:price,CONVERT(bigint,:unit),CONVERT(bigint,:payment_agreement_id),
-                :discountperc,:grossprice,CONVERT(bit,:opration),:netamount,:payagrementperc,GETDATE()
+                :code,DATEFROMPARTS(:year,:month,:day),:source,:price,:unit,:payment_agreement_id,
+                :discountperc,:grossprice,:opration,:netamount,:payagrementperc,GETDATE()
             )');
         foreach ($valid as $row) {
-            $s->execute([
-                'code' => $postedCode,
-                'year' => (int) substr($row[3], 0, 4),
-                'month' => (int) substr($row[3], 5, 2),
-                'day' => (int) substr($row[3], 8, 2),
-                'source' => $row[0],
-                'price' => $row[1],
-                'unit' => $unitId,
-                'payment_agreement_id' => $paymentAgreementId,
-                'discountperc' => $row[4],
-                'grossprice' => $row[5],
-                'opration' => $row[6],
-                'netamount' => $row[7],
-                'payagrementperc' => $paymentAgreementPercent,
-            ]);
+            $s->bindValue(':code', $postedCode, PDO::PARAM_STR);
+            $s->bindValue(':year', (int) substr($row[3], 0, 4), PDO::PARAM_INT);
+            $s->bindValue(':month', (int) substr($row[3], 5, 2), PDO::PARAM_INT);
+            $s->bindValue(':day', (int) substr($row[3], 8, 2), PDO::PARAM_INT);
+            $s->bindValue(':source', $row[0], PDO::PARAM_STR);
+            $s->bindValue(':price', $row[1]);
+            $s->bindValue(':unit', $unitId, PDO::PARAM_INT);
+            $s->bindValue(':payment_agreement_id', $paymentAgreementId, PDO::PARAM_INT);
+            $s->bindValue(':discountperc', $row[4]);
+            $s->bindValue(':grossprice', $row[5]);
+            $s->bindValue(':opration', $row[6], PDO::PARAM_INT);
+            $s->bindValue(':netamount', $row[7]);
+            $s->bindValue(':payagrementperc', $paymentAgreementPercent);
+            $s->execute();
         }
 
         AuditService::log(Auth::userId(), 'price.monitor.create', 'ProductPriceMonitor', $postedCode, null, [
