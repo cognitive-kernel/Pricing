@@ -88,7 +88,7 @@
                                 <td><?=Security::e(Jalali::fromGregorian($price['InquiryDate']))?></td>
                                 <td><?=Security::e((string) ($price['Source'] ?? ''))?></td>
                                 <td><?=Security::e(number_format((float) $price['Price'], 2))?></td>
-                                <td><?=Security::e((string) ($price['UnitID'] ?? ''))?></td>
+                                <td><?=Security::e((string) ($product['unit_name'] ?? ''))?></td>
                                 <td><?=Security::e(Jalali::fromGregorian($price['CreatedDate']))?></td>
                             </tr>
                         <?php endforeach; ?>
