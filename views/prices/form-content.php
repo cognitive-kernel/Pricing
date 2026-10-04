@@ -96,7 +96,7 @@
                     </table>
                 </div>
             <?php else: ?>
-                <div class="alert alert-secondary mb-0">برای این کالا هنوز رکوردی در ProductPriceMonitor ثبت نشده است.</div>
+                <div class="alert alert-secondary mb-0">برای این کالا هنوز رکوردی ثبت نشده است.</div>
             <?php endif; ?>
     </div>
 </div>
