@@ -90,6 +90,43 @@ final class RahkaranPriceService
             : null;
     }
 
+    public function paymentAgreements(): array
+    {
+        $sql = 'SELECT [PaymentAgreementID], [Number], [Title]
+                FROM [Rahkaran_sg31old].[SLS3].[PaymentAgreement]
+                ORDER BY [Title], [Number]';
+
+        return $this->pdo->query($sql)->fetchAll();
+    }
+
+    public function paymentAgreementTitlesByIds(array $ids): array
+    {
+        $wanted = array_values(array_unique(array_filter(array_map(
+            static fn($id): int => (int) $id,
+            $ids
+        ), static fn(int $id): bool => $id > 0)));
+
+        if (!$wanted) {
+            return [];
+        }
+
+        $in = implode(',', array_fill(0, count($wanted), '?'));
+        $s = $this->pdo->prepare(
+            'SELECT [PaymentAgreementID], [Title]
+             FROM [Rahkaran_sg31old].[SLS3].[PaymentAgreement]
+             WHERE [PaymentAgreementID] IN (' . $in . ')'
+        );
+        $s->execute($wanted);
+
+        $result = [];
+        foreach ($s->fetchAll() as $row) {
+            $result[(int) $row['PaymentAgreementID']] = (string) $row['Title'];
+        }
+
+        return $result;
+    }
+
+
     public function latestByCodes(array $codes): array
     {
         $wanted = array_values(array_unique(array_filter(array_map(
