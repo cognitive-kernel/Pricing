@@ -236,12 +236,17 @@ final class PriceController
             exit('کد کالا ارسال نشده است.');
         }
 
+        // History must display the authoritative unit name from Rahkaran,
+        // not the numeric UnitID or a stale value passed in the URL.
+        $rahkaran = RahkaranPriceService::instance()->latestByCodes([$productCode]);
+        $rahkaranRow = $rahkaran[$productCode] ?? null;
+
         $product = [
             'id' => 0,
             'product_code' => $productCode,
             'product_name' => trim((string) ($_GET['product_name'] ?? '')),
-            'unit_id' => (int) ($_GET['unit_id'] ?? 0),
-            'unit_name' => trim((string) ($_GET['unit_name'] ?? '')),
+            'unit_id' => (int) ($rahkaranRow['Announcement_unit_id'] ?? ($_GET['unit_id'] ?? 0)),
+            'unit_name' => trim((string) ($rahkaranRow['Announcement_unit'] ?? '')),
             'registered_at' => null,
         ];
 
