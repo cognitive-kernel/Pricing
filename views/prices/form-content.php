@@ -110,6 +110,7 @@
                         </thead>
                         <tbody>
                         <?php foreach ($prices as $price): ?>
+                            <?php $isAddOperation = $price['opration'] === true || $price['opration'] === 1 || $price['opration'] === '1' || strtolower((string) $price['opration']) === 'true'; ?>
                             <tr>
                                 <td><?= (int) $price['PriceMonitorID'] ?></td>
                                 <td><?=Security::e((string) $price['ProductCode'])?></td>
@@ -118,7 +119,7 @@
                                 <td><?=Security::e(number_format((float) $price['Price'], 2))?></td>
                                 <td><?=Security::e((string) ($price['discountperc'] ?? 0))?>%</td>
                                 <td><?=Security::e(number_format((float) ($price['grossprice'] ?? 0), 0))?></td>
-                                <td><?=((int) ($price['opration'] ?? 0) === 1 ? 'جمع' : 'منها')?></td>
+                                <td><?=$isAddOperation ? 'جمع' : 'منها'?></td>
                                 <td><?=Security::e(number_format((float) ($price['netamount'] ?? 0), 0))?></td>
                                 <td><?=Security::e((string) ($product['unit_name'] ?? ''))?></td>
                                 <td><?=Security::e((string) ($price['PaymentAgreementTitle'] ?? ''))?></td>
