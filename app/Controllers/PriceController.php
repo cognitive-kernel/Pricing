@@ -453,7 +453,8 @@ final class PriceController
             $price = str_replace(',', '', trim((string) ($row['price'] ?? '')));
             $rowUnitId = (int) ($row['unit_id'] ?? 0);
             $discountPercent = (float) ($row['discount_percent'] ?? 0);
-            $operation = (int) ($row['payment_operation'] ?? 1);
+            $operationValue = (string) ($row['payment_operation'] ?? '1');
+            $operation = $operationValue === '1' ? 1 : ($operationValue === '0' ? 0 : -1);
             $date = trim((string) ($row['inquiry_date'] ?? ''));
 
             if ($discountPercent < 0 || $discountPercent > 100) {
@@ -462,7 +463,7 @@ final class PriceController
             }
 
             // SQL Server column opration is BIT: 1 = جمع، 0 = منها.
-            if ($operation !== 0 && $operation !== 1) {
+            if ($operation < 0) {
                 http_response_code(422);
                 exit('عملیات نامعتبر است.');
             }
@@ -524,8 +525,8 @@ final class PriceController
                 ProductCode,InquiryDate,Source,Price,UnitID,PaymentAgreementID,
                 discountperc,grossprice,opration,netamount,payagrementperc,CreatedDate
             ) VALUES(
-                :code,DATEFROMPARTS(:year,:month,:day),:source,:price,:unit,:payment_agreement_id,
-                :discountperc,:grossprice,:opration,:netamount,:payagrementperc,GETDATE()
+                :code,DATEFROMPARTS(:year,:month,:day),:source,:price,CONVERT(bigint,:unit),CONVERT(bigint,:payment_agreement_id),
+                :discountperc,:grossprice,CONVERT(bit,:opration),:netamount,:payagrementperc,GETDATE()
             )');
         foreach ($valid as $row) {
             $s->execute([
