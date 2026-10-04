@@ -12,8 +12,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const discount = numericValue(row.querySelector('.discount-percent'));
         const gross = Math.max(0, price - (price * discount / 100));
         const agreementPercent = numericValue(document.getElementById('payment-agreement-percent'));
-        const operation = row.querySelector('.payment-operation')?.value || 'add';
-        const finalPrice = operation === 'subtract'
+        const operation = row.querySelector('.payment-operation')?.value ?? '1';
+        const finalPrice = operation === '0'
             ? gross - (gross * agreementPercent / 100)
             : gross + (gross * agreementPercent / 100);
 
