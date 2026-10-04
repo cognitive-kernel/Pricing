@@ -406,7 +406,9 @@ final class PriceController
             $rowUnitId = (int) ($row['unit_id'] ?? 0);
             $date = trim((string) ($row['inquiry_date'] ?? ''));
 
-            if ($source === '' && $price === '' && $date === '') {
+            // Optional rows have today's date prefilled, so an untouched row
+            // must still be considered empty when source and price are both blank.
+            if ($source === '' && $price === '') {
                 continue;
             }
 
