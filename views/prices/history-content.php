@@ -15,16 +15,17 @@
 <tr><td colspan="12" class="text-center">سابقه‌ای برای این کالا ثبت نشده است.</td></tr>
 <?php endif; ?>
 <?php foreach($history as $r):?>
+<?php $isAddOperation = $r['opration'] === true || $r['opration'] === 1 || $r['opration'] === '1' || strtolower((string) $r['opration']) === 'true'; ?>
 <tr>
 <td><?= (int)$r['PriceMonitorID']?></td>
 <td><?=Security::e($r['ProductCode'])?></td>
 <td><?=Security::e(\App\Support\Jalali::fromGregorian($r['InquiryDate']))?></td>
 <td><?=Security::e($r['Source'])?></td>
 <td><?=number_format((float)$r['Price'],2)?></td>
-<td>—</td>
-<td>—</td>
-<td>—</td>
-<td>—</td>
+<td><?=Security::e((string)($r['discountperc'] ?? 0))?>%</td>
+<td><?=number_format((float)($r['grossprice'] ?? 0),0)?></td>
+<td><?=$isAddOperation ? 'جمع' : 'منها'?></td>
+<td><?=number_format((float)($r['netamount'] ?? 0),0)?></td>
 <td><?=Security::e((string)($product['unit_name'] ?? ''))?></td>
 <td><?=Security::e((string)($r['PaymentAgreementTitle'] ?? ''))?></td>
 <td><?=Security::e(\App\Support\Jalali::fromGregorian($r['CreatedDate']))?></td>
