@@ -419,6 +419,11 @@ final class PriceController
 
         $pdo = Database::connection();
         $postedCode = trim((string) ($_POST['product_code'] ?? ''));
+        $postedProductCode = filter_var($postedCode, FILTER_VALIDATE_INT);
+        if ($postedProductCode === false) {
+            http_response_code(422);
+            exit('کد کالا باید عددی باشد.');
+        }
         if ($postedCode === '') {
             http_response_code(422);
             exit('کد کالا الزامی است.');
@@ -526,24 +531,24 @@ final class PriceController
                 ProductCode,InquiryDate,Source,Price,UnitID,PaymentAgreementID,
                 discountperc,grossprice,opration,netamount,payagrementperc,CreatedDate
             ) VALUES(
-                CONVERT(bigint,:code),DATEFROMPARTS(:year,:month,:day),:source,:price,
-                CONVERT(bigint,:unit),CONVERT(bigint,:payment_agreement_id),
-                CONVERT(int,:discountperc),CONVERT(bigint,:grossprice),CONVERT(bit,:opration),
-                CONVERT(bigint,:netamount),CONVERT(int,:payagrementperc),GETDATE()
+                :code,DATEFROMPARTS(:year,:month,:day),:source,:price,
+                :unit,:payment_agreement_id,
+                :discountperc,:grossprice,:opration,
+                :netamount,:payagrementperc,GETDATE()
             )');
         foreach ($valid as $row) {
-            $s->bindValue(':code', $postedCode, PDO::PARAM_STR);
+            $s->bindValue(':code', (int) $postedProductCode, PDO::PARAM_INT);
             $s->bindValue(':year', (int) substr($row[3], 0, 4), PDO::PARAM_INT);
             $s->bindValue(':month', (int) substr($row[3], 5, 2), PDO::PARAM_INT);
             $s->bindValue(':day', (int) substr($row[3], 8, 2), PDO::PARAM_INT);
             $s->bindValue(':source', $row[0], PDO::PARAM_STR);
-            $s->bindValue(':price', $row[1]);
-            $s->bindValue(':unit', $unitId, PDO::PARAM_INT);
-            $s->bindValue(':payment_agreement_id', $paymentAgreementId, PDO::PARAM_INT);
+            $s->bindValue(':price', (string) $row[1], PDO::PARAM_STR);
+            $s->bindValue(':unit', (int) $unitId, PDO::PARAM_INT);
+            $s->bindValue(':payment_agreement_id', (int) $paymentAgreementId, PDO::PARAM_INT);
             $s->bindValue(':discountperc', (int) round($row[4]), PDO::PARAM_INT);
-            $s->bindValue(':grossprice', (int) $row[5], PDO::PARAM_INT);
+            $s->bindValue(':grossprice', (string) (int) $row[5], PDO::PARAM_STR);
             $s->bindValue(':opration', (int) $row[6], PDO::PARAM_INT);
-            $s->bindValue(':netamount', (int) $row[7], PDO::PARAM_INT);
+            $s->bindValue(':netamount', (string) (int) $row[7], PDO::PARAM_STR);
             $s->bindValue(':payagrementperc', (int) round($paymentAgreementPercent), PDO::PARAM_INT);
             $s->execute();
         }
