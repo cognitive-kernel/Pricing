@@ -59,7 +59,7 @@ final class MarketPriceCalculator
                 'count' => $count,
                 'prices' => $prices,
                 'used_prices' => $usedPrices,
-                'average_price' => array_sum($usedPrices) / count($usedPrices),
+                'average_price' => $warning ? null : (array_sum($usedPrices) / count($usedPrices)),
                 'warning' => $warning,
                 'rows' => $rowsInGroup,
             ];
