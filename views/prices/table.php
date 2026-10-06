@@ -91,12 +91,13 @@ use App\Support\Jalali;
             <?php foreach ($marketPrices as $group): ?>
                 <div class="mb-2">
                     <strong><?= Security::e((string) ($group['PaymentAgreementTitle'] ?? 'بدون توافق پرداخت')) ?></strong>
-                    · میانگین:
-                    <strong><?= number_format((float) $group['average_price'], 2) ?> <?= Security::e((string) ($p['unit_name'] ?? '')) ?></strong>
                     <?php if (!empty($group['warning'])): ?>
                         <div class="small text-danger fw-bold">
-                            هشدار: اختلاف دو قیمت این توافق پرداخت بیش از دو برابر است.
+                            هشدار: اختلاف دو قیمت این توافق پرداخت بیش از دو برابر است؛ میانگین محاسبه نشده است.
                         </div>
+                    <?php else: ?>
+                        · میانگین:
+                        <strong><?= number_format((float) $group['average_price'], 2) ?> <?= Security::e((string) ($p['unit_name'] ?? '')) ?></strong>
                     <?php endif; ?>
                 </div>
             <?php endforeach; ?>
