@@ -88,12 +88,16 @@ use App\Support\Jalali;
 
     <td>
         <?php if ($marketPrices): ?>
-            <?php foreach ($marketPrices as $pr): ?>
-                <div class="mb-1">
-                    منبع:
-                    <?= Security::e((string) $pr['supplier']) ?>
-                    · <?= number_format((float) $pr['unit_price'], 2) ?> <?= Security::e((string) ($p['unit_name'] ?? '')) ?>
-                    · <?= Security::e(Jalali::fromGregorian($pr['price_received_at'])) ?>
+            <?php foreach ($marketPrices as $group): ?>
+                <div class="mb-2">
+                    <strong><?= Security::e((string) ($group['PaymentAgreementTitle'] ?? 'بدون توافق پرداخت')) ?></strong>
+                    · میانگین:
+                    <strong><?= number_format((float) $group['average_price'], 2) ?> <?= Security::e((string) ($p['unit_name'] ?? '')) ?></strong>
+                    <?php if (!empty($group['warning'])): ?>
+                        <div class="small text-danger fw-bold">
+                            هشدار: اختلاف دو قیمت این توافق پرداخت بیش از دو برابر است.
+                        </div>
+                    <?php endif; ?>
                 </div>
             <?php endforeach; ?>
         <?php else: ?>
