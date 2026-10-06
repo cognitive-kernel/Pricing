@@ -109,7 +109,7 @@ final class MarketGreenExportController
                 $xml .= '<Row>';
                 foreach ($values as $index => $value) {
                     $type = is_numeric($value) && $value !== '' ? 'Number' : 'String';
-                    $style = ($index === 11 || $index === 13 || $index === 14) ? ' ss:StyleID="Decimal6"' : '';
+                    $style = ($index === 12 || $index === 14 || $index === 15) ? ' ss:StyleID="Decimal6"' : '';
                     $xml .= '<Cell' . $style . '><Data ss:Type="' . $type . '">' . htmlspecialchars((string) $value, ENT_XML1 | ENT_QUOTES, 'UTF-8') . '</Data></Cell>';
                 }
                 $xml .= '</Row>';
