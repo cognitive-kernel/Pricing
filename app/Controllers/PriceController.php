@@ -9,6 +9,7 @@ use App\Core\Security;
 use App\Core\View;
 use App\Services\AuditService;
 use App\Services\PermissionService;
+use App\Services\MarketPriceCalculator;
 use App\Services\RahkaranPriceService;
 use App\Support\Jalali;
 use PDO;
@@ -169,12 +170,25 @@ final class PriceController
             $in = implode(',', array_fill(0, count($codes), '?'));
             $s = $pdo->prepare('SELECT m.PriceMonitorID,m.ProductCode,m.InquiryDate,m.Source,m.Price,m.UnitID,m.CreatedDate,m.PaymentAgreementID,m.discountperc,m.grossprice,m.opration,m.netamount,m.payagrementperc FROM ProductPriceMonitor m INNER JOIN (SELECT ProductCode,MAX(InquiryDate) AS latest_date FROM ProductPriceMonitor WHERE ProductCode IN (' . $in . ') GROUP BY ProductCode) latest ON latest.ProductCode=m.ProductCode AND latest.latest_date=m.InquiryDate ORDER BY m.ProductCode,m.InquiryDate DESC,m.PriceMonitorID DESC');
             $s->execute($codes);
-            foreach ($s->fetchAll() as $r) {
+            $marketRows = $s->fetchAll();
+            $agreementIds = array_values(array_unique(array_map(
+                static fn(array $row): int => (int) ($row['PaymentAgreementID'] ?? 0),
+                $marketRows
+            )));
+            $agreementTitles = RahkaranPriceService::instance()->paymentAgreementTitlesByIds($agreementIds);
+
+            foreach ($marketRows as $r) {
                 $r['price_received_at'] = $r['InquiryDate'];
                 $r['supplier'] = $r['Source'];
                 $r['unit_price'] = $r['Price'];
                 $r['unit_id'] = $r['UnitID'];
+                $agreementId = (int) ($r['PaymentAgreementID'] ?? 0);
+                $r['PaymentAgreementTitle'] = $agreementTitles[$agreementId] ?? '';
                 $prices[trim((string) $r['ProductCode'])][] = $r;
+            }
+
+            foreach ($prices as $code => $marketRowsByCode) {
+                $prices[$code] = MarketPriceCalculator::groupByPaymentAgreement($marketRowsByCode);
             }
         }
 
