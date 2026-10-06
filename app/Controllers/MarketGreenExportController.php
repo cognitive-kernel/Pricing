@@ -100,8 +100,8 @@ final class MarketGreenExportController
                     (string) ($r['Announcement_unit'] ?? ''),
                     '', '', '', '', '', '',
                     (string) ($group['PaymentAgreementTitle'] ?? ''),
-                    (float) ($group['average_price'] ?? 0),
-                    'قطعی',
+                    $group['warning'] ? '' : (float) ($group['average_price'] ?? 0),
+                    $group['warning'] ? 'هشدار اختلاف قیمت' : 'قطعی',
                     0,
                     0
                 ];
