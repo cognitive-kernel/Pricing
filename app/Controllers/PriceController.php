@@ -584,8 +584,8 @@ final class PriceController
             if ((string) ($item['has_base_price'] ?? '0') !== '1') continue;
             $code = trim((string) $code);
             $priceText = str_replace(',', '', trim((string) ($item['price'] ?? '')));
-            // A selected row without a price is optional: skip it silently and do not insert it.
-            if ($priceText === '') continue;
+            // Selected rows with an empty or zero price are optional and must not be inserted.
+            if ($priceText === '' || (is_numeric($priceText) && (float) $priceText == 0.0)) continue;
             $dateText = trim((string) ($item['inquiry_date'] ?? ''));
             if ($code === '' || !is_numeric($priceText) || (float) $priceText < 0 || $dateText === '') {
                 http_response_code(422);
