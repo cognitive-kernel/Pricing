@@ -235,24 +235,127 @@ final class PriceController
         Auth::requireLogin();
         PermissionService::require(Auth::userId(), 'prices.view');
 
-        $lists = Database::connection()->query('SELECT id, listcode, listname FROM dbo.SupplierLIST ORDER BY listname')->fetchAll(PDO::FETCH_ASSOC);
+        $pdo = Database::connection();
+        $lists = $pdo->query('SELECT id, listcode, listname FROM dbo.SupplierLIST ORDER BY listname')->fetchAll(PDO::FETCH_ASSOC);
         $selectedCode = trim((string) ($_GET['code'] ?? ''));
         $validCodes = array_map(static fn(array $row): string => trim((string) ($row['listcode'] ?? '')), $lists);
         $members = [];
         $loadError = '';
+        $paymentAgreements = [];
+        $firstAdjustment = (string) ($_GET['first_adjustment'] ?? 'increase');
+        $firstValue = (string) ($_GET['first_value'] ?? '0');
+        $secondAdjustment = (string) ($_GET['second_adjustment'] ?? 'increase');
+        $secondValue = (string) ($_GET['second_value'] ?? '0');
+        if (!in_array($firstAdjustment, ['increase', 'decrease'], true)) {
+            $firstAdjustment = 'increase';
+        }
+        if (!in_array($secondAdjustment, ['increase', 'decrease'], true)) {
+            $secondAdjustment = 'increase';
+        }
+        $selectedPaymentAgreementId = max(0, (int) ($_GET['payment_agreement_id'] ?? 0));
 
         if ($selectedCode !== '' && in_array($selectedCode, $validCodes, true)) {
             try {
-                $members = RahkaranPriceService::instance()->partGroupMembers($selectedCode);
-            } catch (\Throwable $e) {
-                error_log('Rahkaran list members failed: ' . $e->getMessage());
-                $loadError = 'دریافت اقلام از دیتابیس راهکاران ناموفق بود. گزارش خطا در لاگ برنامه ثبت شد.';
+                $service = RahkaranPriceService::instance();
+                $members = $service->partGroupMembers($selectedCode);
+                $paymentAgreements = $service->paymentAgreements();
+
+                $codes = array_values(array_unique(array_filter(array_map(
+                    static fn(array $member): string => trim((string) ($member['code'] ?? '')),
+                    $members
+                ), static fn(string $code): bool => $code !== '')));
+
+                if ($codes) {
+                    $rahkaranRows = $service->allRows();
+                    $rahkaranByCode = [];
+                    foreach ($rahkaranRows as $row) {
+                        $code = trim((string) ($row['Code'] ?? ''));
+                        if ($code !== '' && in_array($code, $codes, true)) {
+                            $rahkaranByCode[$code] = $row;
+                        }
+                    }
+
+                    $in = implode(',', array_fill(0, count($codes), '?'));
+                    $marketQuery = $pdo->prepare(
+                        'SELECT ProductCode, InquiryDate, Source, Price
+                         FROM (
+                             SELECT ProductCode, InquiryDate, Source, Price,
+                                    ROW_NUMBER() OVER (
+                                        PARTITION BY ProductCode
+                                        ORDER BY InquiryDate DESC, PriceMonitorID DESC
+                                    ) AS rn
+                             FROM dbo.ProductPriceMonitor
+                             WHERE ProductCode IN (' . $in . ')
+                         ) latest_market
+                         WHERE rn = 1'
+                    );
+                    $marketQuery->execute($codes);
+                    $marketByCode = [];
+                    foreach ($marketQuery->fetchAll(PDO::FETCH_ASSOC) as $marketRow) {
+                        $marketByCode[trim((string) $marketRow['ProductCode'])] = $marketRow;
+                    }
+
+                    foreach ($members as &$member) {
+                        $code = trim((string) ($member['code'] ?? ''));
+                        $candidates = [];
+                        $rahkaranRow = $rahkaranByCode[$code] ?? [];
+
+                        foreach ([
+                            ['date' => $rahkaranRow['Announcement_date'] ?? null, 'price' => $rahkaranRow['Announcement_price'] ?? null, 'source' => 'اعلامیه راهکاران'],
+                            ['date' => $rahkaranRow['invoice_date'] ?? null, 'price' => $rahkaranRow['invoice_price'] ?? null, 'source' => 'فاکتور راهکاران'],
+                        ] as $candidate) {
+                            if ($candidate['date'] !== null && $candidate['date'] !== '' && $candidate['price'] !== null && is_numeric($candidate['price'])) {
+                                try {
+                                    $candidate['sort_date'] = strtotime(\\App\\Support\\Jalali::toGregorian((string) $candidate['date'])) ?: 0;
+                                    $candidates[] = $candidate;
+                                } catch (\\Throwable $e) {
+                                    // Ignore an invalid Rahkaran date and continue with other available sources.
+                                }
+                            }
+                        }
+
+                        $marketRow = $marketByCode[$code] ?? null;
+                        if ($marketRow && is_numeric($marketRow['Price'] ?? null)) {
+                            $marketDate = $marketRow['InquiryDate'] ?? null;
+                            if ($marketDate instanceof \\DateTimeInterface) {
+                                $marketDate = $marketDate->format('Y-m-d');
+                            }
+                            $candidates[] = [
+                                'date' => $marketDate ? (string) $marketDate : '',
+                                'sort_date' => $marketDate ? (strtotime((string) $marketDate) ?: 0) : 0,
+                                'price' => $marketRow['Price'],
+                                'source' => 'رصد بازار',
+                            ];
+                        }
+
+                        usort($candidates, static fn(array $a, array $b): int => ($b['sort_date'] ?? 0) <=> ($a['sort_date'] ?? 0));
+                        $latest = $candidates[0] ?? null;
+                        $member['latest_price'] = $latest !== null ? (float) $latest['price'] : null;
+                        $member['latest_price_source'] = (string) ($latest['source'] ?? '');
+                        $member['latest_price_date'] = (string) ($latest['date'] ?? '');
+                    }
+                    unset($member);
+                }
+            } catch (\\Throwable $e) {
+                error_log('Rahkaran list members or prices failed: ' . $e->getMessage());
+                $loadError = 'دریافت اقلام یا قیمت‌ها از دیتابیس ناموفق بود. گزارش خطا در لاگ برنامه ثبت شد.';
             }
         } else {
             $selectedCode = '';
         }
 
-        View::render('prices/queue', compact('lists', 'selectedCode', 'members', 'loadError'));
+        View::render('prices/queue', compact(
+            'lists',
+            'selectedCode',
+            'members',
+            'loadError',
+            'paymentAgreements',
+            'selectedPaymentAgreementId',
+            'firstAdjustment',
+            'firstValue',
+            'secondAdjustment',
+            'secondValue'
+        ));
     }
 
     public function history(int $id): void
