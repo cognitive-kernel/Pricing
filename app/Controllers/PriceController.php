@@ -781,7 +781,7 @@ final class PriceController
             Security::redirect('/prices/0/edit?' . $query);
         }
 
-        Security::redirect('/prices');
+        Security::redirect('/prices/list');
     }
 
 
