@@ -234,8 +234,9 @@ final class PriceController
     {
         Auth::requireLogin();
         PermissionService::require(Auth::userId(), 'prices.view');
-        $rows = Database::connection()->query("SELECT TOP 500 q.id,q.product_id,q.score,q.priority_level,q.status,q.assigned_to,q.due_at,q.started_at,q.completed_at,q.result_note,q.reason,p.product_code,p.product_name,u.name unit_name,p.importance FROM price_queue q JOIN products p ON p.id=q.product_id JOIN units u ON u.id=p.unit_id WHERE q.status IN('new','in_progress','needs_followup') ORDER BY q.score DESC,q.updated_at ASC,p.product_code ASC")->fetchAll();
-        View::render('prices/queue', compact('rows'));
+        $lists = Database::connection()->query('SELECT id, listcode, listname FROM dbo.SupplierLIST ORDER BY listname')->fetchAll(PDO::FETCH_ASSOC);
+        $selectedId = (int) ($_GET['id'] ?? 0);
+        View::render('prices/queue', compact('lists', 'selectedId'));
     }
 
     public function history(int $id): void
