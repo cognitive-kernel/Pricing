@@ -93,7 +93,7 @@
                         <td><?= Security::e((string) ($member['name'] ?? '')) ?></td>
                         <td><input class="form-control jalali-date" data-jalali-picker="true" autocomplete="off" inputmode="numeric" name="items[<?= Security::e((string) ($member['code'] ?? '')) ?>][inquiry_date]" value="<?= Security::e($todayJalali) ?>" required></td>
                         <td><?= Security::e((string) ($selectedListName ?? '')) ?></td>
-                        <td><input class="form-control queue-saved-price" name="items[<?= Security::e((string) ($member['code'] ?? '')) ?>][price]" value="<?= ($member['latest_price'] ?? null) !== null ? Security::e((string) $member['latest_price']) : '' ?>" inputmode="decimal" required></td>
+                        <td><input class="form-control queue-saved-price" name="items[<?= Security::e((string) ($member['code'] ?? '')) ?>][price]" value="<?= ($member['latest_price'] ?? null) !== null ? Security::e((string) $member['latest_price']) : '' ?>" inputmode="decimal"></td>
                         <td><?= Security::e((string) ($member['latest_price_source'] ?? '')) ?: '—' ?></td>
                         <td><input class="form-control queue-discount" type="number" min="0" max="100" step="0.01" name="items[<?= Security::e((string) ($member['code'] ?? '')) ?>][discount_percent]" value="0"></td>
                         <td class="queue-gross-price">—</td>
