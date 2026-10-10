@@ -21,15 +21,10 @@ final class MarketGreenExportController
         $pdo = Database::connection();
 
         $latest = [];
-        $sql = 'SELECT m.ProductCode, m.InquiryDate, m.Source, m.Price, m.UnitID, m.CreatedDate, m.PaymentAgreementID
+        $sql = 'SELECT m.PriceMonitorID, m.ProductCode, m.InquiryDate, m.Source, m.Price, m.UnitID, m.CreatedDate, m.PaymentAgreementID
                 FROM ProductPriceMonitor m
-                INNER JOIN (
-                    SELECT ProductCode, MAX(InquiryDate) AS latest_date
-                    FROM ProductPriceMonitor
-                    GROUP BY ProductCode
-                ) latest
-                    ON latest.ProductCode = m.ProductCode
-                   AND latest.latest_date = m.InquiryDate
+                WHERE m.InquiryDate = CONVERT(date, GETDATE())
+                  AND ISNULL(m.isexported, 0) = 0
                 ORDER BY m.ProductCode, m.PaymentAgreementID, m.PriceMonitorID';
         $marketRows = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
         $agreementIds = array_values(array_unique(array_map(
@@ -38,6 +33,7 @@ final class MarketGreenExportController
         )));
         $agreementTitles = RahkaranPriceService::instance()->paymentAgreementTitlesByIds($agreementIds);
 
+        $exportedIds = [];
         foreach ($marketRows as $r) {
             $code = trim((string) ($r['ProductCode'] ?? ''));
             if ($code === '') {
@@ -77,21 +73,15 @@ final class MarketGreenExportController
                 continue;
             }
 
-            $marketDate = $marketRows[0]['InquiryDate'] ?? null;
-            if ($marketDate instanceof \DateTimeInterface) {
-                $marketDate = $marketDate->format('Y-m-d');
-            }
-            $marketTimestamp = strtotime((string) $marketDate);
-            if ($marketTimestamp === false) {
-                continue;
-            }
-
-            $marketDays = max(0, (int) ((time() - $marketTimestamp) / 86400));
-            if ($marketDays >= 7) {
-                continue;
-            }
-
+            // The query limits this export to today's unexported rows.
             $groups = MarketPriceCalculator::groupByPaymentAgreement($marketRows);
+            if (!$groups) {
+                continue;
+            }
+            foreach ($marketRows as $marketRow) {
+                $exportedIds[] = (int) $marketRow['PriceMonitorID'];
+            }
+
             foreach ($groups as $group) {
                 $values = [
                     $code,
@@ -117,6 +107,19 @@ final class MarketGreenExportController
         }
 
         $xml .= '</Table></Worksheet></Workbook>';
+
+        // Mark only records represented in the generated workbook as exported.
+        $exportedIds = array_values(array_unique(array_filter($exportedIds, static fn(int $id): bool => $id > 0)));
+        if ($exportedIds) {
+            $placeholders = implode(',', array_fill(0, count($exportedIds), '?'));
+            $update = $pdo->prepare(
+                'UPDATE ProductPriceMonitor
+                 SET isexported = 1
+                 WHERE ISNULL(isexported, 0) = 0
+                   AND PriceMonitorID IN (' . $placeholders . ')'
+            );
+            $update->execute($exportedIds);
+        }
 
         header('Content-Type: application/vnd.ms-excel; charset=UTF-8');
         header('Content-Disposition: attachment; filename="green-market-prices.xls"');
