@@ -10,7 +10,7 @@
         <div class="row g-3">
             <?php foreach ($tiles as $tile): ?>
                 <div class="col-12 col-sm-6 col-xl-4">
-                    <a class="card h-100 text-decoration-none shadow-sm border-0" href="<?= \App\Core\Security::e($tile['url']) ?>">
+                    <a class="card h-100 text-decoration-none shadow-sm border-0" href="<?= \App\Core\Security::e($tile['url']) ?>" target="_blank" rel="noopener noreferrer">
                         <div class="card-body p-4">
                             <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
                                 <span class="badge text-bg-<?= \App\Core\Security::e($tile['tone']) ?> px-3 py-2">
