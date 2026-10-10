@@ -57,16 +57,17 @@ $(function(){
         if(agreementCell && agreement){
           agreementCell.textContent=agreement.selectedIndex>0?agreement.options[agreement.selectedIndex].text:'—';
         }
-        if(!check || !check.checked || raw==='' || !Number.isFinite(Number(raw))){
-          if(priceInput) priceInput.value=raw;
+        const manuallyEdited=priceInput && priceInput.dataset.manualPrice==='1';
+        const enteredPrice=manuallyEdited?priceInput.value:raw;
+        if(!check || !check.checked || enteredPrice==='' || !Number.isFinite(Number(enteredPrice))){
           if(grossCell) grossCell.textContent='—';
           if(finalCell) finalCell.childNodes[0].textContent='—';
           return;
         }
-        const base=Number(raw);
-        const stageOne=adjust(base,firstType.value,Number.parseFloat(firstValue.value));
-        const finalPrice=adjust(stageOne,secondType.value,Number.parseFloat(secondValue.value));
-        if(priceInput) priceInput.value=finalPrice.toFixed(2);
+        const base=Number(enteredPrice);
+        const stageOne=manuallyEdited?base:adjust(base,firstType.value,Number.parseFloat(firstValue.value));
+        const finalPrice=manuallyEdited?base:adjust(stageOne,secondType.value,Number.parseFloat(secondValue.value));
+        if(priceInput && !manuallyEdited) priceInput.value=finalPrice.toFixed(2);
         const discount=Number.parseFloat(row.querySelector('.queue-discount')?.value||'0')||0;
         const gross=finalPrice-(finalPrice*discount/100);
         const operationControl=row.querySelector('.queue-operation');
@@ -85,9 +86,15 @@ $(function(){
       control.addEventListener('change',render);
     });
     table.addEventListener('input',function(event){
+      if(event.target.matches('.queue-saved-price')){
+        event.target.dataset.manualPrice='1';
+      }
       if(event.target.matches('.queue-discount,.queue-saved-price,.queue-agreement-percent')) render();
     });
     table.addEventListener('change',function(event){
+      if(event.target.matches('.queue-saved-price')){
+        event.target.dataset.manualPrice='1';
+      }
       if(event.target.matches('.queue-discount,.queue-operation,.queue-saved-price,.queue-agreement-percent')) render();
     });
     render();
