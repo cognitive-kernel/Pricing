@@ -23,9 +23,9 @@
 <td><?=Security::e($r['Source'])?></td>
 <td><?=number_format((float)$r['Price'],2)?></td>
 <td><?=Security::e((string)($r['discountperc'] ?? 0))?>%</td>
-<td><?=number_format((float)($r['grossprice'] ?? 0),0)?></td>
+<td><?=number_format((float)($r['grossprice'] ?? 0),2)?></td>
 <td><?=$isAddOperation ? 'جمع' : 'منها'?></td>
-<td><?=number_format((float)($r['netamount'] ?? 0),0)?></td>
+<td><?=number_format((float)($r['netamount'] ?? 0),2)?></td>
 <td><?=Security::e((string)($product['unit_name'] ?? ''))?></td>
 <td><?=Security::e((string)($r['PaymentAgreementTitle'] ?? ''))?></td>
 <td><?=Security::e(\App\Support\Jalali::fromGregorian($r['CreatedDate']))?></td>
