@@ -6,6 +6,23 @@ $(function(){
     if(select && select.value !== '') select.form.requestSubmit();
   });
 
+  document.addEventListener('change',function(event){
+    if(event.target && event.target.id==='queue-select-all'){
+      document.querySelectorAll('#queue-items-table .queue-item-select').forEach(function(box){
+        box.checked=event.target.checked;
+      });
+      if(typeof window.renderQueuePricePreview==='function') window.renderQueuePricePreview();
+    } else if(event.target && event.target.classList.contains('queue-item-select')){
+      const boxes=Array.from(document.querySelectorAll('#queue-items-table .queue-item-select'));
+      const all=document.getElementById('queue-select-all');
+      if(all){
+        all.checked=boxes.length>0 && boxes.every(function(box){return box.checked;});
+        all.indeterminate=boxes.some(function(box){return box.checked;}) && !all.checked;
+      }
+      if(typeof window.renderQueuePricePreview==='function') window.renderQueuePricePreview();
+    }
+  });
+
   function initQueuePricePreview(){
     const table=document.getElementById('queue-items-table');
     if(!table) return;
@@ -22,7 +39,13 @@ $(function(){
 
     function render(){
       table.querySelectorAll('.queue-price-row').forEach(function(row){
+        const selected=row.querySelector('.queue-item-select');
         const raw=row.dataset.basePrice;
+        if(!selected || !selected.checked){
+          row.querySelector('.queue-first-price').textContent='—';
+          row.querySelector('.queue-final-price').textContent='—';
+          return;
+        }
         const firstCell=row.querySelector('.queue-first-price');
         const finalCell=row.querySelector('.queue-final-price');
         if(raw==='' || !Number.isFinite(Number(raw))){
@@ -38,6 +61,7 @@ $(function(){
       });
     }
 
+    window.renderQueuePricePreview=render;
     [firstType,firstValue,secondType,secondValue].forEach(function(control){
       control.addEventListener('input',render);
       control.addEventListener('change',render);
