@@ -11,6 +11,7 @@
         </select>
     </form>
 </div>
+<?php if (!empty($loadError)): ?><div class="alert alert-danger mt-3"><?= Security::e($loadError) ?></div><?php endif; ?>
 <?php if ($selectedCode !== ''): ?>
     <div class="card mt-3">
         <div class="card-header">اقلام لیست انتخاب‌شده</div>
