@@ -238,6 +238,13 @@ final class PriceController
         $pdo = Database::connection();
         $lists = $pdo->query('SELECT id, listcode, listname FROM dbo.SupplierLIST ORDER BY listname')->fetchAll(PDO::FETCH_ASSOC);
         $selectedCode = trim((string) ($_GET['code'] ?? ''));
+        $selectedListName = '';
+        foreach ($lists as $listOption) {
+            if (trim((string) ($listOption['listcode'] ?? '')) === $selectedCode) {
+                $selectedListName = (string) ($listOption['listname'] ?? '');
+                break;
+            }
+        }
         $validCodes = array_map(static fn(array $row): string => trim((string) ($row['listcode'] ?? '')), $lists);
         $members = [];
         $loadError = '';
@@ -323,6 +330,7 @@ final class PriceController
 
                         usort($candidates, static fn(array $a, array $b): int => ($b['sort_date'] ?? 0) <=> ($a['sort_date'] ?? 0));
                         $latest = $candidates[0] ?? null;
+                        $member['unit_id'] = (int) ($rahkaranRow['Announcement_unit_id'] ?? 0);
                         $member['latest_price'] = $latest !== null ? (float) $latest['price'] : null;
                         $member['latest_price_source'] = (string) ($latest['source'] ?? '');
                         $member['latest_price_date'] = (string) ($latest['date'] ?? '');
@@ -340,6 +348,7 @@ final class PriceController
         View::render('prices/queue', compact(
             'lists',
             'selectedCode',
+            'selectedListName',
             'members',
             'loadError',
             'paymentAgreements',
