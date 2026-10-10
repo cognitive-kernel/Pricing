@@ -13,6 +13,7 @@
     </form>
 </div>
 
+<?php if (isset($_GET['saved']) && (int) $_GET['saved'] > 0): ?><div class="alert alert-success mt-3"><?= (int) $_GET['saved'] ?> کالا ثبت شد.</div><?php endif; ?>
 <?php if (!empty($loadError)): ?>
     <div class="alert alert-danger mt-3"><?= Security::e($loadError) ?></div>
 <?php endif; ?>
@@ -92,7 +93,7 @@
                         <td class="queue-gross-price">—</td>
                         <td><select class="form-select queue-operation" name="items[<?= Security::e((string) ($member['code'] ?? '')) ?>][operation]"><option value="1">جمع</option><option value="0">منها</option></select></td>
                         <td class="queue-final-price fw-bold">—<input type="hidden" class="queue-agreement-percent" name="items[<?= Security::e((string) ($member['code'] ?? '')) ?>][agreement_percent]" value="0"></td>
-                        <td><?= (int) ($member['unit_id'] ?? 0) ?></td>
+                        <td><?= Security::e((string) ($member['unit_name'] ?? '')) ?: (int) ($member['unit_id'] ?? 0) ?></td>
                         <td class="queue-agreement-title">—</td>
                         <td><?= Security::e($todayJalali) ?></td>
                     </tr>
