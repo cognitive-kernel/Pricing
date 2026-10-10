@@ -67,13 +67,17 @@
         <div class="table-responsive">
             <table class="table table-striped table-hover align-middle mb-0" id="queue-items-table">
                 <thead>
-                    <tr><th>کد</th><th>نام کالا</th><th>قیمت مبنا</th><th>منبع قیمت</th><th>تاریخ قیمت</th><th>قیمت پس از مرحله اول</th><th>قیمت نهایی</th></tr>
+                    <tr>
+                        <th><input type="checkbox" id="queue-select-all" aria-label="انتخاب همه کالاها" title="انتخاب همه کالاها"></th>
+                        <th>کد</th><th>نام کالا</th><th>قیمت مبنا</th><th>منبع قیمت</th><th>تاریخ قیمت</th><th>قیمت پس از مرحله اول</th><th>قیمت نهایی</th>
+                    </tr>
                 </thead>
                 <tbody>
                 <?php if (!$members): ?>
-                    <tr><td colspan="7" class="text-center">موردی برای نمایش وجود ندارد.</td></tr>
+                    <tr><td colspan="8" class="text-center">موردی برای نمایش وجود ندارد.</td></tr>
                 <?php else: foreach ($members as $member): ?>
                     <tr class="queue-price-row" data-base-price="<?= ($member['latest_price'] ?? null) !== null ? Security::e((string) $member['latest_price']) : '' ?>">
+                        <td><input type="checkbox" class="queue-item-select" aria-label="انتخاب کالا <?= Security::e((string) ($member['code'] ?? '')) ?>"></td>
                         <td><?= Security::e((string) ($member['code'] ?? '')) ?></td>
                         <td><?= Security::e((string) ($member['name'] ?? '')) ?></td>
                         <td class="queue-base-price"><?= ($member['latest_price'] ?? null) !== null ? number_format((float) $member['latest_price'], 2) : '—' ?></td>
