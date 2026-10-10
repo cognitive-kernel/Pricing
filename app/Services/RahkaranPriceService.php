@@ -70,6 +70,50 @@ final class RahkaranPriceService
         return $this->pdo->query($sql)->fetchAll();
     }
 
+    public function rowsByCodes(array $codes): array
+    {
+        $wanted = array_values(array_unique(array_filter(array_map(
+            static fn($code): string => trim((string) $code),
+            $codes
+        ), static fn(string $code): bool => $code !== '')));
+
+        if (!$wanted) {
+            return [];
+        }
+
+        $queryFile = BASE_PATH . '/database/queries/stock_with_latest_prices.sql';
+        $sql = (string) file_get_contents($queryFile);
+
+        $plant = (int) ($this->config['plant_ref'] ?? env('RAHKARAN_PLANT_REF', 2));
+        $ledger = (int) ($this->config['ledger_ref'] ?? env('RAHKARAN_LEDGER_REF', 1));
+        $fiscalYear = (int) ($this->config['fiscal_year_ref'] ?? env('RAHKARAN_FISCAL_YEAR_REF', 9));
+
+        $sql = preg_replace('/DECLARE\\s+@PlantRef\\s+BIGINT\\s*=\\s*\\d+\\s*;/i', 'DECLARE @PlantRef BIGINT = ' . $plant . ';', $sql, 1);
+        $sql = preg_replace('/DECLARE\\s+@LedgerRef\\s+BIGINT\\s*=\\s*\\d+\\s*;/i', 'DECLARE @LedgerRef BIGINT = ' . $ledger . ';', $sql, 1);
+        $sql = preg_replace('/DECLARE\\s+@FiscalYearRef\\s+BIGINT\\s*=\\s*\\d+\\s*;/i', 'DECLARE @FiscalYearRef BIGINT = ' . $fiscalYear . ';', $sql, 1);
+
+        $orderBy = 'ORDER BY s.PartID DESC;';
+        $position = strripos($sql, $orderBy);
+        if ($position === false) {
+            throw new \\RuntimeException('Unable to apply product filter to Rahkaran price query.');
+        }
+
+        $filter = 'WHERE s.Code IN (' . implode(',', array_fill(0, count($wanted), '?')) . ')\\n';
+        $sql = substr_replace($sql, $filter, $position, 0);
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute($wanted);
+
+        $rows = [];
+        foreach ($statement->fetchAll() as $row) {
+            $code = trim((string) ($row['Code'] ?? ''));
+            if ($code !== '') {
+                $rows[$code] = $row;
+            }
+        }
+
+        return $rows;
+    }
+
     public function unitIdByCode(string $code): ?int
     {
         $code = trim($code);
