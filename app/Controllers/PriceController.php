@@ -239,14 +239,20 @@ final class PriceController
         $selectedCode = trim((string) ($_GET['code'] ?? ''));
         $validCodes = array_map(static fn(array $row): string => trim((string) ($row['listcode'] ?? '')), $lists);
         $members = [];
+        $loadError = '';
 
         if ($selectedCode !== '' && in_array($selectedCode, $validCodes, true)) {
-            $members = RahkaranPriceService::instance()->partGroupMembers($selectedCode);
+            try {
+                $members = RahkaranPriceService::instance()->partGroupMembers($selectedCode);
+            } catch (\\Throwable $e) {
+                error_log('Rahkaran list members failed: ' . $e->getMessage());
+                $loadError = 'دریافت اقلام از دیتابیس راهکاران ناموفق بود. گزارش خطا در لاگ برنامه ثبت شد.';
+            }
         } else {
             $selectedCode = '';
         }
 
-        View::render('prices/queue', compact('lists', 'selectedCode', 'members'));
+        View::render('prices/queue', compact('lists', 'selectedCode', 'members', 'loadError'));
     }
 
     public function history(int $id): void
