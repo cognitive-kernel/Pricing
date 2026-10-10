@@ -147,4 +147,23 @@ final class RahkaranPriceService
         }
         return $result;
     }
+
+    public function partGroupMembers(string $groupRef): array
+    {
+        $groupRef = trim($groupRef);
+        if ($groupRef === '') {
+            return [];
+        }
+
+        $s = $this->pdo->prepare(
+            'SELECT p.code, p.name
+             FROM [LGS3].[PartGroupMember] AS pgm
+             LEFT JOIN [LGS3].[Part] AS p ON p.PartID = pgm.MemberID
+             WHERE pgm.GroupRef = :groupRef
+             ORDER BY p.code'
+        );
+        $s->execute(['groupRef' => $groupRef]);
+
+        return $s->fetchAll();
+    }
 }
