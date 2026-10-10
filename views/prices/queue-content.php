@@ -29,14 +29,14 @@
             <div class="row g-3 align-items-end">
                 <div class="col-md-3">
                     <label for="first-adjustment" class="form-label">مرحله اول</label>
-                    <select id="first-adjustment" class="form-select">
+                    <select id="first-adjustment" name="first_adjustment" class="form-select">
                         <option value="increase" <?= $firstAdjustment === 'increase' ? 'selected' : '' ?>>افزایش</option>
                         <option value="decrease" <?= $firstAdjustment === 'decrease' ? 'selected' : '' ?>>کاهش</option>
                     </select>
                 </div>
                 <div class="col-md-3">
                     <label for="first-value" class="form-label">درصد افزایش یا کاهش</label>
-                    <input id="first-value" type="number" min="0" step="any" inputmode="decimal" class="form-control" value="<?= Security::e($firstValue) ?>">
+                    <input id="first-value" name="first_value" type="number" min="0" step="any" inputmode="decimal" class="form-control" value="<?= Security::e($firstValue) ?>">
                 </div>
                 <div class="col-md-3">
                     <label for="queue-master-inquiry-date" class="form-label">تاریخ رصد همه کالاها</label>
@@ -63,7 +63,7 @@
                 </div>
                 <div class="col-md-3">
                     <label for="second-value" class="form-label">درصد افزایش یا کاهش</label>
-                    <input id="second-value" type="number" min="0" step="any" inputmode="decimal" class="form-control" value="<?= Security::e($secondValue) ?>">
+                    <input id="second-value" name="second_value" type="number" min="0" step="any" inputmode="decimal" class="form-control" value="<?= Security::e($secondValue) ?>">
                 </div>
                 <div class="col-md-6">
                     <div class="small text-muted">ثبت فقط برای کالاهای انتخاب‌شده انجام می‌شود.</div>
