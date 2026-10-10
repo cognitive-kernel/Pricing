@@ -331,6 +331,7 @@ final class PriceController
                         usort($candidates, static fn(array $a, array $b): int => ($b['sort_date'] ?? 0) <=> ($a['sort_date'] ?? 0));
                         $latest = $candidates[0] ?? null;
                         $member['unit_id'] = (int) ($rahkaranRow['Announcement_unit_id'] ?? 0);
+                        $member['unit_name'] = (string) ($rahkaranRow['Announcement_unit'] ?? '');
                         $member['latest_price'] = $latest !== null ? (float) $latest['price'] : null;
                         $member['latest_price_source'] = (string) ($latest['source'] ?? '');
                         $member['latest_price_date'] = (string) ($latest['date'] ?? '');
