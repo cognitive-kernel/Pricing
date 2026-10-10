@@ -95,10 +95,10 @@ final class RahkaranPriceService
         $orderBy = 'ORDER BY s.PartID DESC;';
         $position = strripos($sql, $orderBy);
         if ($position === false) {
-            throw new \\RuntimeException('Unable to apply product filter to Rahkaran price query.');
+            throw new \RuntimeException('Unable to apply product filter to Rahkaran price query.');
         }
 
-        $filter = 'WHERE s.Code IN (' . implode(',', array_fill(0, count($wanted), '?')) . ')\\n';
+        $filter = 'WHERE s.Code IN (' . implode(',', array_fill(0, count($wanted), '?')) . ')' . PHP_EOL;
         $sql = substr_replace($sql, $filter, $position, 0);
         $statement = $this->pdo->prepare($sql);
         $statement->execute($wanted);
