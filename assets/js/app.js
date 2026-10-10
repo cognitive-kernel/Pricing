@@ -87,15 +87,23 @@ $(function(){
       control.addEventListener('input',function(){render('global');});
       control.addEventListener('change',function(){render('global');});
     });
-    if(secondType){
-      secondType.addEventListener('change',function(){
-        table.querySelectorAll('.queue-price-row').forEach(function(row){
-          const check=row.querySelector('.queue-item-select');
-          const op=row.querySelector('.queue-operation');
-          if(check?.checked && op) op.value=secondType.value==='decrease'?'0':'1';
-        });
-        render('global');
+    function syncSecondStageToSelectedRows(){
+      table.querySelectorAll('.queue-price-row').forEach(function(row){
+        const check=row.querySelector('.queue-item-select');
+        if(!check?.checked) return;
+        const op=row.querySelector('.queue-operation');
+        const discountInput=row.querySelector('.queue-discount');
+        if(op) op.value=secondType?.value==='decrease'?'0':'1';
+        if(discountInput && secondValue) discountInput.value=secondValue.value;
       });
+      render('global');
+    }
+    if(secondType){
+      secondType.addEventListener('change',syncSecondStageToSelectedRows);
+    }
+    if(secondValue){
+      secondValue.addEventListener('input',syncSecondStageToSelectedRows);
+      secondValue.addEventListener('change',syncSecondStageToSelectedRows);
     }
     table.addEventListener('input',function(event){
       if(event.target.matches('.queue-saved-price,.queue-discount,.queue-agreement-percent')) {
