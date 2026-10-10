@@ -1,5 +1,10 @@
 $(function(){
   const JALALI_MONTHS=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+
+  document.addEventListener('change',function(event){
+    const select=event.target.closest('form[data-auto-submit-on-change] select');
+    if(select && select.value !== '') select.form.requestSubmit();
+  });
   const WEEKDAYS=['ش','ی','د','س','چ','پ','ج'];
 
   function div(a,b){ return Math.floor(a/b); }
