@@ -26,45 +26,55 @@ $(function(){
   function initQueuePricePreview(){
     const table=document.getElementById('queue-items-table');
     if(!table) return;
-
     const firstType=document.getElementById('first-adjustment');
     const firstValue=document.getElementById('first-value');
     const secondType=document.getElementById('second-adjustment');
     const secondValue=document.getElementById('second-value');
-
-    function applyAdjustment(price,type,percent){
+    const agreement=document.getElementById('queue-payment-agreement');
+    function adjust(price,type,percent){
       const factor=Math.max(0,Number.isFinite(percent)?percent:0)/100;
-      return type==='decrease' ? price*(1-factor) : price*(1+factor);
+      return type==='decrease'?price*(1-factor):price*(1+factor);
     }
-
     function render(){
       table.querySelectorAll('.queue-price-row').forEach(function(row){
-        const selected=row.querySelector('.queue-item-select');
+        const check=row.querySelector('.queue-item-select');
+        const priceInput=row.querySelector('.queue-saved-price');
         const raw=row.dataset.basePrice;
-        if(!selected || !selected.checked){
-          row.querySelector('.queue-first-price').textContent='—';
-          row.querySelector('.queue-final-price').textContent='—';
-          return;
-        }
-        const firstCell=row.querySelector('.queue-first-price');
+        const grossCell=row.querySelector('.queue-gross-price');
         const finalCell=row.querySelector('.queue-final-price');
-        if(raw==='' || !Number.isFinite(Number(raw))){
-          firstCell.textContent='—';
-          finalCell.textContent='—';
+        const agreementCell=row.querySelector('.queue-agreement-title');
+        if(agreementCell && agreement){
+          agreementCell.textContent=agreement.selectedIndex>0?agreement.options[agreement.selectedIndex].text:'—';
+        }
+        if(!check || !check.checked || raw==='' || !Number.isFinite(Number(raw))){
+          if(priceInput) priceInput.value=raw;
+          if(grossCell) grossCell.textContent='—';
+          if(finalCell) finalCell.childNodes[0].textContent='—';
           return;
         }
         const base=Number(raw);
-        const afterFirst=applyAdjustment(base,firstType.value,Number.parseFloat(firstValue.value));
-        const finalPrice=applyAdjustment(afterFirst,secondType.value,Number.parseFloat(secondValue.value));
-        firstCell.textContent=afterFirst.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-        finalCell.textContent=finalPrice.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+        const stageOne=adjust(base,firstType.value,Number.parseFloat(firstValue.value));
+        const finalPrice=adjust(stageOne,secondType.value,Number.parseFloat(secondValue.value));
+        if(priceInput) priceInput.value=finalPrice.toFixed(2);
+        const discount=Number.parseFloat(row.querySelector('.queue-discount')?.value||'0')||0;
+        const gross=finalPrice-(finalPrice*discount/100);
+        const op=row.querySelector('.queue-operation')?.value||'1';
+        const agreementPercent=Number.parseFloat(row.querySelector('.queue-agreement-percent')?.value||'0')||0;
+        const net=op==='1'?gross+(gross*agreementPercent/100):gross-(gross*agreementPercent/100);
+        if(grossCell) grossCell.textContent=gross.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+        if(finalCell) finalCell.childNodes[0].textContent=net.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
       });
     }
-
     window.renderQueuePricePreview=render;
-    [firstType,firstValue,secondType,secondValue].forEach(function(control){
+    [firstType,firstValue,secondType,secondValue,agreement].filter(Boolean).forEach(function(control){
       control.addEventListener('input',render);
       control.addEventListener('change',render);
+    });
+    table.addEventListener('input',function(event){
+      if(event.target.matches('.queue-discount,.queue-saved-price,.queue-agreement-percent')) render();
+    });
+    table.addEventListener('change',function(event){
+      if(event.target.matches('.queue-discount,.queue-operation,.queue-saved-price,.queue-agreement-percent')) render();
     });
     render();
   }
