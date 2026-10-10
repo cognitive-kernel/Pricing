@@ -558,6 +558,13 @@ final class PriceController
         $listName = trim((string) ($_POST['list_name'] ?? ''));
         $agreementId = (int) ($_POST['payment_agreement_id'] ?? 0);
         $items = $_POST['items'] ?? [];
+        $firstAdjustment = (string) ($_POST['first_adjustment'] ?? 'increase');
+        $firstValue = (float) ($_POST['first_value'] ?? 0);
+        $secondValue = (float) ($_POST['second_value'] ?? 0);
+        if (!in_array($firstAdjustment, ['increase', 'decrease'], true) || $firstValue < 0 || $secondValue < 0) {
+            http_response_code(422);
+            exit('درصدهای تنظیم قیمت نامعتبر است.');
+        }
         if ($listCode === '' || $listName === '' || $agreementId < 1 || !is_array($items)) {
             http_response_code(422);
             exit('لیست، توافق پرداخت و اقلام معتبر الزامی است.');
@@ -594,8 +601,16 @@ final class PriceController
                 http_response_code(422);
                 exit('درصد تخفیف یا عملیات نامعتبر است.');
             }
-            $gross = round($price - $price * $discount / 100, 2);
-            $net = round($operation === '1' ? $gross + $gross * $agreementPercent / 100 : $gross - $gross * $agreementPercent / 100, 2);
+            $stageOneFactor = $firstValue / 100;
+            $stageOnePrice = $firstAdjustment === 'decrease'
+                ? $price * (1 - $stageOneFactor)
+                : $price * (1 + $stageOneFactor);
+            $gross = round($stageOnePrice - $stageOnePrice * $discount / 100, 2);
+            $stageTwoFactor = $secondValue / 100;
+            $stageTwoPrice = $operation === '1'
+                ? $gross * (1 + $stageTwoFactor)
+                : $gross * (1 - $stageTwoFactor);
+            $net = round($operation === '1' ? $stageTwoPrice + $stageTwoPrice * $agreementPercent / 100 : $stageTwoPrice - $stageTwoPrice * $agreementPercent / 100, 2);
             $insert->execute(['code'=>$code,'date'=>$date,'source'=>$listName,'price'=>$price,'unit'=>$unitId,'agreement'=>$agreementId,'discount'=>$discount,'gross'=>$gross,'operation'=>(int)$operation,'net'=>$net,'agreement_percent'=>$agreementPercent,'userid'=>Auth::userId()]);
             $saved++;
         }
