@@ -90,9 +90,9 @@ $(function(){
     function syncSecondStageToSelectedRows(){
       table.querySelectorAll('.queue-price-row').forEach(function(row){
         const check=row.querySelector('.queue-item-select');
-        if(!check?.checked) return;
         const op=row.querySelector('.queue-operation');
         const discountInput=row.querySelector('.queue-discount');
+        if(!check?.checked) return;
         if(op) op.value=secondType?.value==='decrease'?'0':'1';
         if(discountInput && secondValue) discountInput.value=secondValue.value;
       });
