@@ -580,7 +580,7 @@ final class PriceController
                 exit('قیمت و تاریخ رصد برای هر کالای انتخاب‌شده الزامی است.');
             }
             try { $date = Jalali::toGregorian($dateText); }
-            catch (\\Throwable $e) { http_response_code(422); exit('تاریخ رصد نامعتبر است.'); }
+            catch (\Throwable $e) { http_response_code(422); exit('تاریخ رصد نامعتبر است.'); }
             $unitId = $service->unitIdByCode($code);
             if ($unitId === null) { http_response_code(422); exit('واحد کالا در راهکاران پیدا نشد: ' . Security::e($code)); }
             $price = round((float) $priceText, 2);
