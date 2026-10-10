@@ -538,6 +538,60 @@ final class PriceController
         return 3;
     }
 
+    public function saveQueue(): void
+    {
+        Auth::requireLogin();
+        PermissionService::require(Auth::userId(), 'prices.edit');
+        Security::verifyCsrf();
+        $pdo = Database::connection();
+        $listCode = trim((string) ($_POST['list_code'] ?? ''));
+        $listName = trim((string) ($_POST['list_name'] ?? ''));
+        $agreementId = (int) ($_POST['payment_agreement_id'] ?? 0);
+        $items = $_POST['items'] ?? [];
+        if ($listCode === '' || $listName === '' || $agreementId < 1 || !is_array($items)) {
+            http_response_code(422);
+            exit('لیست، توافق پرداخت و اقلام معتبر الزامی است.');
+        }
+        $listQuery = $pdo->prepare('SELECT COUNT(*) FROM dbo.SupplierLIST WHERE listcode=:code AND listname=:name');
+        $listQuery->execute(['code' => $listCode, 'name' => $listName]);
+        if ((int) $listQuery->fetchColumn() < 1) {
+            http_response_code(422);
+            exit('لیست انتخاب‌شده معتبر نیست.');
+        }
+        $service = RahkaranPriceService::instance();
+        $insert = $pdo->prepare('INSERT INTO dbo.ProductPriceMonitor(ProductCode,InquiryDate,Source,Price,UnitID,PaymentAgreementID,discountperc,grossprice,opration,netamount,payagrementperc,userid,isexported,CreatedDate) VALUES(:code,:date,:source,:price,:unit,:agreement,:discount,:gross,:operation,:net,:agreement_percent,:userid,0,GETDATE())');
+        $saved = 0;
+        foreach ($items as $code => $item) {
+            if (!is_array($item) || empty($item['selected'])) continue;
+            $code = trim((string) $code);
+            $priceText = str_replace(',', '', trim((string) ($item['price'] ?? '')));
+            $dateText = trim((string) ($item['inquiry_date'] ?? ''));
+            if ($code === '' || !is_numeric($priceText) || (float) $priceText < 0 || $dateText === '') {
+                http_response_code(422);
+                exit('قیمت و تاریخ رصد برای هر کالای انتخاب‌شده الزامی است.');
+            }
+            try { $date = Jalali::toGregorian($dateText); }
+            catch (\\Throwable $e) { http_response_code(422); exit('تاریخ رصد نامعتبر است.'); }
+            $unitId = $service->unitIdByCode($code);
+            if ($unitId === null) { http_response_code(422); exit('واحد کالا در راهکاران پیدا نشد: ' . Security::e($code)); }
+            $price = round((float) $priceText, 2);
+            $discount = (float) ($item['discount_percent'] ?? 0);
+            $agreementPercent = (float) ($item['agreement_percent'] ?? 0);
+            $operation = (string) ($item['operation'] ?? '1');
+            if ($discount < 0 || $discount > 100 || $agreementPercent < 0 || !in_array($operation, ['0','1'], true)) {
+                http_response_code(422);
+                exit('درصد تخفیف یا عملیات نامعتبر است.');
+            }
+            $gross = round($price - $price * $discount / 100, 2);
+            $net = round($operation === '1' ? $gross + $gross * $agreementPercent / 100 : $gross - $gross * $agreementPercent / 100, 2);
+            $insert->execute(['code'=>$code,'date'=>$date,'source'=>$listName,'price'=>$price,'unit'=>$unitId,'agreement'=>$agreementId,'discount'=>$discount,'gross'=>$gross,'operation'=>(int)$operation,'net'=>$net,'agreement_percent'=>$agreementPercent,'userid'=>Auth::userId()]);
+            $saved++;
+        }
+        if ($saved < 1) { http_response_code(422); exit('حداقل یک کالا را انتخاب کنید.'); }
+        AuditService::log(Auth::userId(), 'price.monitor.queue.create', 'ProductPriceMonitor', $listCode, null, ['list_code'=>$listCode,'count'=>$saved]);
+        Security::redirect('/prices/queue?code=' . rawurlencode($listCode) . '&saved=' . $saved);
+    }
+
     public function save(?int $id = null): void
     {
         Auth::requireLogin();
