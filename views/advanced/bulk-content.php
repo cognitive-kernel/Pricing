@@ -16,6 +16,11 @@
 <?php if ($selectedCode !== ''): ?>
     <div class="card mt-3">
         <div class="card-header">اقلام شرکت انتخاب‌شده</div>
+        <div class="p-3 pb-0">
+            <label for="company-items-search" class="form-label">جستجو در اقلام بارگذاری‌شده</label>
+            <input type="search" id="company-items-search" class="form-control" placeholder="جستجو بر اساس کد، نام یا واحد..." autocomplete="off">
+            <div class="form-text" id="company-items-search-count" aria-live="polite"></div>
+        </div>
         <div class="table-responsive">
             <table class="table table-striped table-hover align-middle mb-0" id="company-items-table">
                 <thead><tr><th>کد</th><th>نام</th><th>تاریخ رصد</th><th>منبع</th><th>توافق پرداخت</th><th>واحد</th><th>مبلغ نهایی</th><th>ثبت</th></tr></thead>
