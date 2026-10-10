@@ -73,10 +73,10 @@
                 <?php if (!$members): ?>
                     <tr><td colspan="7" class="text-center">موردی برای نمایش وجود ندارد.</td></tr>
                 <?php else: foreach ($members as $member): ?>
-                    <tr class="queue-price-row" data-base-price="<?= $member['latest_price'] !== null ? Security::e((string) $member['latest_price']) : '' ?>">
+                    <tr class="queue-price-row" data-base-price="<?= ($member['latest_price'] ?? null) !== null ? Security::e((string) $member['latest_price']) : '' ?>">
                         <td><?= Security::e((string) ($member['code'] ?? '')) ?></td>
                         <td><?= Security::e((string) ($member['name'] ?? '')) ?></td>
-                        <td class="queue-base-price"><?= $member['latest_price'] !== null ? number_format((float) $member['latest_price'], 2) : '—' ?></td>
+                        <td class="queue-base-price"><?= ($member['latest_price'] ?? null) !== null ? number_format((float) $member['latest_price'], 2) : '—' ?></td>
                         <td><?= Security::e((string) ($member['latest_price_source'] ?? '')) ?: '—' ?></td>
                         <td><?= Security::e((string) ($member['latest_price_date'] ?? '')) ?: '—' ?></td>
                         <td class="queue-first-price">—</td>
