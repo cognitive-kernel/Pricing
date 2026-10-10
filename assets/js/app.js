@@ -82,6 +82,9 @@ $(function(){
       if(!row.dataset.queueSecondStageDefaultsSaved){
         row.dataset.queueOriginalOperation=op?op.value:'';
         row.dataset.queueOriginalDiscount=discountInput?discountInput.value:'';
+        row.dataset.queueOriginalGross=row.querySelector('.queue-gross-price')?.textContent||'—';
+        const finalCell=row.querySelector('.queue-final-price');
+        row.dataset.queueOriginalFinal=finalCell?.childNodes[0]?.textContent||'—';
         row.dataset.queueSecondStageDefaultsSaved='1';
       }
       if(op)op.value=secondType?.value==='decrease'?'0':'1';
@@ -94,7 +97,10 @@ $(function(){
       const discountInput=row.querySelector('.queue-discount');
       if(op)op.value=row.dataset.queueOriginalOperation;
       if(discountInput)discountInput.value=row.dataset.queueOriginalDiscount;
-      render('row',row);
+      const grossCell=row.querySelector('.queue-gross-price');
+      const finalCell=row.querySelector('.queue-final-price');
+      if(grossCell)grossCell.textContent=row.dataset.queueOriginalGross||'—';
+      if(finalCell&&finalCell.childNodes[0])finalCell.childNodes[0].textContent=row.dataset.queueOriginalFinal||'—';
     };
     [firstType,firstValue,secondType,secondValue,agreement].filter(Boolean).forEach(function(control){control.addEventListener('input',function(){render('global');});control.addEventListener('change',function(){render('global');});});
     if(secondType)secondType.addEventListener('change',syncSecondStageToSelectedRows);
