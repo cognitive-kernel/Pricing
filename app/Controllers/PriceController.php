@@ -543,12 +543,12 @@ final class PriceController
 
         $s = $pdo->prepare('INSERT INTO ProductPriceMonitor(
                 ProductCode,InquiryDate,Source,Price,UnitID,PaymentAgreementID,
-                discountperc,grossprice,opration,netamount,payagrementperc,CreatedDate
+                discountperc,grossprice,opration,netamount,payagrementperc,userid,CreatedDate
             ) VALUES(
                 :code,DATEFROMPARTS(:year,:month,:day),:source,:price,
                 :unit,:payment_agreement_id,
                 :discountperc,:grossprice,:opration,
-                :netamount,:payagrementperc,GETDATE()
+                :netamount,:payagrementperc,:userid,GETDATE()
             )');
         foreach ($valid as $row) {
             $s->bindValue(':code', (int) $postedProductCode, PDO::PARAM_INT);
@@ -564,6 +564,7 @@ final class PriceController
             $s->bindValue(':opration', (int) $row[6], PDO::PARAM_INT);
             $s->bindValue(':netamount', (string) (int) $row[7], PDO::PARAM_STR);
             $s->bindValue(':payagrementperc', (int) round($paymentAgreementPercent), PDO::PARAM_INT);
+            $s->bindValue(':userid', Auth::userId(), PDO::PARAM_INT);
             $s->execute();
         }
 
