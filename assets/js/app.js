@@ -10,9 +10,11 @@ $(function(){
     if(event.target && event.target.id==='queue-select-all'){
       document.querySelectorAll('#queue-items-table .queue-item-select').forEach(function(box){
         box.checked=event.target.checked;
+        if(box.checked && typeof window.syncQueueSecondStageToRow==='function') window.syncQueueSecondStageToRow(box.closest('.queue-price-row'));
       });
       if(typeof window.renderQueuePricePreview==='function') window.renderQueuePricePreview();
     } else if(event.target && event.target.classList.contains('queue-item-select')){
+      if(event.target.checked && typeof window.syncQueueSecondStageToRow==='function') window.syncQueueSecondStageToRow(event.target.closest('.queue-price-row'));
       const boxes=Array.from(document.querySelectorAll('#queue-items-table .queue-item-select'));
       const all=document.getElementById('queue-select-all');
       if(all){
@@ -73,7 +75,6 @@ $(function(){
         const discount=Math.min(100,Math.max(0,Number.parseFloat(row.querySelector('.queue-discount')?.value||'0')||0));
         const operationControl=row.querySelector('.queue-operation');
         const op=operationControl?.value==='0'?'0':'1';
-        // Gross price is stage one only. Row discount and operation determine stage two.
         const gross=stageOne;
         const stageTwo=adjust(gross,op==='0'?'decrease':'increase',discount);
         const agreementPercent=Math.max(0,Number.parseFloat(row.querySelector('.queue-agreement-percent')?.value||'0')||0);
@@ -83,24 +84,28 @@ $(function(){
       });
     }
     window.renderQueuePricePreview=function(){render('global');};
+    function syncSecondStageToSelectedRows(){
+      table.querySelectorAll('.queue-price-row').forEach(function(row){
+        const check=row.querySelector('.queue-item-select');
+        if(check?.checked) window.syncQueueSecondStageToRow(row);
+      });
+      render('global');
+    }
+    window.syncQueueSecondStageToRow=function(row){
+      if(!row) return;
+      const check=row.querySelector('.queue-item-select');
+      if(!check?.checked) return;
+      const op=row.querySelector('.queue-operation');
+      const discountInput=row.querySelector('.queue-discount');
+      if(op) op.value=secondType?.value==='decrease'?'0':'1';
+      if(discountInput && secondValue) discountInput.value=secondValue.value;
+      render('row',row);
+    };
     [firstType,firstValue,secondType,secondValue,agreement].filter(Boolean).forEach(function(control){
       control.addEventListener('input',function(){render('global');});
       control.addEventListener('change',function(){render('global');});
     });
-    function syncSecondStageToSelectedRows(){
-      table.querySelectorAll('.queue-price-row').forEach(function(row){
-        const check=row.querySelector('.queue-item-select');
-        const op=row.querySelector('.queue-operation');
-        const discountInput=row.querySelector('.queue-discount');
-        if(!check?.checked) return;
-        if(op) op.value=secondType?.value==='decrease'?'0':'1';
-        if(discountInput && secondValue) discountInput.value=secondValue.value;
-      });
-      render('global');
-    }
-    if(secondType){
-      secondType.addEventListener('change',syncSecondStageToSelectedRows);
-    }
+    if(secondType) secondType.addEventListener('change',syncSecondStageToSelectedRows);
     if(secondValue){
       secondValue.addEventListener('input',syncSecondStageToSelectedRows);
       secondValue.addEventListener('change',syncSecondStageToSelectedRows);
