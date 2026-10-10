@@ -317,7 +317,7 @@ final class PriceController
                         $marketRow = $marketByCode[$code] ?? null;
                         if ($marketRow && is_numeric($marketRow['Price'] ?? null)) {
                             $marketDate = $marketRow['InquiryDate'] ?? null;
-                            if ($marketDate instanceof \\DateTimeInterface) {
+                            if ($marketDate instanceof \DateTimeInterface) {
                                 $marketDate = $marketDate->format('Y-m-d');
                             }
                             $candidates[] = [
