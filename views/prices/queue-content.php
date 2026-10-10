@@ -1,4 +1,4 @@
-<?php use App\Core\Security; ?>
+<?php use App\Core\Security; use App\Support\Jalali; $todayJalali = Jalali::fromGregorian(date('Y-m-d')); ?>
 <div class="mb-3"><h4 class="mb-1">لیستی</h4></div>
 <div class="card card-body mb-3">
     <label for="list-selection" class="form-label">انتخاب لیست</label>
