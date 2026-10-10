@@ -67,6 +67,13 @@
         </div>
     </div>
 
+    <div class="card mb-3">
+        <div class="card-body">
+            <label for="queue-master-inquiry-date" class="form-label">تاریخ رصد همه کالاها</label>
+            <input id="queue-master-inquiry-date" type="text" class="form-control jalali-date" data-jalali-picker="true" autocomplete="off" inputmode="numeric" value="<?= Security::e($todayJalali) ?>" aria-describedby="queue-master-date-help">
+            <div id="queue-master-date-help" class="form-text">با تغییر این تاریخ، تاریخ رصد تمام ردیف‌های لیست یکسان می‌شود.</div>
+        </div>
+    </div>
     <div class="card">
         <div class="card-header">اقلام لیست انتخاب‌شده</div>
         <div class="table-responsive">
