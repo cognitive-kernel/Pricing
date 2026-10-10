@@ -38,7 +38,11 @@
                     <label for="first-value" class="form-label">درصد افزایش یا کاهش</label>
                     <input id="first-value" type="number" min="0" step="any" inputmode="decimal" class="form-control" value="<?= Security::e($firstValue) ?>">
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-3">
+                    <label for="queue-master-inquiry-date" class="form-label">تاریخ رصد همه کالاها</label>
+                    <input id="queue-master-inquiry-date" type="text" class="form-control form-control-sm jalali-date" style="max-width: 180px;" data-jalali-picker="true" autocomplete="off" inputmode="numeric" value="<?= Security::e($todayJalali) ?>" aria-describedby="queue-master-date-help">
+                </div>
+                <div class="col-md-3">
                     <label for="queue-payment-agreement" class="form-label">توافق پرداخت</label>
                     <select id="queue-payment-agreement" name="payment_agreement_id" class="form-select" required>
                         <option value="">انتخاب توافق پرداخت</option>
@@ -67,13 +71,6 @@
         </div>
     </div>
 
-    <div class="card mb-3">
-        <div class="card-body">
-            <label for="queue-master-inquiry-date" class="form-label">تاریخ رصد همه کالاها</label>
-            <input id="queue-master-inquiry-date" type="text" class="form-control jalali-date" data-jalali-picker="true" autocomplete="off" inputmode="numeric" value="<?= Security::e($todayJalali) ?>" aria-describedby="queue-master-date-help">
-            <div id="queue-master-date-help" class="form-text">با تغییر این تاریخ، تاریخ رصد تمام ردیف‌های لیست یکسان می‌شود.</div>
-        </div>
-    </div>
     <div class="card">
         <div class="card-header">اقلام لیست انتخاب‌شده</div>
         <div class="table-responsive">
