@@ -234,9 +234,19 @@ final class PriceController
     {
         Auth::requireLogin();
         PermissionService::require(Auth::userId(), 'prices.view');
+
         $lists = Database::connection()->query('SELECT id, listcode, listname FROM dbo.SupplierLIST ORDER BY listname')->fetchAll(PDO::FETCH_ASSOC);
-        $selectedId = (int) ($_GET['id'] ?? 0);
-        View::render('prices/queue', compact('lists', 'selectedId'));
+        $selectedCode = trim((string) ($_GET['code'] ?? ''));
+        $validCodes = array_map(static fn(array $row): string => trim((string) ($row['listcode'] ?? '')), $lists);
+        $members = [];
+
+        if ($selectedCode !== '' && in_array($selectedCode, $validCodes, true)) {
+            $members = RahkaranPriceService::instance()->partGroupMembers($selectedCode);
+        } else {
+            $selectedCode = '';
+        }
+
+        View::render('prices/queue', compact('lists', 'selectedCode', 'members'));
     }
 
     public function history(int $id): void
