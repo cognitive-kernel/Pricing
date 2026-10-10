@@ -2,13 +2,14 @@
 <h4 class="mb-3">شرکتی</h4>
 <div class="card card-body">
     <label for="company-list" class="form-label">انتخاب شرکت</label>
-    <form method="get" action="/pricing/public/products/bulk">
-        <select id="company-list" name="code" class="form-select" onchange="this.form.submit()">
+    <form method="get" action="/pricing/public/products/bulk" data-auto-submit-on-change>
+        <select id="company-list" name="code" class="form-select">
             <option value="">یک شرکت انتخاب کنید</option>
             <?php foreach ($companies as $company): ?>
                 <option value="<?= Security::e((string) $company['listcode']) ?>" <?= $selectedCode === trim((string) $company['listcode']) ? 'selected' : '' ?>><?= Security::e($company['listname']) ?></option>
             <?php endforeach; ?>
         </select>
+        <noscript><button type="submit" class="btn btn-primary mt-2">نمایش اقلام</button></noscript>
     </form>
 </div>
 <?php if (!empty($loadError)): ?><div class="alert alert-danger mt-3"><?= Security::e($loadError) ?></div><?php endif; ?>
