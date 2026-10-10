@@ -605,11 +605,12 @@ final class PriceController
             $stageOnePrice = $firstAdjustment === 'decrease'
                 ? $price * (1 - $stageOneFactor)
                 : $price * (1 + $stageOneFactor);
-            $gross = round($stageOnePrice - $stageOnePrice * $discount / 100, 2);
-            $stageTwoFactor = $secondValue / 100;
+            // Gross price reflects only the first adjustment stage.
+            $gross = round($stageOnePrice, 2);
+            // Row discount and operation control the second stage and final amount.
             $stageTwoPrice = $operation === '1'
-                ? $gross * (1 + $stageTwoFactor)
-                : $gross * (1 - $stageTwoFactor);
+                ? $gross * (1 + $discount / 100)
+                : $gross * (1 - $discount / 100);
             $net = round($operation === '1' ? $stageTwoPrice + $stageTwoPrice * $agreementPercent / 100 : $stageTwoPrice - $stageTwoPrice * $agreementPercent / 100, 2);
             $insert->execute(['code'=>$code,'date'=>$date,'source'=>$listName,'price'=>$price,'unit'=>$unitId,'agreement'=>$agreementId,'discount'=>$discount,'gross'=>$gross,'operation'=>(int)$operation,'net'=>$net,'agreement_percent'=>$agreementPercent,'userid'=>Auth::userId()]);
             $saved++;
