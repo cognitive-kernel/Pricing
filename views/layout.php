@@ -11,9 +11,9 @@ $menus=[
  'عملیات قیمت'=>[
   ['prices.view','لیست قیمت‌ها','/pricing/public/prices'],
   ['prices.create','ثبت قیمت','/pricing/public/prices/create'],
-  ['prices.queue.view','صف استعلام','/pricing/public/prices/queue'],
+  ['prices.queue.view','لیستی','/pricing/public/prices/queue'],
   ['search.view','جستجوی پیشرفته','/pricing/public/search'],
-  ['products.bulk','عملیات گروهی','/pricing/public/products/bulk'],
+  ['products.bulk','شرکتی','/pricing/public/products/bulk'],
   ['workflow.view','گردش کار','/pricing/public/workflow'],
  ],
  'اطلاعات پایه'=>[
