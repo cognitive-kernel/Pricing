@@ -19,7 +19,7 @@ final class HomeController
                 'permission' => 'prices.view',
                 'title' => 'لیست قیمت‌ها',
                 'description' => 'مشاهده قیمت‌های ثبت‌شده و وضعیت رصد کالاها',
-                'url' => '/pricing/public/prices',
+                'url' => '/pricing/public/prices/list',
                 'symbol' => 'قیمت',
                 'tone' => 'primary',
             ],
