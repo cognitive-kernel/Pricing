@@ -58,7 +58,10 @@ $(function(){
         if(priceInput) priceInput.value=finalPrice.toFixed(2);
         const discount=Number.parseFloat(row.querySelector('.queue-discount')?.value||'0')||0;
         const gross=finalPrice-(finalPrice*discount/100);
-        const op=row.querySelector('.queue-operation')?.value||'1';
+        const operationControl=row.querySelector('.queue-operation');
+        // Keep the operation column aligned with the second adjustment stage.
+        const op=secondType.value==='decrease'?'0':'1';
+        if(operationControl) operationControl.value=op;
         const agreementPercent=Number.parseFloat(row.querySelector('.queue-agreement-percent')?.value||'0')||0;
         const net=op==='1'?gross+(gross*agreementPercent/100):gross-(gross*agreementPercent/100);
         if(grossCell) grossCell.textContent=gross.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
