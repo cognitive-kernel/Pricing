@@ -43,7 +43,7 @@ final class HomeController
 
         $tiles = array_values(array_filter(
             $allTiles,
-            static fn(array $tile): bool => PermissionService::allows($userId, $tile['permission'])
+            static fn(array $tile): bool => PermissionService::allows($userId, $tile['permission']) && ($tile['permission'] !== 'prices.queue.view' || PermissionService::allows($userId, 'prices.view'))
         ));
 
         View::render('home/index', compact('tiles'));
