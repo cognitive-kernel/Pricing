@@ -5,6 +5,47 @@ $(function(){
     const select=event.target.closest('form[data-auto-submit-on-change] select');
     if(select && select.value !== '') select.form.requestSubmit();
   });
+
+  function initQueuePricePreview(){
+    const table=document.getElementById('queue-items-table');
+    if(!table) return;
+
+    const firstType=document.getElementById('first-adjustment');
+    const firstValue=document.getElementById('first-value');
+    const secondType=document.getElementById('second-adjustment');
+    const secondValue=document.getElementById('second-value');
+
+    function applyAdjustment(price,type,percent){
+      const factor=Math.max(0,Number.isFinite(percent)?percent:0)/100;
+      return type==='decrease' ? price*(1-factor) : price*(1+factor);
+    }
+
+    function render(){
+      table.querySelectorAll('.queue-price-row').forEach(function(row){
+        const raw=row.dataset.basePrice;
+        const firstCell=row.querySelector('.queue-first-price');
+        const finalCell=row.querySelector('.queue-final-price');
+        if(raw==='' || !Number.isFinite(Number(raw))){
+          firstCell.textContent='—';
+          finalCell.textContent='—';
+          return;
+        }
+        const base=Number(raw);
+        const afterFirst=applyAdjustment(base,firstType.value,Number.parseFloat(firstValue.value));
+        const finalPrice=applyAdjustment(afterFirst,secondType.value,Number.parseFloat(secondValue.value));
+        firstCell.textContent=afterFirst.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+        finalCell.textContent=finalPrice.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+      });
+    }
+
+    [firstType,firstValue,secondType,secondValue].forEach(function(control){
+      control.addEventListener('input',render);
+      control.addEventListener('change',render);
+    });
+    render();
+  }
+
+  initQueuePricePreview();
   const WEEKDAYS=['ش','ی','د','س','چ','پ','ج'];
 
   function div(a,b){ return Math.floor(a/b); }
