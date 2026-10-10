@@ -244,7 +244,7 @@ final class PriceController
         if ($selectedCode !== '' && in_array($selectedCode, $validCodes, true)) {
             try {
                 $members = RahkaranPriceService::instance()->partGroupMembers($selectedCode);
-            } catch (\\Throwable $e) {
+            } catch (\Throwable $e) {
                 error_log('Rahkaran list members failed: ' . $e->getMessage());
                 $loadError = 'دریافت اقلام از دیتابیس راهکاران ناموفق بود. گزارش خطا در لاگ برنامه ثبت شد.';
             }
