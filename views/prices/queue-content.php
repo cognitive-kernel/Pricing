@@ -2,13 +2,14 @@
 <div class="mb-3"><h4 class="mb-1">لیستی</h4></div>
 <div class="card card-body">
     <label for="list-selection" class="form-label">انتخاب لیست</label>
-    <form method="get" action="/pricing/public/prices/queue">
-        <select id="list-selection" name="code" class="form-select" onchange="this.form.submit()">
+    <form method="get" action="/pricing/public/prices/queue" data-auto-submit-on-change>
+        <select id="list-selection" name="code" class="form-select">
             <option value="">یک لیست انتخاب کنید</option>
             <?php foreach ($lists as $list): ?>
                 <option value="<?= Security::e((string) $list['listcode']) ?>" <?= $selectedCode === trim((string) $list['listcode']) ? 'selected' : '' ?>><?= Security::e($list['listname']) ?></option>
             <?php endforeach; ?>
         </select>
+        <noscript><button type="submit" class="btn btn-primary mt-2">نمایش اقلام</button></noscript>
     </form>
 </div>
 <?php if (!empty($loadError)): ?><div class="alert alert-danger mt-3"><?= Security::e($loadError) ?></div><?php endif; ?>
