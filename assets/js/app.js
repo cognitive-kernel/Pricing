@@ -31,6 +31,17 @@ $(function(){
     const secondType=document.getElementById('second-adjustment');
     const secondValue=document.getElementById('second-value');
     const agreement=document.getElementById('queue-payment-agreement');
+    const masterInquiryDate=document.getElementById('queue-master-inquiry-date');
+    function syncInquiryDates(){
+      if(!masterInquiryDate) return;
+      table.querySelectorAll('.queue-price-row input[name$="[inquiry_date]"]').forEach(function(input){
+        input.value=masterInquiryDate.value;
+      });
+    }
+    if(masterInquiryDate){
+      masterInquiryDate.addEventListener('input',syncInquiryDates);
+      masterInquiryDate.addEventListener('change',syncInquiryDates);
+    }
     function adjust(price,type,percent){
       const factor=Math.max(0,Number.isFinite(percent)?percent:0)/100;
       return type==='decrease'?price*(1-factor):price*(1+factor);
