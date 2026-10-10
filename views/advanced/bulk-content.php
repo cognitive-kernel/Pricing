@@ -1,1 +1,13 @@
-<?php use App\Core\Security; ?><h4>عملیات گروهی محصولات</h4><form method="post"><input type="hidden" name="_csrf" value="<?=Security::e(Security::csrf())?>"><div class="card card-body mb-3"><div class="row g-2 align-items-end"><div class="col-md-3"><select name="action" class="form-select"><option value="activate">فعال‌سازی</option><option value="deactivate">غیرفعال‌سازی</option><option value="importance">تغییر اهمیت</option><option value="assign_queue">تخصیص صف</option><option value="followup">ارسال برای پیگیری</option><option value="export">خروجی انتخاب‌شده</option></select></div><div class="col-md-3"><select name="importance" class="form-select"><option value="1">عادی</option><option value="2">مهم</option><option value="3">بحرانی</option></select></div><div class="col-md-3"><select name="assigned_to" class="form-select"><option value="0">بدون مسئول</option><?php foreach($users as $u):?><option value="<?=$u['id']?>"><?=Security::e($u['name'])?></option><?php endforeach;?></select></div><div class="col-md-3"><button class="btn btn-primary w-100">اجرای عملیات</button></div></div></div><div class="table-responsive"><table class="table table-bordered"><thead><tr><th><input type="checkbox" id="all"></th><th>کد</th><th>نام</th><th>اهمیت</th><th>وضعیت</th><th>صف</th></tr></thead><tbody><?php foreach($rows as $r):?><tr><td><input class="item" type="checkbox" name="ids[]" value="<?=$r['id']?>"></td><td><?=Security::e($r['product_code'])?></td><td><?=Security::e($r['product_name'])?></td><td><?=$r['importance']?></td><td><?=$r['is_active']?'فعال':'غیرفعال'?></td><td><?=Security::e($r['queue_status']??'—')?></td></tr><?php endforeach;?></tbody></table></div></form><script>document.getElementById('all')?.addEventListener('change',e=>document.querySelectorAll('.item').forEach(x=>x.checked=e.target.checked));</script>
+<?php use App\Core\Security; ?>
+<h4 class="mb-3">شرکتی</h4>
+<div class="card card-body">
+    <label for="company-list" class="form-label">انتخاب شرکت</label>
+    <form method="get" action="/pricing/public/products/bulk">
+        <select id="company-list" name="id" class="form-select" onchange="this.form.submit()">
+            <option value="0">یک شرکت انتخاب کنید</option>
+            <?php foreach ($companies as $company): ?>
+                <option value="<?= (int) $company['id'] ?>" <?= $selectedId === (int) $company['id'] ? 'selected' : '' ?>><?= Security::e($company['listname']) ?></option>
+            <?php endforeach; ?>
+        </select>
+    </form>
+</div>
