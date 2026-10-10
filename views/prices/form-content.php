@@ -119,9 +119,9 @@
                                 <td><?=Security::e((string) ($price['Source'] ?? ''))?></td>
                                 <td><?=Security::e(number_format((float) $price['Price'], 2))?></td>
                                 <td><?=Security::e((string) ($price['discountperc'] ?? 0))?>%</td>
-                                <td><?=Security::e(number_format((float) ($price['grossprice'] ?? 0), 0))?></td>
+                                <td><?=Security::e(number_format((float) ($price['grossprice'] ?? 0), 2))?></td>
                                 <td><?=$isAddOperation ? 'جمع' : 'منها'?></td>
-                                <td><?=Security::e(number_format((float) ($price['netamount'] ?? 0), 0))?></td>
+                                <td><?=Security::e(number_format((float) ($price['netamount'] ?? 0), 2))?></td>
                                 <td><?=Security::e((string) ($product['unit_name'] ?? ''))?></td>
                                 <td><?=Security::e((string) ($price['PaymentAgreementTitle'] ?? ''))?></td>
                                 <td><?=Security::e(Jalali::fromGregorian($price['CreatedDate']))?></td>
