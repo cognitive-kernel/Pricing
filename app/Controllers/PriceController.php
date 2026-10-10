@@ -266,14 +266,7 @@ final class PriceController
                 ), static fn(string $code): bool => $code !== '')));
 
                 if ($codes) {
-                    $rahkaranRows = $service->allRows();
-                    $rahkaranByCode = [];
-                    foreach ($rahkaranRows as $row) {
-                        $code = trim((string) ($row['Code'] ?? ''));
-                        if ($code !== '' && in_array($code, $codes, true)) {
-                            $rahkaranByCode[$code] = $row;
-                        }
-                    }
+                    $rahkaranByCode = $service->rowsByCodes($codes);
 
                     $in = implode(',', array_fill(0, count($codes), '?'));
                     $marketQuery = $pdo->prepare(
