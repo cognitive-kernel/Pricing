@@ -12,8 +12,8 @@ $menus=[
   ['prices.view','لیست قیمت‌ها','/pricing/public/prices'],
   ['prices.create','ثبت قیمت','/pricing/public/prices/create'],
   ['prices.queue.view','لیستی','/pricing/public/prices/queue'],
-  ['search.view','جستجوی پیشرفته','/pricing/public/search'],
   ['products.bulk','شرکتی','/pricing/public/products/bulk'],
+  ['search.view','جستجوی پیشرفته','/pricing/public/search'],
   ['workflow.view','گردش کار','/pricing/public/workflow'],
  ],
  'اطلاعات پایه'=>[
