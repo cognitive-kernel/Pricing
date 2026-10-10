@@ -306,9 +306,9 @@ final class PriceController
                         ] as $candidate) {
                             if ($candidate['date'] !== null && $candidate['date'] !== '' && $candidate['price'] !== null && is_numeric($candidate['price'])) {
                                 try {
-                                    $candidate['sort_date'] = strtotime(\\App\\Support\\Jalali::toGregorian((string) $candidate['date'])) ?: 0;
+                                    $candidate['sort_date'] = strtotime(Jalali::toGregorian((string) $candidate['date'])) ?: 0;
                                     $candidates[] = $candidate;
-                                } catch (\\Throwable $e) {
+                                } catch (\Throwable $e) {
                                     // Ignore an invalid Rahkaran date and continue with other available sources.
                                 }
                             }
@@ -336,7 +336,7 @@ final class PriceController
                     }
                     unset($member);
                 }
-            } catch (\\Throwable $e) {
+            } catch (\Throwable $e) {
                 error_log('Rahkaran list members or prices failed: ' . $e->getMessage());
                 $loadError = 'دریافت اقلام یا قیمت‌ها از دیتابیس ناموفق بود. گزارش خطا در لاگ برنامه ثبت شد.';
             }
