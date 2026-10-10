@@ -49,8 +49,9 @@ $(function(){
     function money(value){
       return value.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
     }
-    function render(mode){
-      table.querySelectorAll('.queue-price-row').forEach(function(row){
+    function render(mode,targetRow){
+      const rows=targetRow ? [targetRow] : Array.from(table.querySelectorAll('.queue-price-row'));
+      rows.forEach(function(row){
         const check=row.querySelector('.queue-item-select');
         const priceInput=row.querySelector('.queue-saved-price');
         const grossCell=row.querySelector('.queue-gross-price');
@@ -98,7 +99,10 @@ $(function(){
       if(event.target.matches('.queue-saved-price,.queue-discount,.queue-agreement-percent')) render('row');
     });
     table.addEventListener('change',function(event){
-      if(event.target.matches('.queue-saved-price,.queue-discount,.queue-operation,.queue-agreement-percent')) render('row');
+      if(event.target.matches('.queue-saved-price,.queue-discount,.queue-operation,.queue-agreement-percent')){
+        const row=event.target.closest('.queue-price-row');
+        if(row) render('row',row);
+      }
     });
     render('global');
   }
