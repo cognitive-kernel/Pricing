@@ -1,6 +1,6 @@
 <?php
-use App\Controllers\AdminController;use App\Controllers\AuthController;use App\Controllers\PriceController;use App\Controllers\ManagementController;use App\Controllers\AdvancedController;
-$router->get('/',fn()=>\App\Core\Security::redirect('/prices'));
+use App\Controllers\AdminController;use App\Controllers\AuthController;use App\Controllers\PriceController;use App\Controllers\ManagementController;use App\Controllers\AdvancedController;use App\Controllers\HomeController;
+$router->get('/',[HomeController::class,'index']);
 $router->get('/login',[AuthController::class,'login']);$router->post('/login',[AuthController::class,'login']);$router->post('/logout',[AuthController::class,'logout']);
 $router->get('/password',[AuthController::class,'password']);$router->post('/password',[AuthController::class,'password']);
 $router->get('/prices',[PriceController::class,'index']);$router->get('/prices/queue',[PriceController::class,'queue']);$router->post('/prices/queue-save',[PriceController::class,'saveQueue']);$router->get('/prices/create',[PriceController::class,'form']);$router->post('/prices',[PriceController::class,'save']);$router->get('/prices/{id}/history',[PriceController::class,'history']);$router->get('/prices/history-chart',[PriceController::class,'historyChart']);$router->get('/prices/{id}/edit',[PriceController::class,'form']);$router->post('/prices/{id}',[PriceController::class,'save']);$router->post('/prices/{id}/delete',[PriceController::class,'delete']);
