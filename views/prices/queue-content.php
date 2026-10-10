@@ -38,17 +38,7 @@
                     <label for="first-value" class="form-label">درصد افزایش یا کاهش</label>
                     <input id="first-value" type="number" min="0" step="any" inputmode="decimal" class="form-control" value="<?= Security::e($firstValue) ?>">
                 </div>
-                <div class="col-md-3">
-                    <label for="second-adjustment" class="form-label">مرحله دوم</label>
-                    <select id="second-adjustment" class="form-select">
-                        <option value="increase" <?= $secondAdjustment === 'increase' ? 'selected' : '' ?>>افزایش</option>
-                        <option value="decrease" <?= $secondAdjustment === 'decrease' ? 'selected' : '' ?>>کاهش</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label for="second-value" class="form-label">درصد افزایش یا کاهش</label>
-                    <input id="second-value" type="number" min="0" step="any" inputmode="decimal" class="form-control" value="<?= Security::e($secondValue) ?>">
-                </div>
+                <div class="w-100"></div>
                 <div class="col-md-3">
                     <label for="queue-payment-agreement" class="form-label">توافق پرداخت</label>
                     <select id="queue-payment-agreement" name="payment_agreement_id" class="form-select" required>
@@ -63,6 +53,17 @@
                 <div class="col-md-3">
                     <label for="queue-master-inquiry-date" class="form-label">تاریخ رصد همه کالاها</label>
                     <input id="queue-master-inquiry-date" type="text" class="form-control form-control-sm jalali-date" style="max-width: 180px;" data-jalali-picker="true" autocomplete="off" inputmode="numeric" value="<?= Security::e($todayJalali) ?>" aria-describedby="queue-master-date-help">
+                </div>
+                <div class="col-md-3">
+                    <label for="second-adjustment" class="form-label">مرحله دوم</label>
+                    <select id="second-adjustment" class="form-select">
+                        <option value="increase" <?= $secondAdjustment === 'increase' ? 'selected' : '' ?>>افزایش</option>
+                        <option value="decrease" <?= $secondAdjustment === 'decrease' ? 'selected' : '' ?>>کاهش</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="second-value" class="form-label">درصد افزایش یا کاهش</label>
+                    <input id="second-value" type="number" min="0" step="any" inputmode="decimal" class="form-control" value="<?= Security::e($secondValue) ?>">
                 </div>
                 <div class="col-md-6">
                     <div class="small text-muted">ثبت فقط برای کالاهای انتخاب‌شده انجام می‌شود.</div>
