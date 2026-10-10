@@ -65,20 +65,15 @@ $(function(){
           return;
         }
         const base=Number(enteredPrice);
-        const stageOne=adjust(base,firstType.value,Number.parseFloat(firstValue.value));
-        const adjustedPrice=adjust(stageOne,secondType.value,Number.parseFloat(secondValue.value));
-        const operationControl=row.querySelector('.queue-operation');
-        const op=operationControl ? operationControl.value : '1';
-        const discount=Number.parseFloat(row.querySelector('.queue-discount')?.value||'0')||0;
-        const discountedBase=adjustedPrice-(adjustedPrice*discount/100);
-        const gross=manuallyEdited?base:discountedBase;
-        const finalPrice=manuallyEdited
-          ? (op==='1'?gross+(gross*Number.parseFloat(secondValue.value||'0')/100):gross-(gross*Number.parseFloat(secondValue.value||'0')/100))
-          : adjustedPrice;
+        const stageOne=manuallyEdited?base:adjust(base,firstType.value,Number.parseFloat(firstValue.value));
+        const finalPrice=manuallyEdited?base:adjust(stageOne,secondType.value,Number.parseFloat(secondValue.value));
         if(priceInput && !manuallyEdited) priceInput.value=finalPrice.toFixed(2);
+        const discount=Number.parseFloat(row.querySelector('.queue-discount')?.value||'0')||0;
+        const gross=finalPrice-(finalPrice*discount/100);
         const operationControl=row.querySelector('.queue-operation');
-        // Respect the operation selected directly in this row.
-        const op=operationControl ? operationControl.value : '1';
+        // Keep the operation column aligned with the second adjustment stage.
+        const op=secondType.value==='decrease'?'0':'1';
+        if(operationControl) operationControl.value=op;
         const agreementPercent=Number.parseFloat(row.querySelector('.queue-agreement-percent')?.value||'0')||0;
         const net=op==='1'?gross+(gross*agreementPercent/100):gross-(gross*agreementPercent/100);
         if(grossCell) grossCell.textContent=gross.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
