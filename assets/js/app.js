@@ -46,58 +46,61 @@ $(function(){
       const factor=Math.max(0,Number.isFinite(percent)?percent:0)/100;
       return type==='decrease'?price*(1-factor):price*(1+factor);
     }
-    function render(){
+    function money(value){
+      return value.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    }
+    function render(mode){
       table.querySelectorAll('.queue-price-row').forEach(function(row){
         const check=row.querySelector('.queue-item-select');
         const priceInput=row.querySelector('.queue-saved-price');
-        const raw=row.dataset.basePrice;
         const grossCell=row.querySelector('.queue-gross-price');
         const finalCell=row.querySelector('.queue-final-price');
         const agreementCell=row.querySelector('.queue-agreement-title');
         if(agreementCell && agreement){
           agreementCell.textContent=agreement.selectedIndex>0?agreement.options[agreement.selectedIndex].text:'—';
         }
-        const manuallyEdited=priceInput && priceInput.dataset.manualPrice==='1';
-        const enteredPrice=manuallyEdited?priceInput.value:raw;
-        if(!check || !check.checked || enteredPrice==='' || !Number.isFinite(Number(enteredPrice))){
+        if(mode==='global' && (!check || !check.checked)) return;
+        const enteredPrice=priceInput ? priceInput.value.trim() : '';
+        if(enteredPrice==='' || !Number.isFinite(Number(enteredPrice))){
           if(grossCell) grossCell.textContent='—';
           if(finalCell) finalCell.childNodes[0].textContent='—';
           return;
         }
-        const base=Number(enteredPrice);
-        const stageOne=manuallyEdited?base:adjust(base,firstType.value,Number.parseFloat(firstValue.value));
-        const finalPrice=manuallyEdited?base:adjust(stageOne,secondType.value,Number.parseFloat(secondValue.value));
-        if(priceInput && !manuallyEdited) priceInput.value=finalPrice.toFixed(2);
-        const discount=Number.parseFloat(row.querySelector('.queue-discount')?.value||'0')||0;
-        const gross=finalPrice-(finalPrice*discount/100);
+        const price=Number(enteredPrice);
+        const stageOne=adjust(price,firstType?.value||'increase',Number.parseFloat(firstValue?.value||'0'));
+        const discount=Math.min(100,Math.max(0,Number.parseFloat(row.querySelector('.queue-discount')?.value||'0')||0));
+        const gross=stageOne-(stageOne*discount/100);
         const operationControl=row.querySelector('.queue-operation');
-        // Keep the operation column aligned with the second adjustment stage.
-        const op=secondType.value==='decrease'?'0':'1';
-        if(operationControl) operationControl.value=op;
-        const agreementPercent=Number.parseFloat(row.querySelector('.queue-agreement-percent')?.value||'0')||0;
-        const net=op==='1'?gross+(gross*agreementPercent/100):gross-(gross*agreementPercent/100);
-        if(grossCell) grossCell.textContent=gross.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-        if(finalCell) finalCell.childNodes[0].textContent=net.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+        const op=operationControl?.value==='0'?'0':'1';
+        const stageTwo=adjust(gross,op==='0'?'decrease':'increase',Number.parseFloat(secondValue?.value||'0'));
+        const agreementPercent=Math.max(0,Number.parseFloat(row.querySelector('.queue-agreement-percent')?.value||'0')||0);
+        const net=op==='1'?stageTwo+(stageTwo*agreementPercent/100):stageTwo-(stageTwo*agreementPercent/100);
+        if(grossCell) grossCell.textContent=money(gross);
+        if(finalCell) finalCell.childNodes[0].textContent=money(net);
       });
     }
-    window.renderQueuePricePreview=render;
-    [firstType,firstValue,secondType,secondValue,agreement].filter(Boolean).forEach(function(control){
-      control.addEventListener('input',render);
-      control.addEventListener('change',render);
+    window.renderQueuePricePreview=function(){render('global');};
+    [firstType,firstValue,secondValue,agreement].filter(Boolean).forEach(function(control){
+      control.addEventListener('input',function(){render('global');});
+      control.addEventListener('change',function(){render('global');});
     });
+    if(secondType){
+      secondType.addEventListener('change',function(){
+        table.querySelectorAll('.queue-price-row').forEach(function(row){
+          const check=row.querySelector('.queue-item-select');
+          const op=row.querySelector('.queue-operation');
+          if(check?.checked && op) op.value=secondType.value==='decrease'?'0':'1';
+        });
+        render('global');
+      });
+    }
     table.addEventListener('input',function(event){
-      if(event.target.matches('.queue-saved-price')){
-        event.target.dataset.manualPrice='1';
-      }
-      if(event.target.matches('.queue-discount,.queue-saved-price,.queue-agreement-percent')) render();
+      if(event.target.matches('.queue-saved-price,.queue-discount,.queue-agreement-percent')) render('row');
     });
     table.addEventListener('change',function(event){
-      if(event.target.matches('.queue-saved-price')){
-        event.target.dataset.manualPrice='1';
-      }
-      if(event.target.matches('.queue-discount,.queue-operation,.queue-saved-price,.queue-agreement-percent')) render();
+      if(event.target.matches('.queue-saved-price,.queue-discount,.queue-operation,.queue-agreement-percent')) render('row');
     });
-    render();
+    render('global');
   }
 
   initQueuePricePreview();
