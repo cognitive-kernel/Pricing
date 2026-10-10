@@ -18,6 +18,10 @@
 <?php endif; ?>
 
 <?php if ($selectedCode !== ''): ?>
+    <form method="post" action="/pricing/public/prices/queue-save" id="queue-price-form">
+        <input type="hidden" name="_csrf" value="<?= Security::e(Security::csrf()) ?>">
+        <input type="hidden" name="list_code" value="<?= Security::e($selectedCode) ?>">
+        <input type="hidden" name="list_name" value="<?= Security::e($selectedListName ?? '') ?>">
     <div class="card mb-3">
         <div class="card-header">تنظیم قیمت نهایی</div>
         <div class="card-body">
@@ -35,7 +39,7 @@
                 </div>
                 <div class="col-md-6">
                     <label for="queue-payment-agreement" class="form-label">توافق پرداخت</label>
-                    <select id="queue-payment-agreement" class="form-select">
+                    <select id="queue-payment-agreement" name="payment_agreement_id" class="form-select" required>
                         <option value="">انتخاب توافق پرداخت</option>
                         <?php foreach (($paymentAgreements ?? []) as $agreement): ?>
                             <option value="<?= (int) $agreement['PaymentAgreementID'] ?>" <?= (int) $selectedPaymentAgreementId === (int) $agreement['PaymentAgreementID'] ? 'selected' : '' ?>>
@@ -56,7 +60,7 @@
                     <input id="second-value" type="number" min="0" step="any" inputmode="decimal" class="form-control" value="<?= Security::e($secondValue) ?>">
                 </div>
                 <div class="col-md-6">
-                    <div class="small text-muted">محاسبات فقط برای پیش‌نمایش هستند؛ در این مرحله چیزی در پایگاه داده ثبت نمی‌شود.</div>
+                    <div class="small text-muted">ثبت فقط برای کالاهای انتخاب‌شده انجام می‌شود.</div>
                 </div>
             </div>
         </div>
@@ -69,26 +73,34 @@
                 <thead>
                     <tr>
                         <th><input type="checkbox" id="queue-select-all" aria-label="انتخاب همه کالاها" title="انتخاب همه کالاها"></th>
-                        <th>کد</th><th>نام کالا</th><th>قیمت مبنا</th><th>منبع قیمت</th><th>تاریخ قیمت</th><th>قیمت پس از مرحله اول</th><th>قیمت نهایی</th>
+                        <th>کد کالا</th><th>نام کالا</th><th>تاریخ رصد</th><th>منبع</th><th>قیمت</th><th>منبع قیمت</th><th>درصد تخفیف</th><th>قیمت ناخالص</th><th>عملیات</th><th>مبلغ نهایی</th><th>واحد</th><th>توافق پرداخت</th><th>تاریخ ایجاد</th>
                     </tr>
                 </thead>
                 <tbody>
                 <?php if (!$members): ?>
-                    <tr><td colspan="8" class="text-center">موردی برای نمایش وجود ندارد.</td></tr>
+                    <tr><td colspan="13" class="text-center">موردی برای نمایش وجود ندارد.</td></tr>
                 <?php else: foreach ($members as $member): ?>
-                    <tr class="queue-price-row" data-base-price="<?= ($member['latest_price'] ?? null) !== null ? Security::e((string) $member['latest_price']) : '' ?>">
-                        <td><input type="checkbox" class="queue-item-select" aria-label="انتخاب کالا <?= Security::e((string) ($member['code'] ?? '')) ?>"></td>
+                    <tr class="queue-price-row" data-base-price="<?= ($member['latest_price'] ?? null) !== null ? Security::e((string) $member['latest_price']) : '' ?>" data-product-code="<?= Security::e((string) ($member['code'] ?? '')) ?>">
+                        <td><input type="checkbox" class="queue-item-select" name="items[<?= Security::e((string) ($member['code'] ?? '')) ?>][selected]" value="1" aria-label="انتخاب کالا <?= Security::e((string) ($member['code'] ?? '')) ?>"></td>
                         <td><?= Security::e((string) ($member['code'] ?? '')) ?></td>
                         <td><?= Security::e((string) ($member['name'] ?? '')) ?></td>
-                        <td class="queue-base-price"><?= ($member['latest_price'] ?? null) !== null ? number_format((float) $member['latest_price'], 2) : '—' ?></td>
+                        <td><input class="form-control jalali-date" data-jalali-picker="true" autocomplete="off" inputmode="numeric" name="items[<?= Security::e((string) ($member['code'] ?? '')) ?>][inquiry_date]" value="<?= Security::e($todayJalali) ?>" required></td>
+                        <td><?= Security::e((string) ($selectedListName ?? '')) ?></td>
+                        <td><input class="form-control queue-saved-price" name="items[<?= Security::e((string) ($member['code'] ?? '')) ?>][price]" value="<?= ($member['latest_price'] ?? null) !== null ? Security::e((string) $member['latest_price']) : '' ?>" inputmode="decimal" required></td>
                         <td><?= Security::e((string) ($member['latest_price_source'] ?? '')) ?: '—' ?></td>
-                        <td><?= Security::e((string) ($member['latest_price_date'] ?? '')) ?: '—' ?></td>
-                        <td class="queue-first-price">—</td>
-                        <td class="queue-final-price fw-bold">—</td>
+                        <td><input class="form-control queue-discount" type="number" min="0" max="100" step="0.01" name="items[<?= Security::e((string) ($member['code'] ?? '')) ?>][discount_percent]" value="0"></td>
+                        <td class="queue-gross-price">—</td>
+                        <td><select class="form-select queue-operation" name="items[<?= Security::e((string) ($member['code'] ?? '')) ?>][operation]"><option value="1">جمع</option><option value="0">منها</option></select></td>
+                        <td class="queue-final-price fw-bold">—<input type="hidden" class="queue-agreement-percent" name="items[<?= Security::e((string) ($member['code'] ?? '')) ?>][agreement_percent]" value="0"></td>
+                        <td><?= (int) ($member['unit_id'] ?? 0) ?></td>
+                        <td class="queue-agreement-title">—</td>
+                        <td><?= Security::e($todayJalali) ?></td>
                     </tr>
                 <?php endforeach; endif; ?>
                 </tbody>
             </table>
         </div>
     </div>
+        <div class="d-flex gap-2 p-3"><button type="submit" class="btn btn-primary">ثبت</button><a href="/pricing/public/prices" class="btn btn-secondary">انصراف</a></div>
+    </form>
 <?php endif; ?>
