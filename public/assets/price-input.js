@@ -4,18 +4,18 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function formatNumber(value) {
-        return Number.isFinite(value) ? value.toLocaleString('en-US', { maximumFractionDigits: 6 }) : '';
+        return Number.isFinite(value) ? value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
     }
 
     function recalculateRow(row) {
         const price = numericValue(row.querySelector('.price-input'));
         const discount = numericValue(row.querySelector('.discount-percent'));
-        const gross = Math.max(0, price - (price * discount / 100));
+        const gross = Math.max(0, Math.round((price - (price * discount / 100)) * 100) / 100);
         const agreementPercent = numericValue(document.getElementById('payment-agreement-percent'));
         const operation = row.querySelector('.payment-operation')?.value ?? '1';
-        const finalPrice = operation === '0'
+        const finalPrice = Math.round((operation === '0'
             ? gross - (gross * agreementPercent / 100)
-            : gross + (gross * agreementPercent / 100);
+            : gross + (gross * agreementPercent / 100)) * 100) / 100;
 
         const grossInput = row.querySelector('.gross-price');
         const finalInput = row.querySelector('.final-price');
