@@ -573,6 +573,8 @@ final class PriceController
         $saved = 0;
         foreach ($items as $code => $item) {
             if (!is_array($item) || empty($item['selected'])) continue;
+            // Do not create a monitoring record for products that had no source price when the queue loaded.
+            if ((string) ($item['has_base_price'] ?? '0') !== '1') continue;
             $code = trim((string) $code);
             $priceText = str_replace(',', '', trim((string) ($item['price'] ?? '')));
             $dateText = trim((string) ($item['inquiry_date'] ?? ''));
