@@ -11,7 +11,7 @@ $pdo->beginTransaction();
 try {
     $permissionGroups = [
         'عملیات قیمت'=>[
-            'prices.view'=>'مشاهده لیست قیمت','prices.create'=>'ثبت قیمت','prices.edit'=>'ویرایش قیمت','prices.delete'=>'حذف قیمت','prices.history.view'=>'مشاهده تاریخچه قیمت',
+            'prices.view'=>'مشاهده لیست قیمت','prices.create'=>'ثبت قیمت','prices.edit'=>'ویرایش قیمت','prices.delete'=>'حذف قیمت','prices.history.view'=>'مشاهده تاریخچه قیمت','prices.approvals.view'=>'مشاهده صف تأیید قیمت‌ها','prices.approvals.decide'=>'تأیید یا رد قیمت‌ها','prices.approvals.export'=>'خروجی اکسل قیمت‌های تأییدشده',
             'prices.queue.view'=>'مشاهده صف استعلام','prices.queue.manage'=>'مدیریت صف قیمت','search.view'=>'جستجوی پیشرفته','search.filters.manage'=>'مدیریت فیلترهای ذخیره‌شده','products.bulk'=>'عملیات گروهی محصولات','workflow.view'=>'مشاهده گردش کار','workflow.manage'=>'مدیریت گردش کار','product.sources.view'=>'مشاهده منابع محصول','product.sources.manage'=>'مدیریت منابع محصول'
         ],
         'اطلاعات پایه'=>[
