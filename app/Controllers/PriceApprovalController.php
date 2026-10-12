@@ -21,38 +21,66 @@ final class PriceApprovalController
 
         $q = trim((string) ($_GET['q'] ?? ''));
         $pdo = Database::connection();
-        $sql = "WITH ranked AS (
-            SELECT m.PriceMonitorID,m.ProductCode,m.InquiryDate,m.Source,m.Price,m.UnitID,
-                   m.CreatedDate,m.PaymentAgreementID,m.discountperc,m.grossprice,m.opration,
-                   m.netamount,m.payagrementperc,m.userid,m.Approved,m.isexported, u.username AS CreatorUsername,
-                   ROW_NUMBER() OVER (PARTITION BY m.ProductCode ORDER BY m.InquiryDate DESC,m.PriceMonitorID DESC) AS rn
-            FROM dbo.ProductPriceMonitor m
-            LEFT JOIN dbo.users u ON u.id = m.userid
+        $sql = "WITH latest_dates AS (
+            SELECT ProductCode, MAX(InquiryDate) AS latest_date
+            FROM dbo.ProductPriceMonitor
+            GROUP BY ProductCode
         )
-        SELECT * FROM ranked
-        WHERE rn=1 AND ISNULL(Approved,0)=0";
+        SELECT m.PriceMonitorID,m.ProductCode,m.InquiryDate,m.Source,m.Price,m.UnitID,
+               m.CreatedDate,m.PaymentAgreementID,m.discountperc,m.grossprice,m.opration,
+               m.netamount,m.payagrementperc,m.userid,m.Approved,m.isexported,
+               u.username AS CreatorUsername
+        FROM dbo.ProductPriceMonitor m
+        INNER JOIN latest_dates ld ON ld.ProductCode=m.ProductCode AND ld.latest_date=m.InquiryDate
+        LEFT JOIN dbo.users u ON u.id=m.userid
+        WHERE ISNULL(m.Approved,0)=0";
         $params = [];
         if ($q !== '') {
-            $sql .= " AND (CONVERT(varchar(100),ProductCode) LIKE :q OR Source LIKE :q)";
+            $sql .= " AND (CONVERT(varchar(100),m.ProductCode) LIKE :q OR m.Source LIKE :q)";
             $params['q'] = '%' . $q . '%';
         }
-        $sql .= " ORDER BY InquiryDate DESC,ProductCode";
+        $sql .= " ORDER BY m.ProductCode,m.PaymentAgreementID,m.InquiryDate DESC,m.PriceMonitorID DESC";
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
         $agreementIds = array_values(array_unique(array_map(static fn(array $r): int => (int)($r['PaymentAgreementID'] ?? 0), $records)));
         $rahkaran = RahkaranPriceService::instance();
         $agreements = $rahkaran->paymentAgreementTitlesByIds($agreementIds);
         $unitIds = array_values(array_unique(array_map(static fn(array $r): int => (int)($r['UnitID'] ?? 0), $records)));
         $unitNames = $rahkaran->unitNamesByIds($unitIds);
+
+        $byProduct = [];
         foreach ($records as &$record) {
-            $record['PaymentAgreementTitle'] = $agreements[(int)($record['PaymentAgreementID'] ?? 0)] ?? ''; 
-            $record['InquiryDateJalali'] = !empty($record['InquiryDate']) ? Jalali::fromGregorian((string)$record['InquiryDate']) : ''; 
+            $record['PaymentAgreementTitle'] = $agreements[(int)($record['PaymentAgreementID'] ?? 0)] ?? '';
+            $record['InquiryDateJalali'] = !empty($record['InquiryDate']) ? Jalali::fromGregorian((string)$record['InquiryDate']) : '';
             $record['CreatorUsername'] = (string)($record['CreatorUsername'] ?? '');
-            $record['UnitName'] = $unitNames[(int)($record['UnitID'] ?? 0)] ?? ''; 
+            $record['UnitName'] = $unitNames[(int)($record['UnitID'] ?? 0)] ?? '';
+            $record['price_received_at'] = $record['InquiryDate'];
+            $record['supplier'] = $record['Source'];
+            $record['unit_price'] = $record['Price'];
+            $record['unit_id'] = $record['UnitID'];
+            $byProduct[trim((string)$record['ProductCode'])][] = $record;
         }
         unset($record);
-        View::render('prices/approvals', compact('records','q'));
+
+        $approvalGroups = [];
+        foreach ($byProduct as $code => $productRows) {
+            $agreementGroups = \\App\\Services\\MarketPriceCalculator::groupByPaymentAgreement($productRows);
+            foreach ($agreementGroups as $group) {
+                $groupRows = $group['rows'];
+                $first = $groupRows[0];
+                $approvalGroups[] = [
+                    'ids' => array_values(array_map(static fn(array $r): int => (int)$r['PriceMonitorID'], $groupRows)),
+                    'row' => $first,
+                    'count' => (int)$group['count'],
+                    'average_price' => $group['average_price'],
+                    'warning' => (bool)$group['warning'],
+                    'prices' => $group['prices'],
+                ];
+            }
+        }
+        View::render('prices/approvals', compact('approvalGroups','q'));
     }
 
     public function decision(): void
