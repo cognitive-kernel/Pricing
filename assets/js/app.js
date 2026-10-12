@@ -162,4 +162,92 @@ $(function(){
   }
   function initCompanyRowSave(){const table=document.getElementById('company-items-table');if(!table||table._companySaveBound)return;table._companySaveBound=true;table.addEventListener('click',async function(event){const button=event.target.closest('.company-row-save');if(!button)return;const row=button.closest('.company-item-row');const price=row.querySelector('.company-final-price');const agreement=row.querySelector('.company-agreement');const message=row.querySelector('.company-row-message');const amount=(price?.value||'').trim();if(!amount||!Number.isFinite(Number(amount))||Number(amount)<=0){price?.focus();message.textContent=' مبلغ معتبر وارد کنید.';return;}if(!agreement?.value){agreement?.focus();message.textContent=' توافق پرداخت را انتخاب کنید.';return;}button.disabled=true;message.textContent=' در حال ثبت…';try{const body=new URLSearchParams({_csrf:document.getElementById('company-row-csrf')?.value||'',company_code:document.getElementById('company-row-code')?.value||'',product_code:row.dataset.productCode||'',payment_agreement_id:agreement.value,final_price:amount});const response=await fetch('/pricing/public/products/bulk-save-row',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8','X-Requested-With':'XMLHttpRequest'},body:body.toString(),credentials:'same-origin'});const result=await response.json();if(!response.ok||!result.success)throw new Error(result.message||'ثبت ردیف انجام نشد.');row.classList.add('table-success');message.textContent=' ثبت شد';}catch(error){message.textContent=' '+(error.message||'خطا در ثبت ردیف');}finally{button.disabled=false;}});}
   initCompanyItemsSearch();initCompanyRowSave();initPriceActionRows();initPriceForm();
+
+  function initPriceApprovals(){
+    const form=document.getElementById('approval-decision-form');
+    const selectAll=document.getElementById('approval-select-all');
+    const exportButton=document.getElementById('approval-export-btn');
+    const messageBox=document.getElementById('approval-message');
+    if(!form&&!selectAll&&!exportButton)return;
+    function showMessage(message,success){
+      if(!messageBox)return;
+      messageBox.textContent=message|| (success?'عملیات انجام شد.':'خطایی رخ داد.');
+      messageBox.className='alert mb-3 '+(success?'alert-success':'alert-danger');
+      messageBox.hidden=false;
+      messageBox.scrollIntoView({behavior:'smooth',block:'nearest'});
+    }
+    function boxes(){return Array.from(document.querySelectorAll('#approval-decision-form .approval-select'));}
+    function syncMaster(){
+      if(!selectAll)return;
+      const all=boxes();
+      const checked=all.filter(box=>box.checked).length;
+      selectAll.checked=all.length>0&&checked===all.length;
+      selectAll.indeterminate=checked>0&&checked<all.length;
+    }
+    if(selectAll&&!selectAll._approvalBound){
+      selectAll._approvalBound=true;
+      selectAll.addEventListener('change',function(){
+        boxes().forEach(box=>{box.checked=selectAll.checked;});
+        syncMaster();
+      });
+    }
+    if(form&&!form._approvalBound){
+      form._approvalBound=true;
+      form.addEventListener('change',function(event){
+        if(event.target.classList.contains('approval-select'))syncMaster();
+      });
+      form.addEventListener('submit',async function(event){
+        event.preventDefault();
+        const button=event.submitter;
+        if(!button)return;
+        if(!boxes().some(box=>box.checked)){
+          showMessage('ابتدا حداقل یک ردیف را انتخاب کنید.',false);
+          return;
+        }
+        if(!window.confirm(button.value==='approve'?'ردیف‌های انتخاب‌شده تأیید شوند؟':'ردیف‌های انتخاب‌شده رد شوند؟'))return;
+        const data=new FormData(form);
+        data.set('decision',button.value);
+        button.disabled=true;
+        try{
+          const response=await fetch(form.action,{method:'POST',body:data,credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/json'}});
+          const type=(response.headers.get('content-type')||'').toLowerCase();
+          let result={};
+          if(type.includes('application/json'))result=await response.json();
+          else {const text=await response.text();throw new Error(text.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim()||'پاسخ نامعتبر از سرور دریافت شد.');}
+          if(!response.ok||result.ok===false)throw new Error(result.message||'ثبت تصمیم انجام نشد.');
+          showMessage(result.message||'تصمیم ثبت شد.',true);
+          window.setTimeout(()=>window.location.reload(),700);
+        }catch(error){showMessage(error.message||'خطا در ارتباط با سرور.',false);}
+        finally{button.disabled=false;}
+      });
+    }
+    if(exportButton&&!exportButton._approvalBound){
+      exportButton._approvalBound=true;
+      exportButton.addEventListener('click',async function(){
+        exportButton.disabled=true;
+        try{
+          const response=await fetch('/pricing/public/prices/approvals/export',{credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/vnd.ms-excel, application/json'}});
+          const type=(response.headers.get('content-type')||'').toLowerCase();
+          if(!response.ok||type.includes('application/json')||type.includes('text/html')){
+            const text=await response.text();
+            let message=text.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
+            try{const json=JSON.parse(text);message=json.message||message;}catch(ignore){}
+            throw new Error(message||'فایل اکسل از سرور دریافت نشد.');
+          }
+          const blob=await response.blob();
+          if(blob.size===0)throw new Error('فایل خروجی خالی است.');
+          const url=URL.createObjectURL(blob);
+          const link=document.createElement('a');
+          link.href=url;link.download='approved-market-prices.xls';
+          document.body.appendChild(link);link.click();link.remove();
+          window.setTimeout(()=>URL.revokeObjectURL(url),1000);
+          showMessage('خروجی اکسل دریافت شد.',true);
+        }catch(error){showMessage(error.message||'خطا در دریافت خروجی اکسل.',false);}
+        finally{exportButton.disabled=false;}
+      });
+    }
+    syncMaster();
+  }
+  initPriceApprovals();
+
 });
