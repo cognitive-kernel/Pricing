@@ -173,15 +173,22 @@ $(function(){
     if(!form&&!selectAll&&!exportButton)return;
     function showMessage(message,success){
       if(!messageBox)return;
-      messageBox.textContent=message|| (success?'عملیات انجام شد.':'خطایی رخ داد.');
+      messageBox.textContent=message||(success?'عملیات انجام شد.':'خطایی رخ داد.');
       messageBox.className='alert mb-3 '+(success?'alert-success':'alert-danger');
       messageBox.hidden=false;
       messageBox.scrollIntoView({behavior:'smooth',block:'nearest'});
     }
-    function boxes(){return Array.from(document.querySelectorAll('#approval-decision-form .approval-select')).filter(box=>!box.disabled);}
+    function groups(){
+      return Array.from(form?.querySelectorAll('.approval-select-group')||[]).filter(box=>!box.disabled);
+    }
+    function syncGroup(groupBox){
+      const row=groupBox.closest('tr');
+      if(!row)return;
+      row.querySelectorAll('.approval-record-id').forEach(input=>{input.disabled=!groupBox.checked;});
+    }
     function syncMaster(){
       if(!selectAll)return;
-      const all=boxes();
+      const all=groups();
       const checked=all.filter(box=>box.checked).length;
       selectAll.checked=all.length>0&&checked===all.length;
       selectAll.indeterminate=checked>0&&checked<all.length;
@@ -189,24 +196,30 @@ $(function(){
     if(selectAll&&!selectAll._approvalBound){
       selectAll._approvalBound=true;
       selectAll.addEventListener('change',function(){
-        boxes().forEach(box=>{box.checked=selectAll.checked;});
+        groups().forEach(box=>{
+          box.checked=selectAll.checked;
+          syncGroup(box);
+        });
         syncMaster();
       });
     }
     if(form&&!form._approvalBound){
       form._approvalBound=true;
       form.addEventListener('change',function(event){
-        if(event.target.classList.contains('approval-select'))syncMaster();
+        if(event.target.classList.contains('approval-select-group')){
+          syncGroup(event.target);
+          syncMaster();
+        }
       });
       form.addEventListener('submit',async function(event){
         event.preventDefault();
         const button=event.submitter;
         if(!button)return;
-        if(!boxes().some(box=>box.checked)){
-          showMessage('ابتدا حداقل یک ردیف را انتخاب کنید.',false);
+        if(!groups().some(box=>box.checked)){
+          showMessage('ابتدا حداقل یک گروه قیمت را انتخاب کنید.',false);
           return;
         }
-        if(!window.confirm(button.value==='approve'?'ردیف‌های انتخاب‌شده تأیید شوند؟':'ردیف‌های انتخاب‌شده رد شوند؟'))return;
+        if(!window.confirm(button.value==='approve'?'گروه‌های انتخاب‌شده تأیید شوند؟':'گروه‌های انتخاب‌شده رد شوند؟'))return;
         const data=new FormData(form);
         data.set('decision',button.value);
         button.disabled=true;
@@ -215,7 +228,7 @@ $(function(){
           const type=(response.headers.get('content-type')||'').toLowerCase();
           let result={};
           if(type.includes('application/json'))result=await response.json();
-          else {const text=await response.text();throw new Error(text.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim()||'پاسخ نامعتبر از سرور دریافت شد.');}
+          else{const text=await response.text();throw new Error(text.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim()||'پاسخ نامعتبر از سرور دریافت شد.');}
           if(!response.ok||result.ok===false)throw new Error(result.message||'ثبت تصمیم انجام نشد.');
           showMessage(result.message||'تصمیم ثبت شد.',true);
           window.setTimeout(()=>window.location.reload(),700);
@@ -248,6 +261,7 @@ $(function(){
         finally{exportButton.disabled=false;}
       });
     }
+    groups().forEach(syncGroup);
     syncMaster();
   }
 
