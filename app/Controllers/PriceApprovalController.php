@@ -141,9 +141,6 @@ final class PriceApprovalController
         PermissionService::require(Auth::userId(), 'prices.approvals.view');
 
         $pdo = Database::connection();
-
-        // Use the same latest-date records and payment-agreement grouping as
-        // the market price list. Eligibility for export is an additional filter.
         $sql = "WITH latest_dates AS (
             SELECT ProductCode, MAX(InquiryDate) AS latest_date
             FROM dbo.ProductPriceMonitor
@@ -151,23 +148,32 @@ final class PriceApprovalController
         )
         SELECT m.PriceMonitorID,m.ProductCode,m.InquiryDate,m.Source,m.Price,m.UnitID,
                m.CreatedDate,m.PaymentAgreementID,m.discountperc,m.grossprice,m.opration,
-               m.netamount,m.payagrementperc,m.userid,m.Approved,m.isexported
+               m.netamount,m.payagrementperc,m.userid,m.Approved,m.isexported,
+               u.username AS CreatorUsername
         FROM dbo.ProductPriceMonitor m
         INNER JOIN latest_dates ld
             ON ld.ProductCode=m.ProductCode AND ld.latest_date=m.InquiryDate
+        LEFT JOIN dbo.users u ON u.id=m.userid
         ORDER BY m.ProductCode,m.PaymentAgreementID,m.InquiryDate DESC,m.PriceMonitorID DESC";
 
         try {
             $marketRows = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
-            $rahkaran = RahkaranPriceService::instance();
-            $products = [];
-            foreach ($rahkaran->allRows() as $product) {
-                $code = trim((string)($product['Code'] ?? ''));
-                if ($code !== '') {
-                    $products[$code] = $product;
-                }
+            $existing = $pdo->query(
+                'SELECT ProductCode, CONVERT(varchar(10), InquiryDate, 23) AS InquiryDate, PaymentAgreementID
+                 FROM dbo.PriceApprove'
+            )->fetchAll(PDO::FETCH_ASSOC);
+
+            $exportedKeys = [];
+            foreach ($existing as $saved) {
+                $date = substr((string)($saved['InquiryDate'] ?? ''), 0, 10);
+                $exportedKeys[
+                    trim((string)($saved['ProductCode'] ?? '')) . '|' .
+                    $date . '|' .
+                    (int)($saved['PaymentAgreementID'] ?? 0)
+                ] = true;
             }
 
+            $rahkaran = RahkaranPriceService::instance();
             $agreementIds = array_values(array_unique(array_map(
                 static fn(array $r): int => (int)($r['PaymentAgreementID'] ?? 0),
                 $marketRows
@@ -189,136 +195,138 @@ final class PriceApprovalController
             if ($code === '') {
                 continue;
             }
-            $agreementId = (int)($row['PaymentAgreementID'] ?? 0);
-            $row['PaymentAgreementTitle'] = $agreements[$agreementId] ?? '';
+
+            $row['PaymentAgreementTitle'] = $agreements[(int)($row['PaymentAgreementID'] ?? 0)] ?? '';
             $row['UnitName'] = $unitNames[(int)($row['UnitID'] ?? 0)] ?? '';
+            $row['CreatorUsername'] = (string)($row['CreatorUsername'] ?? '');
+            $dateValue = $row['InquiryDate'] ?? '';
+            if ($dateValue instanceof \DateTimeInterface) {
+                $row['InquiryDateText'] = $dateValue->format('Y-m-d H:i:s');
+            } else {
+                $row['InquiryDateText'] = (string)$dateValue;
+            }
+            $row['InquiryDateJalali'] = $row['InquiryDateText'] !== ''
+                ? Jalali::fromGregorian($row['InquiryDateText'])
+                : '';
+            $row['price_received_at'] = $row['InquiryDate'];
+            $row['supplier'] = $row['Source'];
+            $row['unit_price'] = $row['Price'];
+            $row['unit_id'] = $row['UnitID'];
             $byProduct[$code][] = $row;
         }
 
-        // Exact column layout requested for the legacy Rahkaran import workbook.
+        // The Excel rows intentionally mirror the columns and aggregation shown
+        // on the approvals screen. A previously logged product/date/agreement
+        // group can never be exported a second time.
         $headers = [
-            'کد محصول','عنوان محصول','کد گروه محصول','واحد سنجش',
-            'عامل کنترل موجودی اول','عامل کنترل موجودی دوم','عامل کنترل موجودی سوم',
-            'عامل کنترل موجودی چهارم','عامل کنترل موجودی پنجم','بسته بندی',
-            'تا مقدار','فی','قطعیت','تلرانس کاهش','تلرانس افزایش'
+            'کد کالا',
+            'تاریخ رصد',
+            'منبع',
+            'قیمت',
+            'واحد',
+            'توافق پرداخت',
+            'قیمت ناخالص',
+            'مبلغ نهایی',
+            'کاربر ثبت‌کننده',
         ];
 
         $xml = '<?xml version="1.0" encoding="UTF-8"?>';
         $xml .= '<?mso-application progid="Excel.Sheet"?>';
         $xml .= '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">';
-        $xml .= '<Styles><Style ss:ID="Decimal6"><NumberFormat ss:Format="#,##0.######"/></Style></Styles>';
-        $xml .= '<Worksheet ss:Name="رصد بازار"><Table><Row>';
+        $xml .= '<Worksheet ss:Name="تأیید قیمت‌ها"><Table><Row>';
         foreach ($headers as $header) {
-            $xml .= '<Cell><Data ss:Type="String">'.htmlspecialchars($header, ENT_XML1|ENT_QUOTES, 'UTF-8').'</Data></Cell>';
+            $xml .= '<Cell><Data ss:Type="String">'.htmlspecialchars($header, ENT_XML1 | ENT_QUOTES, 'UTF-8').'</Data></Cell>';
         }
         $xml .= '</Row>';
 
-        $exportedIds = [];
-        $priceApproveRows = [];
-
+        $exportGroups = [];
         foreach ($byProduct as $code => $rowsForProduct) {
-            // Match the legacy workbook behavior: only export products present in Rahkaran.
-            if (!isset($products[$code])) {
-                continue;
-            }
-            $product = $products[$code];
-            $unitName = trim((string)($product['Announcement_unit'] ?? ''));
-            if ($unitName === '') {
-                $unitName = (string)($unitNames[(int)($rowsForProduct[0]['UnitID'] ?? 0)] ?? '');
-            }
             $groups = MarketPriceCalculator::groupByPaymentAgreement($rowsForProduct);
-
             foreach ($groups as $group) {
-                // Outlier groups are not exportable, even if old records were manually approved.
                 if (!empty($group['warning'])) {
                     continue;
                 }
 
                 $groupRows = $group['rows'];
-                $eligibleRows = array_values(array_filter(
-                    $groupRows,
-                    static fn(array $r): bool => (int)($r['Approved'] ?? 0) === 1
-                        && (int)($r['isexported'] ?? 0) === 0
-                ));
-                if (!$eligibleRows) {
+                if (!$groupRows) {
                     continue;
                 }
 
-                // One PriceApprove row is created per product + date + payment agreement,
-                // using the same average price written to the workbook.
+                // A displayed average covers every price in its group, so only
+                // export when all contributing records are approved and unexported.
+                $allEligible = true;
+                foreach ($groupRows as $r) {
+                    if ((int)($r['Approved'] ?? 0) !== 1 || (int)($r['isexported'] ?? 0) !== 0) {
+                        $allEligible = false;
+                        break;
+                    }
+                }
+                if (!$allEligible) {
+                    continue;
+                }
+
                 $representative = $groupRows[0];
-                $inquiryDate = $representative['InquiryDate'] ?? '';
-                if ($inquiryDate instanceof \DateTimeInterface) {
-                    $inquiryDate = $inquiryDate->format('Y-m-d H:i:s');
-                } else {
-                    $inquiryDate = (string)$inquiryDate;
+                $dateKey = substr((string)($representative['InquiryDateText'] ?? ''), 0, 10);
+                $agreementId = (int)($group['PaymentAgreementID'] ?? $representative['PaymentAgreementID'] ?? 0);
+                $duplicateKey = $code.'|'.$dateKey.'|'.$agreementId;
+                if (isset($exportedKeys[$duplicateKey])) {
+                    continue;
                 }
 
-                $sources = [];
-                foreach ($groupRows as $sourceRow) {
-                    $sourceName = trim((string)($sourceRow['Source'] ?? ''));
-                    if ($sourceName !== '') {
-                        $sources[$sourceName] = true;
-                    }
+                $source = (string)($representative['Source'] ?? '');
+                if (count($groupRows) > 1) {
+                    $source .= ' ('.count($groupRows).' قیمت)';
                 }
 
-                $averageField = static function (array $rows, string $field): float {
-                    $values = [];
-                    foreach ($rows as $r) {
-                        if (isset($r[$field]) && is_numeric($r[$field])) {
-                            $values[] = (float)$r[$field];
-                        }
-                    }
-                    return $values ? array_sum($values) / count($values) : 0.0;
-                };
+                $averagePrice = (float)($group['average_price'] ?? 0);
+                $unitName = (string)($representative['UnitName'] ?? '');
+                $agreementTitle = (string)($representative['PaymentAgreementTitle'] ?? '');
+                $grossPrice = (float)($representative['grossprice'] ?? 0);
+                $netAmount = (float)($representative['netamount'] ?? 0);
+                $username = (string)($representative['CreatorUsername'] ?? '');
 
-                $priceApproveRows[] = [
-                    'ProductCode' => $code,
-                    'InquiryDate' => $inquiryDate,
-                    'Source' => implode('، ', array_keys($sources)),
-                    'Price' => (float)($group['average_price'] ?? 0),
-                    'UnitID' => (int)($representative['UnitID'] ?? 0),
-                    'PaymentAgreementID' => (int)($group['PaymentAgreementID'] ?? $representative['PaymentAgreementID'] ?? 0),
-                    'grossprice' => $averageField($groupRows, 'grossprice'),
-                    'netamount' => $averageField($groupRows, 'netamount'),
-                    'userid' => (int)Auth::userId(),
+                $exportGroups[] = [
+                    'key' => $duplicateKey,
+                    'ids' => array_values(array_map(
+                        static fn(array $r): int => (int)($r['PriceMonitorID'] ?? 0),
+                        $groupRows
+                    )),
+                    'price_approve' => [
+                        'ProductCode' => $code,
+                        'InquiryDate' => $representative['InquiryDateText'],
+                        'Source' => $source,
+                        'Price' => $averagePrice,
+                        'UnitID' => (int)($representative['UnitID'] ?? 0),
+                        'PaymentAgreementID' => $agreementId,
+                        'grossprice' => $grossPrice,
+                        'netamount' => $netAmount,
+                        'userid' => (int)($representative['userid'] ?? 0),
+                    ],
+                    'values' => [
+                        $code,
+                        $representative['InquiryDateJalali'],
+                        $source,
+                        number_format($averagePrice, 2, '.', ''),
+                        $unitName,
+                        $agreementTitle,
+                        number_format($grossPrice, 2, '.', ''),
+                        number_format($netAmount, 2, '.', ''),
+                        $username,
+                    ],
                 ];
-
-                // Only mark records that were actually eligible for this export.
-                foreach ($eligibleRows as $r) {
-                    $id = (int)($r['PriceMonitorID'] ?? 0);
-                    if ($id > 0) {
-                        $exportedIds[] = $id;
-                    }
-                }
-
-                $fee = (float)($group['average_price'] ?? 0);
-                $values = [
-                    $code,
-                    (string)($product['Name'] ?? ''),
-                    '',
-                    $unitName,
-                    '', '', '', '', '', '',
-                    '',
-                    $fee,
-                    'قطعی',
-                    0,
-                    0,
-                ];
-
-                $xml .= '<Row>';
-                foreach ($values as $index => $value) {
-                    $type = is_numeric($value) && $value !== '' ? 'Number' : 'String';
-                    $style = in_array($index, [11, 13, 14], true) ? ' ss:StyleID="Decimal6"' : '';
-                    $xml .= '<Cell'.$style.'><Data ss:Type="'.$type.'">'.htmlspecialchars((string)$value, ENT_XML1|ENT_QUOTES, 'UTF-8').'</Data></Cell>';
-                }
-                $xml .= '</Row>';
             }
+        }
+
+        foreach ($exportGroups as $exportGroup) {
+            $xml .= '<Row>';
+            foreach ($exportGroup['values'] as $value) {
+                $xml .= '<Cell><Data ss:Type="String">'.htmlspecialchars((string)$value, ENT_XML1 | ENT_QUOTES, 'UTF-8').'</Data></Cell>';
+            }
+            $xml .= '</Row>';
         }
         $xml .= '</Table></Worksheet></Workbook>';
 
-        $exportedIds = array_values(array_unique($exportedIds));
-        if ($priceApproveRows) {
+        if ($exportGroups) {
             try {
                 $pdo->beginTransaction();
 
@@ -328,30 +336,32 @@ final class PriceApprovalController
                      VALUES
                         (:code, :inquiry_date, :source, :price, :unit_id, :agreement_id, :grossprice, :netamount, :userid)'
                 );
-
-                foreach ($priceApproveRows as $approvedRow) {
+                foreach ($exportGroups as $exportGroup) {
+                    $r = $exportGroup['price_approve'];
                     $insert->execute([
-                        'code' => $approvedRow['ProductCode'],
-                        'inquiry_date' => $approvedRow['InquiryDate'],
-                        'source' => $approvedRow['Source'],
-                        'price' => number_format($approvedRow['Price'], 6, '.', ''),
-                        'unit_id' => $approvedRow['UnitID'],
-                        'agreement_id' => $approvedRow['PaymentAgreementID'],
-                        'grossprice' => number_format($approvedRow['grossprice'], 6, '.', ''),
-                        'netamount' => number_format($approvedRow['netamount'], 6, '.', ''),
-                        'userid' => $approvedRow['userid'],
+                        'code' => $r['ProductCode'],
+                        'inquiry_date' => $r['InquiryDate'],
+                        'source' => $r['Source'],
+                        'price' => number_format((float)$r['Price'], 6, '.', ''),
+                        'unit_id' => $r['UnitID'],
+                        'agreement_id' => $r['PaymentAgreementID'],
+                        'grossprice' => number_format((float)$r['grossprice'], 6, '.', ''),
+                        'netamount' => number_format((float)$r['netamount'], 6, '.', ''),
+                        'userid' => $r['userid'],
                     ]);
                 }
 
-                if ($exportedIds) {
-                    $marks = implode(',', array_fill(0, count($exportedIds), '?'));
-                    $update = $pdo->prepare(
-                        "UPDATE dbo.ProductPriceMonitor
-                         SET isexported=1
-                         WHERE Approved=1 AND ISNULL(isexported,0)=0
-                           AND PriceMonitorID IN ($marks)"
-                    );
-                    $update->execute($exportedIds);
+                $update = $pdo->prepare(
+                    'UPDATE dbo.ProductPriceMonitor
+                     SET isexported=1
+                     WHERE PriceMonitorID=:id AND Approved=1 AND ISNULL(isexported,0)=0'
+                );
+                foreach ($exportGroups as $exportGroup) {
+                    foreach ($exportGroup['ids'] as $id) {
+                        if ($id > 0) {
+                            $update->execute(['id' => $id]);
+                        }
+                    }
                 }
 
                 $pdo->commit();
