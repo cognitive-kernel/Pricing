@@ -1,15 +1,15 @@
-<?php use App\\Core\\Security; ?>
+<?php use App\Core\Security; ?>
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
     <h4 class="mb-0">تأیید رصد قیمت‌ها</h4>
     <a href="/pricing/public/prices/approvals/export" class="btn btn-success">خروجی اکسل قیمت‌های تأییدشده</a>
 </div>
 <form method="get" action="/pricing/public/prices/approvals" class="row g-2 mb-3">
-    <div class="col-md-5"><input class="form-control" type="search" name="q" value="<?= \App\Core\Security::e($q) ?>" placeholder="جستجو بر اساس کد کالا یا منبع"></div>
+    <div class="col-md-5"><input class="form-control" type="search" name="q" value="<?= Security::e($q) ?>" placeholder="جستجو بر اساس کد کالا یا منبع"></div>
     <div class="col-auto"><button class="btn btn-secondary" type="submit">جستجو</button></div>
     <div class="col-auto d-flex align-items-center text-muted">تعداد در انتظار تأیید: <?= number_format(count($records)) ?></div>
 </form>
 <form method="post" action="/pricing/public/prices/approvals/decision">
-    <input type="hidden" name="_csrf" value="<?= Security::e(\App\Core\Security::csrf()) ?>">
+    <input type="hidden" name="_csrf" value="<?= Security::e(Security::csrf()) ?>">
     <div class="d-flex gap-2 mb-3">
         <button class="btn btn-success" type="submit" name="decision" value="approve" onclick="return confirm('ردیف‌های انتخاب‌شده تأیید شوند؟')">تأیید موارد انتخاب‌شده</button>
         <button class="btn btn-danger" type="submit" name="decision" value="reject" onclick="return confirm('ردیف‌های انتخاب‌شده رد شوند؟')">رد موارد انتخاب‌شده</button>
