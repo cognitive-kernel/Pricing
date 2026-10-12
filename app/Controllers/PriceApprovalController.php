@@ -79,7 +79,7 @@ final class PriceApprovalController
     public function excel(): never
     {
         Auth::requireLogin();
-        PermissionService::require(Auth::userId(), 'prices.view');
+        PermissionService::require(Auth::userId(), 'prices.approvals.view');
         $pdo = Database::connection();
         $sql = "WITH ranked AS (
             SELECT m.PriceMonitorID,m.ProductCode,m.InquiryDate,m.Source,m.Price,m.UnitID,
