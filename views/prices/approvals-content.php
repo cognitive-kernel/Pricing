@@ -1,4 +1,4 @@
-<?php ?>
+<?php use App\\Core\\Security; ?>
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
     <h4 class="mb-0">تأیید رصد قیمت‌ها</h4>
     <a href="/pricing/public/prices/approvals/export" class="btn btn-success">خروجی اکسل قیمت‌های تأییدشده</a>
