@@ -34,7 +34,7 @@ final class PriceApprovalController
         FROM dbo.ProductPriceMonitor m
         INNER JOIN latest_dates ld ON ld.ProductCode=m.ProductCode AND ld.latest_date=m.InquiryDate
         LEFT JOIN dbo.users u ON u.id=m.userid
-        WHERE ISNULL(m.Approved,0)=0";
+        WHERE 1=1";
         $params = [];
         if ($q !== '') {
             $sql .= " AND (CONVERT(varchar(100),m.ProductCode) LIKE :qcode OR m.Source LIKE :qsource)";
@@ -68,12 +68,22 @@ final class PriceApprovalController
 
         $approvalGroups = [];
         foreach ($byProduct as $code => $productRows) {
+            // Calculate average/outlier status using every record on the latest
+            // market date (same inputs as the price-list page), but expose only
+            // still-pending records as selectable approval targets.
             $agreementGroups = MarketPriceCalculator::groupByPaymentAgreement($productRows);
             foreach ($agreementGroups as $group) {
                 $groupRows = $group['rows'];
-                $first = $groupRows[0];
+                $pendingRows = array_values(array_filter(
+                    $groupRows,
+                    static fn(array $r): bool => (int)($r['Approved'] ?? 0) === 0
+                ));
+                if (!$pendingRows) {
+                    continue;
+                }
+                $first = $pendingRows[0];
                 $approvalGroups[] = [
-                    'ids' => array_values(array_map(static fn(array $r): int => (int)$r['PriceMonitorID'], $groupRows)),
+                    'ids' => array_values(array_map(static fn(array $r): int => (int)$r['PriceMonitorID'], $pendingRows)),
                     'row' => $first,
                     'count' => (int)$group['count'],
                     'average_price' => $group['average_price'],
