@@ -22,7 +22,11 @@
             <?php if (!$approvalGroups): ?><tr><td colspan="10" class="text-center">موردی در انتظار تأیید نیست.</td></tr>
             <?php else: foreach ($approvalGroups as $group): $r = $group['row']; ?>
                 <tr class="<?= $group['warning'] ? 'table-danger' : '' ?>">
-                    <td><?php foreach ($group['ids'] as $id): ?><input class="approval-select" type="checkbox" name="ids[]" value="<?= (int)$id ?>" aria-label="انتخاب رکورد <?= (int)$id ?>" <?= $group['warning'] ? 'disabled title="به دلیل اختلاف فاحش قیمت‌ها قابل تأیید نیست"' : '' ?>><?php endforeach; ?><?php if ($group['warning']): ?><small class="text-danger d-block">ابتدا اختلاف قیمت‌ها را بررسی کنید.</small><?php endif; ?></td>
+                    <td>
+                        <input class="approval-select-group" type="checkbox" aria-label="انتخاب گروه قیمت‌های کالا <?= Security::e((string)$r['ProductCode']) ?>" <?= $group['warning'] ? 'disabled title="به دلیل اختلاف فاحش قیمت‌ها قابل تأیید نیست"' : '' ?>>
+                        <?php foreach ($group['ids'] as $id): ?><input class="approval-record-id" type="hidden" name="ids[]" value="<?= (int)$id ?>" disabled><?php endforeach; ?>
+                        <?php if ($group['warning']): ?><small class="text-danger d-block">ابتدا اختلاف قیمت‌ها را بررسی کنید.</small><?php endif; ?>
+                    </td>
                     <td><?= Security::e((string)$r['ProductCode']) ?></td>
                     <td><?= Security::e((string)($r['InquiryDateJalali'] ?? '')) ?></td>
                     <td><?= Security::e((string)$r['Source']) ?><?= count($group['ids']) > 1 ? ' ('.count($group['ids']).' قیمت)' : '' ?></td>
