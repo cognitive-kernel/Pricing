@@ -16,7 +16,7 @@ final class PriceApprovalController
     public function index(): void
     {
         Auth::requireLogin();
-        PermissionService::require(Auth::userId(), 'prices.view');
+        PermissionService::require(Auth::userId(), 'prices.approvals.view');
 
         $q = trim((string) ($_GET['q'] ?? ''));
         $pdo = Database::connection();
