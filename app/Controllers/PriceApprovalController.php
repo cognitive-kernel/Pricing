@@ -102,11 +102,11 @@ final class PriceApprovalController
         $sql = "UPDATE m SET Approved=?
         FROM dbo.ProductPriceMonitor m
         INNER JOIN (
-            SELECT PriceMonitorID,
-                   ROW_NUMBER() OVER (PARTITION BY ProductCode ORDER BY InquiryDate DESC,PriceMonitorID DESC) AS rn
+            SELECT ProductCode, MAX(InquiryDate) AS latest_date
             FROM dbo.ProductPriceMonitor
-        ) latest ON latest.PriceMonitorID=m.PriceMonitorID
-        WHERE latest.rn=1 AND ISNULL(m.Approved,0)=0 AND m.PriceMonitorID IN ($marks)";
+            GROUP BY ProductCode
+        ) latest ON latest.ProductCode=m.ProductCode AND latest.latest_date=m.InquiryDate
+        WHERE ISNULL(m.Approved,0)=0 AND m.PriceMonitorID IN ($marks)";
         $stmt = $pdo->prepare($sql);
         $stmt->execute(array_merge([$approved], $ids));
         Security::redirect('/prices/approvals');
