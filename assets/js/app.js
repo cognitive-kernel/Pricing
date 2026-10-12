@@ -1,4 +1,6 @@
 $(function(){
+  // Bind approval-page controls before unrelated page initializers run.
+  initPriceApprovals();
   const JALALI_MONTHS=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
 
   document.addEventListener('change',function(event){
@@ -248,6 +250,5 @@ $(function(){
     }
     syncMaster();
   }
-  initPriceApprovals();
 
 });
