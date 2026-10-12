@@ -212,7 +212,15 @@ final class PriceApprovalController
 
         $exportedIds = [];
         foreach ($byProduct as $code => $rowsForProduct) {
-            $product = $products[$code] ?? [];
+            // Match the legacy workbook behavior: only export products present in Rahkaran.
+            if (!isset($products[$code])) {
+                continue;
+            }
+            $product = $products[$code];
+            $unitName = trim((string)($product['Announcement_unit'] ?? ''));
+            if ($unitName === '') {
+                $unitName = (string)($unitNames[(int)($rowsForProduct[0]['UnitID'] ?? 0)] ?? '');
+            }
             $groups = MarketPriceCalculator::groupByPaymentAgreement($rowsForProduct);
             foreach ($groups as $group) {
                 $eligibleRows = array_values(array_filter(
@@ -236,7 +244,7 @@ final class PriceApprovalController
                     $code,
                     (string)($product['Name'] ?? ''),
                     '',
-                    (string)($product['Announcement_unit'] ?? ''),
+                    $unitName,
                     '', '', '', '', '', '',
                     '',
                     $fee,
