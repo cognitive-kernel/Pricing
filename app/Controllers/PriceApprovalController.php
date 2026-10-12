@@ -40,11 +40,15 @@ final class PriceApprovalController
         $stmt->execute($params);
         $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $agreementIds = array_values(array_unique(array_map(static fn(array $r): int => (int)($r['PaymentAgreementID'] ?? 0), $records)));
-        $agreements = RahkaranPriceService::instance()->paymentAgreementTitlesByIds($agreementIds);
+        $rahkaran = RahkaranPriceService::instance();
+        $agreements = $rahkaran->paymentAgreementTitlesByIds($agreementIds);
+        $unitIds = array_values(array_unique(array_map(static fn(array $r): int => (int)($r['UnitID'] ?? 0), $records)));
+        $unitNames = $rahkaran->unitNamesByIds($unitIds);
         foreach ($records as &$record) {
             $record['PaymentAgreementTitle'] = $agreements[(int)($record['PaymentAgreementID'] ?? 0)] ?? ''; 
             $record['InquiryDateJalali'] = !empty($record['InquiryDate']) ? Jalali::fromGregorian((string)$record['InquiryDate']) : ''; 
             $record['CreatorUsername'] = (string)($record['CreatorUsername'] ?? '');
+            $record['UnitName'] = $unitNames[(int)($record['UnitID'] ?? 0)] ?? ''; 
         }
         unset($record);
         View::render('prices/approvals', compact('records','q'));
