@@ -178,7 +178,7 @@ $(function(){
       messageBox.hidden=false;
       messageBox.scrollIntoView({behavior:'smooth',block:'nearest'});
     }
-    function boxes(){return Array.from(document.querySelectorAll('#approval-decision-form .approval-select'));}
+    function boxes(){return Array.from(document.querySelectorAll('#approval-decision-form .approval-select')).filter(box=>!box.disabled);}
     function syncMaster(){
       if(!selectAll)return;
       const all=boxes();
