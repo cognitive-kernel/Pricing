@@ -111,7 +111,7 @@ final class PriceApprovalController
         try {
             $stmt = $pdo->prepare($sql);
             $stmt->execute(array_merge([$approved], $ids));
-        } catch (\\Throwable $e) {
+        } catch (\Throwable $e) {
             $this->respondError('ثبت تصمیم انجام نشد. لطفاً ساختار جدول و ستون Approved را بررسی کنید.', 500);
         }
         if ($this->isAjax()) {
@@ -139,7 +139,7 @@ final class PriceApprovalController
         ORDER BY ProductCode";
         try {
             $rows = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
-        } catch (\\Throwable $e) {
+        } catch (\Throwable $e) {
             $this->respondError('خروجی اکسل تهیه نشد. خطای پایگاه داده: ستون‌ها و ساختار جدول ProductPriceMonitor را بررسی کنید.', 500);
         }
         $agreementIds = array_values(array_unique(array_map(static fn(array $r): int => (int)($r['PaymentAgreementID'] ?? 0), $rows)));
