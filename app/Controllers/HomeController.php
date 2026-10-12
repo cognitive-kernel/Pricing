@@ -32,6 +32,14 @@ final class HomeController
                 'tone' => 'success',
             ],
             [
+                'permission' => 'prices.view',
+                'title' => 'تأیید قیمت‌ها',
+                'description' => 'بررسی و تأیید یا رد آخرین رصد ثبت‌شده برای هر کالا',
+                'url' => '/pricing/public/prices/approvals',
+                'symbol' => 'تأیید',
+                'tone' => 'warning',
+            ],
+            [
                 'permission' => 'products.bulk',
                 'title' => 'فرم شرکتی',
                 'description' => 'ثبت قیمت کالاها بر اساس شرکت انتخاب‌شده',
