@@ -141,10 +141,36 @@ final class PriceApprovalController
         // Repair older export rows that were saved before gross/net amounts were
         // consistently populated. If the original monitor amount is missing too,
         // the recorded price is the safe neutral fallback.
-        $pdo->exec("UPDATE dbo.PriceApprove
-                    SET grossprice = COALESCE(grossprice, Price),
-                        netamount = COALESCE(netamount, grossprice, Price)
-                    WHERE grossprice IS NULL OR netamount IS NULL");
+        $pdo->exec("UPDATE pa
+                    SET grossprice = COALESCE(pa.grossprice, src.calculated_gross, pa.Price),
+                        netamount = COALESCE(pa.netamount, src.calculated_net, src.calculated_gross, pa.Price)
+                    FROM dbo.PriceApprove pa
+                    OUTER APPLY (
+                        SELECT TOP 1
+                            COALESCE(
+                                m.grossprice,
+                                ROUND(COALESCE(m.Price, pa.Price) * (1 - ISNULL(m.discountperc, 0) / 100.0), 2)
+                            ) AS calculated_gross,
+                            COALESCE(
+                                m.netamount,
+                                ROUND(
+                                    COALESCE(m.grossprice, COALESCE(m.Price, pa.Price) * (1 - ISNULL(m.discountperc, 0) / 100.0))
+                                    * CASE WHEN ISNULL(m.opration, 1) = 1
+                                           THEN 1 + ISNULL(m.payagrementperc, 0) / 100.0
+                                           ELSE 1 - ISNULL(m.payagrementperc, 0) / 100.0 END,
+                                    2
+                                )
+                            ) AS calculated_net
+                        FROM dbo.ProductPriceMonitor m
+                        WHERE m.ProductCode = pa.ProductCode
+                          AND m.InquiryDate = pa.InquiryDate
+                          AND ISNULL(m.Source, '') = ISNULL(pa.Source, '')
+                          AND ISNULL(m.Price, 0) = ISNULL(pa.Price, 0)
+                          AND ISNULL(m.UnitID, 0) = ISNULL(pa.UnitID, 0)
+                          AND ISNULL(m.PaymentAgreementID, 0) = ISNULL(pa.PaymentAgreementID, 0)
+                        ORDER BY m.PriceMonitorID DESC
+                    ) src
+                    WHERE pa.grossprice IS NULL OR pa.netamount IS NULL");
 
         $sql = "WITH ranked AS (
             SELECT m.PriceMonitorID,m.ProductCode,m.InquiryDate,m.Source,m.Price,m.UnitID,
@@ -219,6 +245,21 @@ final class PriceApprovalController
                         $inquiryDate = (string) $inquiryDate;
                     }
 
+                    $price = (float) ($r['Price'] ?? 0);
+                    $discountPercent = max(0.0, min(100.0, (float) ($r['discountperc'] ?? 0)));
+                    $grossprice = ($r['grossprice'] ?? null) !== null
+                        ? (float) $r['grossprice']
+                        : round($price * (1 - $discountPercent / 100), 2);
+                    $agreementPercent = max(0.0, (float) ($r['payagrementperc'] ?? 0));
+                    $isAddOperation = (int) ($r['opration'] ?? 1) === 1;
+                    $calculatedNet = round(
+                        $isAddOperation
+                            ? $grossprice * (1 + $agreementPercent / 100)
+                            : $grossprice * (1 - $agreementPercent / 100),
+                        2
+                    );
+                    $netamount = ($r['netamount'] ?? null) !== null ? (float) $r['netamount'] : $calculatedNet;
+
                     $insert->execute([
                         'product_code' => (string) ($r['ProductCode'] ?? ''),
                         'inquiry_date' => $inquiryDate,
@@ -226,12 +267,8 @@ final class PriceApprovalController
                         'price' => $r['Price'] ?? null,
                         'unit_id' => (int) ($r['UnitID'] ?? 0),
                         'agreement_id' => (int) ($r['PaymentAgreementID'] ?? 0),
-                        'grossprice' => ($r['grossprice'] ?? null) !== null
-                            ? $r['grossprice']
-                            : ($r['Price'] ?? 0),
-                        'netamount' => ($r['netamount'] ?? null) !== null
-                            ? $r['netamount']
-                            : (($r['grossprice'] ?? null) !== null ? $r['grossprice'] : ($r['Price'] ?? 0)),
+                        'grossprice' => $grossprice,
+                        'netamount' => $netamount,
                         'userid' => (int) ($r['userid'] ?? 0),
                     ]);
                 }
