@@ -61,11 +61,8 @@
             master.indeterminate = items.some(function (item) { return item.checked; }) && !master.checked;
         }
 
-        master.addEventListener('click', function (event) {
-            const shouldCheck = !master.checked;
-            event.preventDefault();
-            getItems().forEach(function (item) { item.checked = shouldCheck; });
-            master.checked = shouldCheck;
+        master.addEventListener('change', function () {
+            getItems().forEach(function (item) { item.checked = master.checked; });
             master.indeterminate = false;
         });
         document.addEventListener('change', function (event) {
