@@ -46,23 +46,37 @@
 </form>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const master = document.getElementById('approval-select-all');
-    if (!master) return;
-    const updateMaster = function () {
-        const items = Array.from(document.querySelectorAll('.approval-select'));
-        master.checked = items.length > 0 && items.every(function (item) { return item.checked; });
-        master.indeterminate = items.some(function (item) { return item.checked; }) && !master.checked;
-    };
-    master.addEventListener('change', function () {
-        document.querySelectorAll('.approval-select').forEach(function (item) {
-            item.checked = master.checked;
+(function () {
+    function initApprovalSelectAll() {
+        const master = document.getElementById('approval-select-all');
+        if (!master || master.dataset.bound === '1') return;
+        master.dataset.bound = '1';
+
+        function getItems() {
+            return Array.from(document.querySelectorAll('input.approval-select[name="ids[]"]'));
+        }
+        function updateMaster() {
+            const items = getItems();
+            master.checked = items.length > 0 && items.every(function (item) { return item.checked; });
+            master.indeterminate = items.some(function (item) { return item.checked; }) && !master.checked;
+        }
+
+        master.addEventListener('click', function (event) {
+            const shouldCheck = !master.checked;
+            event.preventDefault();
+            getItems().forEach(function (item) { item.checked = shouldCheck; });
+            master.checked = shouldCheck;
+            master.indeterminate = false;
         });
-        master.indeterminate = false;
-    });
-    document.querySelectorAll('.approval-select').forEach(function (item) {
-        item.addEventListener('change', updateMaster);
-    });
-    updateMaster();
-});
+        document.addEventListener('change', function (event) {
+            if (event.target && event.target.matches('input.approval-select[name="ids[]"]')) updateMaster();
+        });
+        updateMaster();
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initApprovalSelectAll);
+    } else {
+        initApprovalSelectAll();
+    }
+})();
 </script>
