@@ -137,6 +137,15 @@ final class PriceApprovalController
         Auth::requireLogin();
         PermissionService::require(Auth::userId(), 'prices.approvals.view');
         $pdo = Database::connection();
+
+        // Repair older export rows that were saved before gross/net amounts were
+        // consistently populated. If the original monitor amount is missing too,
+        // the recorded price is the safe neutral fallback.
+        $pdo->exec("UPDATE dbo.PriceApprove
+                    SET grossprice = COALESCE(grossprice, Price),
+                        netamount = COALESCE(netamount, grossprice, Price)
+                    WHERE grossprice IS NULL OR netamount IS NULL");
+
         $sql = "WITH ranked AS (
             SELECT m.PriceMonitorID,m.ProductCode,m.InquiryDate,m.Source,m.Price,m.UnitID,
                    m.PaymentAgreementID,m.discountperc,m.grossprice,m.opration,m.netamount,
@@ -217,8 +226,12 @@ final class PriceApprovalController
                         'price' => $r['Price'] ?? null,
                         'unit_id' => (int) ($r['UnitID'] ?? 0),
                         'agreement_id' => (int) ($r['PaymentAgreementID'] ?? 0),
-                        'grossprice' => $r['grossprice'] ?? null,
-                        'netamount' => $r['netamount'] ?? null,
+                        'grossprice' => ($r['grossprice'] ?? null) !== null
+                            ? $r['grossprice']
+                            : ($r['Price'] ?? 0),
+                        'netamount' => ($r['netamount'] ?? null) !== null
+                            ? $r['netamount']
+                            : (($r['grossprice'] ?? null) !== null ? $r['grossprice'] : ($r['Price'] ?? 0)),
                         'userid' => (int) ($r['userid'] ?? 0),
                     ]);
                 }
