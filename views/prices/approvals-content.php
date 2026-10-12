@@ -16,7 +16,7 @@
     </div>
     <div class="table-responsive">
         <table class="table table-striped table-hover align-middle">
-            <thead><tr><th><input type="checkbox" id="approval-select-all" aria-label="انتخاب همه"></th><th>کد کالا</th><th>تاریخ رصد</th><th>منبع</th><th>قیمت</th><th>واحد</th><th>توافق پرداخت</th><th>قیمت ناخالص</th><th>مبلغ نهایی</th><th>کاربر ثبت‌کننده</th></tr></thead>
+            <thead><tr><th><input type="checkbox" id="approval-select-all" aria-label="انتخاب همه" onchange="document.querySelectorAll('.approval-select').forEach(function(box){box.checked=this.checked;}, this)"></th><th>کد کالا</th><th>تاریخ رصد</th><th>منبع</th><th>قیمت</th><th>واحد</th><th>توافق پرداخت</th><th>قیمت ناخالص</th><th>مبلغ نهایی</th><th>کاربر ثبت‌کننده</th></tr></thead>
             <tbody>
             <?php if (!$approvalGroups): ?><tr><td colspan="10" class="text-center">موردی در انتظار تأیید نیست.</td></tr>
             <?php else: foreach ($approvalGroups as $group): $r = $group['row']; ?>
@@ -45,35 +45,4 @@
     </div>
 </form>
 
-<script>
-(function () {
-    function initApprovalSelectAll() {
-        const master = document.getElementById('approval-select-all');
-        if (!master || master.dataset.bound === '1') return;
-        master.dataset.bound = '1';
 
-        function getItems() {
-            return Array.from(document.querySelectorAll('input.approval-select[name="ids[]"]'));
-        }
-        function updateMaster() {
-            const items = getItems();
-            master.checked = items.length > 0 && items.every(function (item) { return item.checked; });
-            master.indeterminate = items.some(function (item) { return item.checked; }) && !master.checked;
-        }
-
-        master.addEventListener('change', function () {
-            getItems().forEach(function (item) { item.checked = master.checked; });
-            master.indeterminate = false;
-        });
-        document.addEventListener('change', function (event) {
-            if (event.target && event.target.matches('input.approval-select[name="ids[]"]')) updateMaster();
-        });
-        updateMaster();
-    }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initApprovalSelectAll);
-    } else {
-        initApprovalSelectAll();
-    }
-})();
-</script>
