@@ -63,13 +63,14 @@ final class PriceApprovalController
         $approved = $decision === 'approve' ? 1 : 2;
         $pdo = Database::connection();
         $marks = implode(',', array_fill(0, count($ids), '?'));
-        $sql = "WITH ranked AS (
-            SELECT PriceMonitorID,Approved,
+        $sql = "UPDATE m SET Approved=?
+        FROM dbo.ProductPriceMonitor m
+        INNER JOIN (
+            SELECT PriceMonitorID,
                    ROW_NUMBER() OVER (PARTITION BY ProductCode ORDER BY InquiryDate DESC,PriceMonitorID DESC) AS rn
             FROM dbo.ProductPriceMonitor
-        )
-        UPDATE ranked SET Approved=?
-        WHERE rn=1 AND ISNULL(Approved,0)=0 AND PriceMonitorID IN ($marks)";
+        ) latest ON latest.PriceMonitorID=m.PriceMonitorID
+        WHERE latest.rn=1 AND ISNULL(m.Approved,0)=0 AND m.PriceMonitorID IN ($marks)";
         $stmt = $pdo->prepare($sql);
         $stmt->execute(array_merge([$approved], $ids));
         Security::redirect('/prices/approvals');
