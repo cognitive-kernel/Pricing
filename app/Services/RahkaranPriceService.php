@@ -134,6 +134,30 @@ final class RahkaranPriceService
             : null;
     }
 
+
+    public function unitNamesByIds(array $ids): array
+    {
+        $wanted = array_values(array_unique(array_filter(array_map(
+            static fn($id): int => (int) $id,
+            $ids
+        ), static fn(int $id): bool => $id > 0)));
+
+        if (!$wanted) {
+            return [];
+        }
+
+        $in = implode(',', array_fill(0, count($wanted), '?'));
+        $s = $this->pdo->prepare(
+            'SELECT UnitID, Name FROM gnr3.Unit WHERE UnitID IN (' . $in . ')'
+        );
+        $s->execute($wanted);
+        $result = [];
+        foreach ($s->fetchAll() as $row) {
+            $result[(int) $row['UnitID']] = (string) $row['Name'];
+        }
+        return $result;
+    }
+
     public function paymentAgreements(): array
     {
         $sql = 'SELECT [PaymentAgreementID], [Number], [Title]
