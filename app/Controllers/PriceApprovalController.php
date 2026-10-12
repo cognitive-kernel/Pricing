@@ -94,8 +94,7 @@ final class PriceApprovalController
         $ids = array_values(array_unique(array_filter(array_map('intval', (array)($_POST['ids'] ?? [])), static fn(int $id): bool => $id > 0)));
         $decision = (string)($_POST['decision'] ?? '');
         if (!$ids || !in_array($decision, ['approve','reject'], true)) {
-            http_response_code(422);
-            exit('حداقل یک ردیف و نوع تصمیم معتبر انتخاب کنید.');
+            $this->respondError('حداقل یک ردیف و نوع تصمیم معتبر انتخاب کنید.', 422);
         }
 
         $approved = $decision === 'approve' ? 1 : 2;
@@ -109,8 +108,17 @@ final class PriceApprovalController
             GROUP BY ProductCode
         ) latest ON latest.ProductCode=m.ProductCode AND latest.latest_date=m.InquiryDate
         WHERE ISNULL(m.Approved,0)=0 AND m.PriceMonitorID IN ($marks)";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute(array_merge([$approved], $ids));
+        try {
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute(array_merge([$approved], $ids));
+        } catch (\\Throwable $e) {
+            $this->respondError('ثبت تصمیم انجام نشد. لطفاً ساختار جدول و ستون Approved را بررسی کنید.', 500);
+        }
+        if ($this->isAjax()) {
+            header('Content-Type: application/json; charset=UTF-8');
+            echo json_encode(['ok' => true, 'message' => 'تصمیم ثبت شد.'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
         Security::redirect('/prices/approvals');
     }
 
@@ -129,7 +137,11 @@ final class PriceApprovalController
         SELECT * FROM ranked
         WHERE rn=1 AND Approved=1 AND ISNULL(isexported,0)=0
         ORDER BY ProductCode";
-        $rows = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+        try {
+            $rows = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+        } catch (\\Throwable $e) {
+            $this->respondError('خروجی اکسل تهیه نشد. خطای پایگاه داده: ستون‌ها و ساختار جدول ProductPriceMonitor را بررسی کنید.', 500);
+        }
         $agreementIds = array_values(array_unique(array_map(static fn(array $r): int => (int)($r['PaymentAgreementID'] ?? 0), $rows)));
         $agreements = RahkaranPriceService::instance()->paymentAgreementTitlesByIds($agreementIds);
 
@@ -178,4 +190,21 @@ final class PriceApprovalController
         echo $xml;
         exit;
     }
+    private function isAjax(): bool
+    {
+        return strtolower((string)($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest'
+            || str_contains(strtolower((string)($_SERVER['HTTP_ACCEPT'] ?? '')), 'application/json');
+    }
+
+    private function respondError(string $message, int $status): never
+    {
+        http_response_code($status);
+        if ($this->isAjax()) {
+            header('Content-Type: application/json; charset=UTF-8');
+            echo json_encode(['ok' => false, 'message' => $message], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        exit($message);
+    }
+
 }
