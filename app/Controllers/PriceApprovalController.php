@@ -110,19 +110,22 @@ final class PriceApprovalController
         $approved = $decision === 'approve' ? 1 : 2;
         $pdo = Database::connection();
         $marks = implode(',', array_fill(0, count($ids), '?'));
-        $sql = "UPDATE m SET Approved=?
-        FROM dbo.ProductPriceMonitor m
-        INNER JOIN (
-            SELECT ProductCode, MAX(InquiryDate) AS latest_date
-            FROM dbo.ProductPriceMonitor
-            GROUP BY ProductCode
-        ) latest ON latest.ProductCode=m.ProductCode AND latest.latest_date=m.InquiryDate
-        WHERE ISNULL(m.Approved,0)=0 AND m.PriceMonitorID IN ($marks)";
+        // The submitted IDs are the exact pending source rows represented by
+        // the selected approval group. Update them directly so every decision is
+        // persisted and the group disappears from both the list and its searches.
+        $sql = "UPDATE dbo.ProductPriceMonitor
+                SET Approved=?
+                WHERE ISNULL(Approved,0)=0
+                  AND PriceMonitorID IN ($marks)";
         try {
             $stmt = $pdo->prepare($sql);
             $stmt->execute(array_merge([$approved], $ids));
+            if ($stmt->rowCount() < 1) {
+                $this->respondError('ردیف‌های انتخاب‌شده قبلاً بررسی شده‌اند یا دیگر در انتظار تصمیم نیستند. صفحه را تازه‌سازی کنید.', 409);
+            }
         } catch (\Throwable $e) {
-            $this->respondError('ثبت تصمیم انجام نشد. لطفاً ساختار جدول و ستون Approved را بررسی کنید.', 500);
+            error_log('Price approval decision update failed: '.$e->getMessage());
+            $this->respondError('ثبت تصمیم انجام نشد.', 500);
         }
         if ($this->isAjax()) {
             header('Content-Type: application/json; charset=UTF-8');
