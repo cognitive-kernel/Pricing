@@ -32,7 +32,7 @@ final class HomeController
                 'tone' => 'success',
             ],
             [
-                'permission' => 'prices.view',
+                'permission' => 'prices.approvals.view',
                 'title' => 'تأیید قیمت‌ها',
                 'description' => 'بررسی و تأیید یا رد آخرین رصد ثبت‌شده برای هر کالا',
                 'url' => '/pricing/public/prices/approvals',
