@@ -190,10 +190,61 @@ final class PriceApprovalController
         }
         $xml .= '</Table></Worksheet></Workbook>';
 
-        if ($exportedIds) {
-            $marks = implode(',', array_fill(0, count($exportedIds), '?'));
-            $update = $pdo->prepare("UPDATE dbo.ProductPriceMonitor SET isexported=1 WHERE Approved=1 AND ISNULL(isexported,0)=0 AND PriceMonitorID IN ($marks)");
-            $update->execute($exportedIds);
+        if ($rows) {
+            // Save precisely the source rows represented in this workbook.
+            // Foreign-key-like fields are persisted as IDs, not display labels.
+            $insert = $pdo->prepare(
+                'INSERT INTO dbo.PriceApprove
+                    (ProductCode, InquiryDate, Source, Price, UnitID, PaymentAgreementID, grossprice, netamount, userid)
+                 VALUES
+                    (:product_code, :inquiry_date, :source, :price, :unit_id, :agreement_id, :grossprice, :netamount, :userid)'
+            );
+
+            $pdo->beginTransaction();
+            try {
+                foreach ($rows as $r) {
+                    $inquiryDate = $r['InquiryDate'] ?? null;
+                    if ($inquiryDate instanceof \\DateTimeInterface) {
+                        $inquiryDate = $inquiryDate->format('Y-m-d H:i:s');
+                    } elseif ($inquiryDate !== null && $inquiryDate !== false) {
+                        $inquiryDate = (string) $inquiryDate;
+                    }
+
+                    $insert->execute([
+                        'product_code' => (string) ($r['ProductCode'] ?? ''),
+                        'inquiry_date' => $inquiryDate,
+                        'source' => (string) ($r['Source'] ?? ''),
+                        'price' => $r['Price'] ?? null,
+                        'unit_id' => (int) ($r['UnitID'] ?? 0),
+                        'agreement_id' => (int) ($r['PaymentAgreementID'] ?? 0),
+                        'grossprice' => $r['grossprice'] ?? null,
+                        'netamount' => $r['netamount'] ?? null,
+                        'userid' => (int) ($r['userid'] ?? 0),
+                    ]);
+                }
+
+                $exportedIds = array_values(array_unique(array_filter(
+                    $exportedIds,
+                    static fn(int $id): bool => $id > 0
+                )));
+                if ($exportedIds) {
+                    $marks = implode(',', array_fill(0, count($exportedIds), '?'));
+                    $update = $pdo->prepare(
+                        "UPDATE dbo.ProductPriceMonitor
+                         SET isexported=1
+                         WHERE Approved=1 AND ISNULL(isexported,0)=0
+                           AND PriceMonitorID IN ($marks)"
+                    );
+                    $update->execute($exportedIds);
+                }
+                $pdo->commit();
+            } catch (\\Throwable $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                error_log('Saving approved export rows failed: ' . $e->getMessage());
+                $this->respondError('خروجی ثبت نشد؛ جدول dbo.PriceApprove و نوع ستون‌های آن را بررسی کنید.', 500);
+            }
         }
         header('Content-Type: application/vnd.ms-excel; charset=UTF-8');
         header('Content-Disposition: attachment; filename="approved-market-prices.xls"');
