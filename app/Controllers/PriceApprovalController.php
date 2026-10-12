@@ -37,8 +37,9 @@ final class PriceApprovalController
         WHERE ISNULL(m.Approved,0)=0";
         $params = [];
         if ($q !== '') {
-            $sql .= " AND (CONVERT(varchar(100),m.ProductCode) LIKE :q OR m.Source LIKE :q)";
-            $params['q'] = '%' . $q . '%';
+            $sql .= " AND (CONVERT(varchar(100),m.ProductCode) LIKE :qcode OR m.Source LIKE :qsource)";
+            $params['qcode'] = '%' . $q . '%';
+            $params['qsource'] = '%' . $q . '%';
         }
         $sql .= " ORDER BY m.ProductCode,m.PaymentAgreementID,m.InquiryDate DESC,m.PriceMonitorID DESC";
         $stmt = $pdo->prepare($sql);
