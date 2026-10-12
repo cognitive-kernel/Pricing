@@ -122,7 +122,7 @@ final class PriceApprovalController
         $sql = "WITH ranked AS (
             SELECT m.PriceMonitorID,m.ProductCode,m.InquiryDate,m.Source,m.Price,m.UnitID,
                    m.PaymentAgreementID,m.discountperc,m.grossprice,m.opration,m.netamount,
-                   m.payagrementperc,m.userid,m.CreatedDate,
+                   m.payagrementperc,m.userid,m.CreatedDate,m.Approved,m.isexported,
                    ROW_NUMBER() OVER (PARTITION BY m.ProductCode ORDER BY m.InquiryDate DESC,m.PriceMonitorID DESC) AS rn
             FROM dbo.ProductPriceMonitor m
         )
