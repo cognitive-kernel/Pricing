@@ -35,21 +35,17 @@ final class MarketPriceCalculator
             $warning = false;
             $usedPrices = $prices;
 
-            if ($count === 2) {
-                $low = $prices[0];
-                $high = $prices[1];
-                if ($low > 0 && $high > (2 * $low)) {
-                    $warning = true;
-                }
-            } elseif ($count === 3) {
-                $low = $prices[0];
-                $middle = $prices[1];
-                $high = $prices[2];
-
-                if ($middle > 0 && $high > (2 * $middle)) {
-                    $usedPrices = [$low, $middle];
-                } elseif ($low > 0 && $middle > (2 * $low)) {
-                    $usedPrices = [$middle, $high];
+            if ($count >= 2) {
+                // Flag the group if any pair differs by more than 2x.
+                // Do not silently discard a price: approvals and the price list
+                // must use the same data-quality rule.
+                for ($i = 1; $i < $count; $i++) {
+                    $low = $prices[$i - 1];
+                    $high = $prices[$i];
+                    if ($low > 0 && $high > (2 * $low)) {
+                        $warning = true;
+                        break;
+                    }
                 }
             }
 
