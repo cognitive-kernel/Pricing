@@ -211,6 +211,8 @@ final class PriceApprovalController
         $xml .= '</Row>';
 
         $exportedIds = [];
+        $priceApproveRows = [];
+
         foreach ($byProduct as $code => $rowsForProduct) {
             // Match the legacy workbook behavior: only export products present in Rahkaran.
             if (!isset($products[$code])) {
@@ -222,9 +224,16 @@ final class PriceApprovalController
                 $unitName = (string)($unitNames[(int)($rowsForProduct[0]['UnitID'] ?? 0)] ?? '');
             }
             $groups = MarketPriceCalculator::groupByPaymentAgreement($rowsForProduct);
+
             foreach ($groups as $group) {
+                // Outlier groups are not exportable, even if old records were manually approved.
+                if (!empty($group['warning'])) {
+                    continue;
+                }
+
+                $groupRows = $group['rows'];
                 $eligibleRows = array_values(array_filter(
-                    $group['rows'],
+                    $groupRows,
                     static fn(array $r): bool => (int)($r['Approved'] ?? 0) === 1
                         && (int)($r['isexported'] ?? 0) === 0
                 ));
@@ -232,17 +241,55 @@ final class PriceApprovalController
                     continue;
                 }
 
-                // The exported workbook row is calculated from every source price
-                // in this product/agreement group. Mark every source row used in
-                // that average as exported, not just the row that triggered export.
-                foreach ($group['rows'] as $r) {
+                // One PriceApprove row is created per product + date + payment agreement,
+                // using the same average price written to the workbook.
+                $representative = $groupRows[0];
+                $inquiryDate = $representative['InquiryDate'] ?? '';
+                if ($inquiryDate instanceof \DateTimeInterface) {
+                    $inquiryDate = $inquiryDate->format('Y-m-d H:i:s');
+                } else {
+                    $inquiryDate = (string)$inquiryDate;
+                }
+
+                $sources = [];
+                foreach ($groupRows as $sourceRow) {
+                    $sourceName = trim((string)($sourceRow['Source'] ?? ''));
+                    if ($sourceName !== '') {
+                        $sources[$sourceName] = true;
+                    }
+                }
+
+                $averageField = static function (array $rows, string $field): float {
+                    $values = [];
+                    foreach ($rows as $r) {
+                        if (isset($r[$field]) && is_numeric($r[$field])) {
+                            $values[] = (float)$r[$field];
+                        }
+                    }
+                    return $values ? array_sum($values) / count($values) : 0.0;
+                };
+
+                $priceApproveRows[] = [
+                    'ProductCode' => $code,
+                    'InquiryDate' => $inquiryDate,
+                    'Source' => implode('، ', array_keys($sources)),
+                    'Price' => (float)($group['average_price'] ?? 0),
+                    'UnitID' => (int)($representative['UnitID'] ?? 0),
+                    'PaymentAgreementID' => (int)($group['PaymentAgreementID'] ?? $representative['PaymentAgreementID'] ?? 0),
+                    'grossprice' => $averageField($groupRows, 'grossprice'),
+                    'netamount' => $averageField($groupRows, 'netamount'),
+                    'userid' => (int)Auth::userId(),
+                ];
+
+                // Only mark records that were actually eligible for this export.
+                foreach ($eligibleRows as $r) {
                     $id = (int)($r['PriceMonitorID'] ?? 0);
                     if ($id > 0) {
                         $exportedIds[] = $id;
                     }
                 }
 
-                $fee = !empty($group['warning']) ? '' : (float)($group['average_price'] ?? 0);
+                $fee = (float)($group['average_price'] ?? 0);
                 $values = [
                     $code,
                     (string)($product['Name'] ?? ''),
@@ -251,7 +298,7 @@ final class PriceApprovalController
                     '', '', '', '', '', '',
                     '',
                     $fee,
-                    !empty($group['warning']) ? 'هشدار اختلاف قیمت' : 'قطعی',
+                    'قطعی',
                     0,
                     0,
                 ];
@@ -268,18 +315,51 @@ final class PriceApprovalController
         $xml .= '</Table></Worksheet></Workbook>';
 
         $exportedIds = array_values(array_unique($exportedIds));
-        if ($exportedIds) {
-            $marks = implode(',', array_fill(0, count($exportedIds), '?'));
-            $update = $pdo->prepare(
-                "UPDATE dbo.ProductPriceMonitor
-                 SET isexported=1,
-                     Approved=CASE WHEN ISNULL(Approved,0)=2 THEN 2 ELSE 1 END
-                 WHERE PriceMonitorID IN ($marks)"
-            );
-            $update->execute($exportedIds);
-        }
+        if ($priceApproveRows) {
+            try {
+                $pdo->beginTransaction();
 
-        header('Content-Type: application/vnd.ms-excel; charset=UTF-8');
+                $insert = $pdo->prepare(
+                    'INSERT INTO dbo.PriceApprove
+                        (ProductCode, InquiryDate, Source, Price, UnitID, PaymentAgreementID, grossprice, netamount, userid)
+                     VALUES
+                        (:code, :inquiry_date, :source, :price, :unit_id, :agreement_id, :grossprice, :netamount, :userid)'
+                );
+
+                foreach ($priceApproveRows as $approvedRow) {
+                    $insert->execute([
+                        'code' => $approvedRow['ProductCode'],
+                        'inquiry_date' => $approvedRow['InquiryDate'],
+                        'source' => $approvedRow['Source'],
+                        'price' => number_format($approvedRow['Price'], 6, '.', ''),
+                        'unit_id' => $approvedRow['UnitID'],
+                        'agreement_id' => $approvedRow['PaymentAgreementID'],
+                        'grossprice' => number_format($approvedRow['grossprice'], 6, '.', ''),
+                        'netamount' => number_format($approvedRow['netamount'], 6, '.', ''),
+                        'userid' => $approvedRow['userid'],
+                    ]);
+                }
+
+                if ($exportedIds) {
+                    $marks = implode(',', array_fill(0, count($exportedIds), '?'));
+                    $update = $pdo->prepare(
+                        "UPDATE dbo.ProductPriceMonitor
+                         SET isexported=1
+                         WHERE Approved=1 AND ISNULL(isexported,0)=0
+                           AND PriceMonitorID IN ($marks)"
+                    );
+                    $update->execute($exportedIds);
+                }
+
+                $pdo->commit();
+            } catch (\Throwable $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                error_log('Approved prices export persistence failed: '.$e->getMessage());
+                $this->respondError('ثبت خروجی در جدول PriceApprove ناموفق بود؛ فایل صادر نشد.', 500);
+            }
+        }        header('Content-Type: application/vnd.ms-excel; charset=UTF-8');
         header('Content-Disposition: attachment; filename="approved-market-prices.xls"');
         echo $xml;
         exit;
