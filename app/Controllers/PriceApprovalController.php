@@ -359,7 +359,9 @@ final class PriceApprovalController
                 error_log('Approved prices export persistence failed: '.$e->getMessage());
                 $this->respondError('ثبت خروجی در جدول PriceApprove ناموفق بود؛ فایل صادر نشد.', 500);
             }
-        }        header('Content-Type: application/vnd.ms-excel; charset=UTF-8');
+        }
+
+        header('Content-Type: application/vnd.ms-excel; charset=UTF-8');
         header('Content-Disposition: attachment; filename="approved-market-prices.xls"');
         echo $xml;
         exit;
