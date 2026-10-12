@@ -16,7 +16,7 @@
     </div>
     <div class="table-responsive">
         <table class="table table-striped table-hover align-middle">
-            <thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('.approval-select').forEach(e=>e.checked=this.checked)" aria-label="انتخاب همه"></th><th>کد کالا</th><th>تاریخ رصد</th><th>منبع</th><th>قیمت</th><th>واحد</th><th>توافق پرداخت</th><th>قیمت ناخالص</th><th>مبلغ نهایی</th><th>کاربر ثبت‌کننده</th></tr></thead>
+            <thead><tr><th><input type="checkbox" id="approval-select-all" aria-label="انتخاب همه"></th><th>کد کالا</th><th>تاریخ رصد</th><th>منبع</th><th>قیمت</th><th>واحد</th><th>توافق پرداخت</th><th>قیمت ناخالص</th><th>مبلغ نهایی</th><th>کاربر ثبت‌کننده</th></tr></thead>
             <tbody>
             <?php if (!$approvalGroups): ?><tr><td colspan="10" class="text-center">موردی در انتظار تأیید نیست.</td></tr>
             <?php else: foreach ($approvalGroups as $group): $r = $group['row']; ?>
@@ -44,3 +44,25 @@
         </table>
     </div>
 </form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const master = document.getElementById('approval-select-all');
+    if (!master) return;
+    const updateMaster = function () {
+        const items = Array.from(document.querySelectorAll('.approval-select'));
+        master.checked = items.length > 0 && items.every(function (item) { return item.checked; });
+        master.indeterminate = items.some(function (item) { return item.checked; }) && !master.checked;
+    };
+    master.addEventListener('change', function () {
+        document.querySelectorAll('.approval-select').forEach(function (item) {
+            item.checked = master.checked;
+        });
+        master.indeterminate = false;
+    });
+    document.querySelectorAll('.approval-select').forEach(function (item) {
+        item.addEventListener('change', updateMaster);
+    });
+    updateMaster();
+});
+</script>
