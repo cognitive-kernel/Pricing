@@ -50,7 +50,7 @@ final class PriceApprovalController
     public function decision(): void
     {
         Auth::requireLogin();
-        PermissionService::require(Auth::userId(), 'prices.view');
+        PermissionService::require(Auth::userId(), 'prices.approvals.view');
         Security::verifyCsrf();
 
         $ids = array_values(array_unique(array_filter(array_map('intval', (array)($_POST['ids'] ?? [])), static fn(int $id): bool => $id > 0)));
