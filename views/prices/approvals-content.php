@@ -23,14 +23,14 @@
                 <tr>
                     <td><input class="approval-select" type="checkbox" name="ids[]" value="<?= (int)$r['PriceMonitorID'] ?>" aria-label="انتخاب کالا <?= Security::e((string)$r['ProductCode']) ?>"></td>
                     <td><?= Security::e((string)$r['ProductCode']) ?></td>
-                    <td><?= Security::e((string)$r['InquiryDate']) ?></td>
+                    <td><?= Security::e((string)($r['InquiryDateJalali'] ?? '')) ?></td>
                     <td><?= Security::e((string)$r['Source']) ?></td>
                     <td><?= number_format((float)$r['Price'], 2) ?></td>
-                    <td><?= (int)($r['UnitID'] ?? 0) ?></td>
+                    <td><?= Security::e((string)($r['UnitName'] ?? '')) ?></td>
                     <td><?= Security::e((string)($r['PaymentAgreementTitle'] ?? '')) ?></td>
                     <td><?= number_format((float)($r['grossprice'] ?? 0), 2) ?></td>
                     <td><?= number_format((float)($r['netamount'] ?? 0), 2) ?></td>
-                    <td><?= (int)($r['userid'] ?? 0) ?></td>
+                    <td><?= Security::e((string)($r['CreatorUsername'] ?? '')) ?></td>
                 </tr>
             <?php endforeach; endif; ?>
             </tbody>
