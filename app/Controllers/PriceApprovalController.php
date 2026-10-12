@@ -23,9 +23,10 @@ final class PriceApprovalController
         $sql = "WITH ranked AS (
             SELECT m.PriceMonitorID,m.ProductCode,m.InquiryDate,m.Source,m.Price,m.UnitID,
                    m.CreatedDate,m.PaymentAgreementID,m.discountperc,m.grossprice,m.opration,
-                   m.netamount,m.payagrementperc,m.userid,m.Approved,m.isexported,
+                   m.netamount,m.payagrementperc,m.userid,m.Approved,m.isexported, u.username AS CreatorUsername,
                    ROW_NUMBER() OVER (PARTITION BY m.ProductCode ORDER BY m.InquiryDate DESC,m.PriceMonitorID DESC) AS rn
             FROM dbo.ProductPriceMonitor m
+            LEFT JOIN dbo.users u ON u.id = m.userid
         )
         SELECT * FROM ranked
         WHERE rn=1 AND ISNULL(Approved,0)=0";
@@ -41,7 +42,9 @@ final class PriceApprovalController
         $agreementIds = array_values(array_unique(array_map(static fn(array $r): int => (int)($r['PaymentAgreementID'] ?? 0), $records)));
         $agreements = RahkaranPriceService::instance()->paymentAgreementTitlesByIds($agreementIds);
         foreach ($records as &$record) {
-            $record['PaymentAgreementTitle'] = $agreements[(int)($record['PaymentAgreementID'] ?? 0)] ?? '';
+            $record['PaymentAgreementTitle'] = $agreements[(int)($record['PaymentAgreementID'] ?? 0)] ?? ''; 
+            $record['InquiryDateJalali'] = !empty($record['InquiryDate']) ? Jalali::fromGregorian((string)$record['InquiryDate']) : ''; 
+            $record['CreatorUsername'] = (string)($record['CreatorUsername'] ?? '');
         }
         unset($record);
         View::render('prices/approvals', compact('records','q'));
