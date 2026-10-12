@@ -265,4 +265,5 @@ $(function(){
     syncMaster();
   }
 
+  initPriceApprovals();
 });
