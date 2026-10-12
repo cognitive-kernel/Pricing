@@ -67,7 +67,7 @@ final class PriceApprovalController
 
         $approvalGroups = [];
         foreach ($byProduct as $code => $productRows) {
-            $agreementGroups = \\App\\Services\\MarketPriceCalculator::groupByPaymentAgreement($productRows);
+            $agreementGroups = MarketPriceCalculator::groupByPaymentAgreement($productRows);
             foreach ($agreementGroups as $group) {
                 $groupRows = $group['rows'];
                 $first = $groupRows[0];
