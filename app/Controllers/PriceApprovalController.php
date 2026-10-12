@@ -232,7 +232,10 @@ final class PriceApprovalController
                     continue;
                 }
 
-                foreach ($eligibleRows as $r) {
+                // The exported workbook row is calculated from every source price
+                // in this product/agreement group. Mark every source row used in
+                // that average as exported, not just the row that triggered export.
+                foreach ($group['rows'] as $r) {
                     $id = (int)($r['PriceMonitorID'] ?? 0);
                     if ($id > 0) {
                         $exportedIds[] = $id;
@@ -269,9 +272,9 @@ final class PriceApprovalController
             $marks = implode(',', array_fill(0, count($exportedIds), '?'));
             $update = $pdo->prepare(
                 "UPDATE dbo.ProductPriceMonitor
-                 SET isexported=1
-                 WHERE Approved=1 AND ISNULL(isexported,0)=0
-                   AND PriceMonitorID IN ($marks)"
+                 SET isexported=1,
+                     Approved=CASE WHEN ISNULL(Approved,0)=2 THEN 2 ELSE 1 END
+                 WHERE PriceMonitorID IN ($marks)"
             );
             $update->execute($exportedIds);
         }
