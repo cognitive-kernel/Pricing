@@ -17,7 +17,7 @@
     </div>
     <div class="table-responsive">
         <table class="table table-striped table-hover align-middle">
-            <thead><tr><th><input type="checkbox" id="approval-select-all" aria-label="انتخاب همه" onchange="document.querySelectorAll('.approval-select').forEach(function(box){box.checked=this.checked;}, this)"></th><th>کد کالا</th><th>تاریخ رصد</th><th>منبع</th><th>قیمت</th><th>واحد</th><th>توافق پرداخت</th><th>قیمت ناخالص</th><th>مبلغ نهایی</th><th>کاربر ثبت‌کننده</th></tr></thead>
+            <thead><tr><th><input type="checkbox" id="approval-select-all" aria-label="انتخاب همه"></th><th>کد کالا</th><th>تاریخ رصد</th><th>منبع</th><th>قیمت</th><th>واحد</th><th>توافق پرداخت</th><th>قیمت ناخالص</th><th>مبلغ نهایی</th><th>کاربر ثبت‌کننده</th></tr></thead>
             <tbody>
             <?php if (!$approvalGroups): ?><tr><td colspan="10" class="text-center">موردی در انتظار تأیید نیست.</td></tr>
             <?php else: foreach ($approvalGroups as $group): $r = $group['row']; ?>
@@ -70,6 +70,16 @@
             throw new Error(cleaned || 'خطایی در سرور رخ داد.');
         }
         return {text};
+    }
+
+    const selectAll = document.getElementById('approval-select-all');
+    if (selectAll) {
+        selectAll.addEventListener('change', function () {
+            document.querySelectorAll('.approval-select').forEach(function (box) {
+                box.checked = selectAll.checked;
+                box.dispatchEvent(new Event('change', {bubbles: true}));
+            });
+        });
     }
 
     const form = document.getElementById('approval-decision-form');
