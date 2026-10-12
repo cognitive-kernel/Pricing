@@ -576,7 +576,7 @@ final class PriceController
             exit('لیست انتخاب‌شده معتبر نیست.');
         }
         $service = RahkaranPriceService::instance();
-        $insert = $pdo->prepare('INSERT INTO dbo.ProductPriceMonitor(ProductCode,InquiryDate,Source,Price,UnitID,PaymentAgreementID,discountperc,grossprice,opration,netamount,payagrementperc,userid,isexported,CreatedDate) VALUES(:code,:date,:source,:price,:unit,:agreement,:discount,:gross,:operation,:net,:agreement_percent,:userid,0,GETDATE())');
+        $insert = $pdo->prepare('INSERT INTO dbo.ProductPriceMonitor(ProductCode,InquiryDate,Source,Price,UnitID,PaymentAgreementID,discountperc,grossprice,opration,netamount,payagrementperc,userid,isexported,Approved,CreatedDate) VALUES(:code,:date,:source,:price,:unit,:agreement,:discount,:gross,:operation,:net,:agreement_percent,:userid,0,0,GETDATE())');
         $saved = 0;
         foreach ($items as $code => $item) {
             if (!is_array($item) || empty($item['selected'])) continue;
@@ -740,12 +740,12 @@ final class PriceController
 
         $s = $pdo->prepare('INSERT INTO ProductPriceMonitor(
                 ProductCode,InquiryDate,Source,Price,UnitID,PaymentAgreementID,
-                discountperc,grossprice,opration,netamount,payagrementperc,userid,isexported,CreatedDate
+                discountperc,grossprice,opration,netamount,payagrementperc,userid,isexported,Approved,CreatedDate
             ) VALUES(
                 :code,DATEFROMPARTS(:year,:month,:day),:source,:price,
                 :unit,:payment_agreement_id,
                 :discountperc,:grossprice,:opration,
-                :netamount,:payagrementperc,:userid,0,GETDATE()
+                :netamount,:payagrementperc,:userid,0,0,GETDATE()
             )');
         foreach ($valid as $row) {
             $s->bindValue(':code', (int) $postedProductCode, PDO::PARAM_INT);
