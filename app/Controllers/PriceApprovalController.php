@@ -204,7 +204,7 @@ final class PriceApprovalController
             try {
                 foreach ($rows as $r) {
                     $inquiryDate = $r['InquiryDate'] ?? null;
-                    if ($inquiryDate instanceof \\DateTimeInterface) {
+                    if ($inquiryDate instanceof \DateTimeInterface) {
                         $inquiryDate = $inquiryDate->format('Y-m-d H:i:s');
                     } elseif ($inquiryDate !== null && $inquiryDate !== false) {
                         $inquiryDate = (string) $inquiryDate;
@@ -238,7 +238,7 @@ final class PriceApprovalController
                     $update->execute($exportedIds);
                 }
                 $pdo->commit();
-            } catch (\\Throwable $e) {
+            } catch (\Throwable $e) {
                 if ($pdo->inTransaction()) {
                     $pdo->rollBack();
                 }
