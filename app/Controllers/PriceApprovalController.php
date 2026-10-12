@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace App\\Controllers;
+namespace App\Controllers;
 
-use App\\Core\\Auth;
-use App\\Core\\Database;
-use App\\Core\\Security;
-use App\\Core\\View;
-use App\\Services\\PermissionService;
-use App\\Services\\RahkaranPriceService;
+use App\Core\Auth;
+use App\Core\Database;
+use App\Core\Security;
+use App\Core\View;
+use App\Services\PermissionService;
+use App\Services\RahkaranPriceService;
 use PDO;
 
 final class PriceApprovalController
