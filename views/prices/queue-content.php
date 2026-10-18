@@ -108,8 +108,11 @@
                     <tr><td colspan="13" class="text-center">موردی برای نمایش وجود ندارد.</td></tr>
                 <?php else: foreach ($members as $member): ?>
                     <tr class="queue-price-row" data-base-price="<?= ($member['latest_price'] ?? null) !== null ? Security::e((string) $member['latest_price']) : '' ?>" data-product-code="<?= Security::e((string) ($member['code'] ?? '')) ?>">
-                        <td><input type="checkbox" class="queue-item-select" name="items[<?= Security::e((string) ($member['code'] ?? '')) ?>][selected]" value="1" aria-label="انتخاب کالا <?= Security::e((string) ($member['code'] ?? '')) ?>"></td>
-                        <input type="hidden" name="items[<?= Security::e((string) ($member['code'] ?? '')) ?>][has_base_price]" value="<?= ($member['latest_price'] ?? null) !== null && (float) $member['latest_price'] > 0 ? '1' : '0' ?>">
+                        <td>
+                            <input type="checkbox" class="queue-item-select" name="items[<?= Security::e((string) ($member['code'] ?? '')) ?>][selected]" value="1" aria-label="انتخاب کالا <?= Security::e((string) ($member['code'] ?? '')) ?>">
+                            <input type="hidden" name="items[<?= Security::e((string) ($member['code'] ?? '')) ?>][has_base_price]" value="<?= ($member['latest_price'] ?? null) !== null && (float) $member['latest_price'] > 0 ? '1' : '0' ?>">
+                            <input type="hidden" name="items[<?= Security::e((string) ($member['code'] ?? '')) ?>][based_on_price_monitor_id]" value="<?= (int) ($member['latest_price_monitor_id'] ?? 0) ?>">
+                        </td>
                         <td><?= Security::e((string) ($member['code'] ?? '')) ?></td>
                         <td><?= Security::e((string) ($member['name'] ?? '')) ?></td>
                         <td><input class="form-control jalali-date" data-jalali-picker="true" autocomplete="off" inputmode="numeric" name="items[<?= Security::e((string) ($member['code'] ?? '')) ?>][inquiry_date]" value="<?= Security::e($todayJalali) ?>" required></td>
