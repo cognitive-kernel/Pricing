@@ -317,7 +317,7 @@ final class PriceController
                         if ($sourcePaymentAgreementId > 0) {
                             $marketRow = $marketByCode[$code];
                             $marketDate = $marketRow['InquiryDate'] ?? null;
-                            if ($marketDate instanceof \\DateTimeInterface) {
+                            if ($marketDate instanceof \DateTimeInterface) {
                                 $marketDate = $marketDate->format('Y-m-d H:i:s');
                             } elseif ($marketDate !== null && $marketDate !== false) {
                                 $marketDate = (string) $marketDate;
