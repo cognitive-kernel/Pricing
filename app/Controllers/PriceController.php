@@ -260,6 +260,7 @@ final class PriceController
             $secondAdjustment = 'increase';
         }
         $selectedPaymentAgreementId = max(0, (int) ($_GET['payment_agreement_id'] ?? 0));
+        $sourcePaymentAgreementId = max(0, (int) ($_GET['source_payment_agreement_id'] ?? 0));
 
         if ($selectedCode !== '' && in_array($selectedCode, $validCodes, true)) {
             try {
@@ -276,29 +277,65 @@ final class PriceController
                     $rahkaranByCode = $service->rowsByCodes($codes);
 
                     $in = implode(',', array_fill(0, count($codes), '?'));
+                    $agreementFilterSql = $sourcePaymentAgreementId > 0 ? ' AND PaymentAgreementID = ?' : '';
                     $marketQuery = $pdo->prepare(
-                        'SELECT ProductCode, InquiryDate, Source, Price
+                        'SELECT ProductCode, InquiryDate, Source, Price, netamount, PaymentAgreementID
                          FROM (
-                             SELECT ProductCode, InquiryDate, Source, Price,
+                             SELECT ProductCode, InquiryDate, Source, Price, netamount, PaymentAgreementID,
                                     ROW_NUMBER() OVER (
                                         PARTITION BY ProductCode
                                         ORDER BY InquiryDate DESC, PriceMonitorID DESC
                                     ) AS rn
                              FROM dbo.ProductPriceMonitor
-                             WHERE ProductCode IN (' . $in . ')
+                             WHERE ProductCode IN (' . $in . ')' . $agreementFilterSql . '
                          ) latest_market
                          WHERE rn = 1'
                     );
-                    $marketQuery->execute($codes);
+                    $marketParams = $codes;
+                    if ($sourcePaymentAgreementId > 0) {
+                        $marketParams[] = $sourcePaymentAgreementId;
+                    }
+                    $marketQuery->execute($marketParams);
                     $marketByCode = [];
                     foreach ($marketQuery->fetchAll(PDO::FETCH_ASSOC) as $marketRow) {
                         $marketByCode[trim((string) $marketRow['ProductCode'])] = $marketRow;
                     }
 
+                    if ($sourcePaymentAgreementId > 0) {
+                        // When filtering by a historical agreement, list only products
+                        // with a prior record for that agreement, using the latest one.
+                        $members = array_values(array_filter(
+                            $members,
+                            static fn(array $member): bool => isset($marketByCode[trim((string) ($member['code'] ?? ''))])
+                        ));
+                    }
+
                     foreach ($members as &$member) {
                         $code = trim((string) ($member['code'] ?? ''));
-                        $candidates = [];
                         $rahkaranRow = $rahkaranByCode[$code] ?? [];
+
+                        if ($sourcePaymentAgreementId > 0) {
+                            $marketRow = $marketByCode[$code];
+                            $marketDate = $marketRow['InquiryDate'] ?? null;
+                            if ($marketDate instanceof \\DateTimeInterface) {
+                                $marketDate = $marketDate->format('Y-m-d H:i:s');
+                            } elseif ($marketDate !== null && $marketDate !== false) {
+                                $marketDate = (string) $marketDate;
+                            } else {
+                                $marketDate = '';
+                            }
+                            $member['unit_id'] = (int) ($rahkaranRow['Announcement_unit_id'] ?? 0);
+                            $member['unit_name'] = (string) ($rahkaranRow['Announcement_unit'] ?? '');
+                            $member['latest_price'] = ($marketRow['netamount'] ?? null) !== null
+                                ? (float) $marketRow['netamount']
+                                : (float) ($marketRow['Price'] ?? 0);
+                            $member['latest_price_source'] = (string) ($marketRow['Source'] ?? '');
+                            $member['latest_price_date'] = $marketDate;
+                            $member['latest_payment_agreement_id'] = (int) ($marketRow['PaymentAgreementID'] ?? 0);
+                            continue;
+                        }
+
+                        $candidates = [];
 
                         foreach ([
                             ['date' => $rahkaranRow['Announcement_date'] ?? null, 'price' => $rahkaranRow['Announcement_price'] ?? null, 'source' => 'اعلامیه راهکاران'],
@@ -354,6 +391,7 @@ final class PriceController
             'loadError',
             'paymentAgreements',
             'selectedPaymentAgreementId',
+            'sourcePaymentAgreementId',
             'firstAdjustment',
             'firstValue',
             'secondAdjustment',
