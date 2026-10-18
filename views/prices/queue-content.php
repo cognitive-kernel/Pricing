@@ -19,6 +19,27 @@
 <?php endif; ?>
 
 <?php if ($selectedCode !== ''): ?>
+    <div class="card card-body mb-3">
+        <form method="get" action="/pricing/public/prices/queue" class="row g-2 align-items-end">
+            <input type="hidden" name="code" value="<?= Security::e($selectedCode) ?>">
+            <div class="col-md-5">
+                <label for="source-payment-agreement" class="form-label">توافق پرداخت مبنا (ثبت قبلی)</label>
+                <select id="source-payment-agreement" name="source_payment_agreement_id" class="form-select">
+                    <option value="0" <?= (int) ($sourcePaymentAgreementId ?? 0) === 0 ? 'selected' : '' ?>>بدون فیلتر؛ آخرین قیمت رصد بازار</option>
+                    <?php foreach (($paymentAgreements ?? []) as $agreement): ?>
+                        <option value="<?= (int) $agreement['PaymentAgreementID'] ?>" <?= (int) ($sourcePaymentAgreementId ?? 0) === (int) $agreement['PaymentAgreementID'] ? 'selected' : '' ?>>
+                            <?= Security::e((string) $agreement['Title']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <div class="form-text">با انتخاب توافق قبلی، فقط کالاهای این لیست که برای آن توافق ثبت شده‌اند نمایش داده می‌شوند؛ مبلغ نهایی آخرین ثبت، مبنای قیمت قرار می‌گیرد.</div>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-outline-primary">اعمال فیلتر</button>
+            </div>
+        </form>
+    </div>
+
     <form method="post" action="/pricing/public/prices/queue-save" id="queue-price-form">
         <input type="hidden" name="_csrf" value="<?= Security::e(Security::csrf()) ?>">
         <input type="hidden" name="list_code" value="<?= Security::e($selectedCode) ?>">
