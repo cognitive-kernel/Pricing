@@ -1,3 +1,46 @@
+// Keep approval selection working even if the legacy jQuery initializer fails to load.
+document.addEventListener('change', function (event) {
+  const target = event.target;
+  if (!target) return;
+
+  const form = document.getElementById('approval-decision-form');
+  const master = document.getElementById('approval-select-all');
+  if (!form || !master) return;
+
+  function selectableGroups() {
+    return Array.from(form.querySelectorAll('.approval-select-group')).filter(function (box) {
+      return !box.disabled;
+    });
+  }
+  function syncRecordIds(groupBox) {
+    const row = groupBox.closest('tr');
+    if (!row) return;
+    row.querySelectorAll('.approval-record-id').forEach(function (input) {
+      input.disabled = !groupBox.checked;
+    });
+  }
+  function syncMasterCheckbox() {
+    const boxes = selectableGroups();
+    const checkedCount = boxes.filter(function (box) { return box.checked; }).length;
+    master.checked = boxes.length > 0 && checkedCount === boxes.length;
+    master.indeterminate = checkedCount > 0 && checkedCount < boxes.length;
+  }
+
+  if (target.id === 'approval-select-all') {
+    selectableGroups().forEach(function (box) {
+      box.checked = master.checked;
+      syncRecordIds(box);
+    });
+    syncMasterCheckbox();
+    return;
+  }
+
+  if (target.classList && target.classList.contains('approval-select-group')) {
+    syncRecordIds(target);
+    syncMasterCheckbox();
+  }
+});
+
 $(function(){
   // Bind approval-page controls before unrelated page initializers run.
   initPriceApprovals();
