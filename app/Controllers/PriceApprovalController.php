@@ -123,7 +123,6 @@ final class PriceApprovalController
                     FROM dbo.ProductPriceMonitor child
                     INNER JOIN rejected_chain parent
                         ON child.BasedOnPriceMonitorID=parent.PriceMonitorID
-                    WHERE ISNULL(child.Approved,0)=0
                 )
                 UPDATE target
                 SET Approved=2
@@ -131,7 +130,7 @@ final class PriceApprovalController
                 INNER JOIN (
                     SELECT DISTINCT PriceMonitorID FROM rejected_chain
                 ) rejected ON rejected.PriceMonitorID=target.PriceMonitorID
-                WHERE ISNULL(target.Approved,0)=0
+                WHERE ISNULL(target.Approved,0)<>2
                 OPTION (MAXRECURSION 32767)";
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute($ids);
