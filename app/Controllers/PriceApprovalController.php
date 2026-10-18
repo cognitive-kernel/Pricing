@@ -147,7 +147,7 @@ final class PriceApprovalController
             if ($stmt->rowCount() < 1) {
                 $this->respondError('ردیف‌های انتخاب‌شده قبلاً بررسی شده‌اند یا دیگر در انتظار تصمیم نیستند. صفحه را تازه‌سازی کنید.', 409);
             }
-        } catch (\\Throwable $e) {
+        } catch (\Throwable $e) {
             error_log('Price approval decision update failed: '.$e->getMessage());
             $this->respondError('ثبت تصمیم انجام نشد.', 500);
         }
