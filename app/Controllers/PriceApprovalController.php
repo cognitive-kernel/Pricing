@@ -107,23 +107,47 @@ final class PriceApprovalController
             $this->respondError('حداقل یک ردیف و نوع تصمیم معتبر انتخاب کنید.', 422);
         }
 
-        $approved = $decision === 'approve' ? 1 : 2;
         $pdo = Database::connection();
         $marks = implode(',', array_fill(0, count($ids), '?'));
-        // The submitted IDs are the exact pending source rows represented by
-        // the selected approval group. Update them directly so every decision is
-        // persisted and the group disappears from both the list and its searches.
-        $sql = "UPDATE dbo.ProductPriceMonitor
-                SET Approved=?
-                WHERE ISNULL(Approved,0)=0
-                  AND PriceMonitorID IN ($marks)";
         try {
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute(array_merge([$approved], $ids));
+            if ($decision === 'reject') {
+                // Reject selected pending records and recursively reject pending
+                // queue records based directly on those records.
+                $sql = ";WITH rejected_chain AS (
+                    SELECT PriceMonitorID
+                    FROM dbo.ProductPriceMonitor
+                    WHERE ISNULL(Approved,0)=0
+                      AND PriceMonitorID IN ($marks)
+                    UNION ALL
+                    SELECT child.PriceMonitorID
+                    FROM dbo.ProductPriceMonitor child
+                    INNER JOIN rejected_chain parent
+                        ON child.BasedOnPriceMonitorID=parent.PriceMonitorID
+                    WHERE ISNULL(child.Approved,0)=0
+                )
+                UPDATE target
+                SET Approved=2
+                FROM dbo.ProductPriceMonitor target
+                INNER JOIN (
+                    SELECT DISTINCT PriceMonitorID FROM rejected_chain
+                ) rejected ON rejected.PriceMonitorID=target.PriceMonitorID
+                WHERE ISNULL(target.Approved,0)=0
+                OPTION (MAXRECURSION 32767)";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($ids);
+            } else {
+                $sql = "UPDATE dbo.ProductPriceMonitor
+                        SET Approved=1
+                        WHERE ISNULL(Approved,0)=0
+                          AND PriceMonitorID IN ($marks)";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($ids);
+            }
+
             if ($stmt->rowCount() < 1) {
                 $this->respondError('ردیف‌های انتخاب‌شده قبلاً بررسی شده‌اند یا دیگر در انتظار تصمیم نیستند. صفحه را تازه‌سازی کنید.', 409);
             }
-        } catch (\Throwable $e) {
+        } catch (\\Throwable $e) {
             error_log('Price approval decision update failed: '.$e->getMessage());
             $this->respondError('ثبت تصمیم انجام نشد.', 500);
         }
