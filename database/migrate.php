@@ -5,6 +5,7 @@ use App\Core\Database;
 $pdo=Database::connection();
 $statements=[
 "IF OBJECT_ID('dbo.ProductPriceMonitor','U') IS NOT NULL AND COL_LENGTH('dbo.ProductPriceMonitor','BasedOnPriceMonitorID') IS NULL ALTER TABLE dbo.ProductPriceMonitor ADD BasedOnPriceMonitorID BIGINT NULL",
+"IF OBJECT_ID('dbo.ProductPriceMonitor','U') IS NOT NULL AND COL_LENGTH('dbo.ProductPriceMonitor','BasedOnPriceMonitorID') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='IX_ProductPriceMonitor_BasedOnPriceMonitorID' AND object_id=OBJECT_ID('dbo.ProductPriceMonitor')) CREATE INDEX IX_ProductPriceMonitor_BasedOnPriceMonitorID ON dbo.ProductPriceMonitor(BasedOnPriceMonitorID) WHERE BasedOnPriceMonitorID IS NOT NULL",
 "IF COL_LENGTH('dbo.products','min_sources') IS NULL ALTER TABLE dbo.products ADD min_sources TINYINT NOT NULL CONSTRAINT DF_products_min_sources DEFAULT 2",
 "IF COL_LENGTH('dbo.products','max_sources') IS NULL ALTER TABLE dbo.products ADD max_sources TINYINT NOT NULL CONSTRAINT DF_products_max_sources DEFAULT 3",
 "IF COL_LENGTH('dbo.products','status') IS NULL ALTER TABLE dbo.products ADD status NVARCHAR(30) NOT NULL CONSTRAINT DF_products_status DEFAULT 'active'",
