@@ -279,9 +279,9 @@ final class PriceController
                     $in = implode(',', array_fill(0, count($codes), '?'));
                     $agreementFilterSql = $sourcePaymentAgreementId > 0 ? ' AND PaymentAgreementID = ?' : '';
                     $marketQuery = $pdo->prepare(
-                        'SELECT ProductCode, InquiryDate, Source, Price, netamount, PaymentAgreementID
+                        'SELECT PriceMonitorID, ProductCode, InquiryDate, Source, Price, netamount, PaymentAgreementID
                          FROM (
-                             SELECT ProductCode, InquiryDate, Source, Price, netamount, PaymentAgreementID,
+                             SELECT PriceMonitorID, ProductCode, InquiryDate, Source, Price, netamount, PaymentAgreementID,
                                     ROW_NUMBER() OVER (
                                         PARTITION BY ProductCode
                                         ORDER BY InquiryDate DESC, PriceMonitorID DESC
@@ -332,6 +332,7 @@ final class PriceController
                             $member['latest_price_source'] = (string) ($marketRow['Source'] ?? '');
                             $member['latest_price_date'] = $marketDate;
                             $member['latest_payment_agreement_id'] = (int) ($marketRow['PaymentAgreementID'] ?? 0);
+                            $member['latest_price_monitor_id'] = (int) ($marketRow['PriceMonitorID'] ?? 0);
                             continue;
                         }
 
@@ -372,6 +373,9 @@ final class PriceController
                         $member['latest_price'] = $latest !== null ? (float) $latest['price'] : null;
                         $member['latest_price_source'] = (string) ($latest['source'] ?? '');
                         $member['latest_price_date'] = (string) ($latest['date'] ?? '');
+                        $member['latest_price_monitor_id'] = ($latest !== null && ($latest['source'] ?? '') === 'رصد بازار' && $marketRow)
+                            ? (int) ($marketRow['PriceMonitorID'] ?? 0)
+                            : 0;
                     }
                     unset($member);
                 }
@@ -614,13 +618,23 @@ final class PriceController
             exit('لیست انتخاب‌شده معتبر نیست.');
         }
         $service = RahkaranPriceService::instance();
-        $insert = $pdo->prepare('INSERT INTO dbo.ProductPriceMonitor(ProductCode,InquiryDate,Source,Price,UnitID,PaymentAgreementID,discountperc,grossprice,opration,netamount,payagrementperc,userid,isexported,Approved,CreatedDate) VALUES(:code,:date,:source,:price,:unit,:agreement,:discount,:gross,:operation,:net,:agreement_percent,:userid,0,0,GETDATE())');
+        $insert = $pdo->prepare('INSERT INTO dbo.ProductPriceMonitor(ProductCode,InquiryDate,Source,Price,UnitID,PaymentAgreementID,discountperc,grossprice,opration,netamount,payagrementperc,userid,isexported,Approved,BasedOnPriceMonitorID,CreatedDate) VALUES(:code,:date,:source,:price,:unit,:agreement,:discount,:gross,:operation,:net,:agreement_percent,:userid,0,0,:based_on_monitor_id,GETDATE())');
+        $validateBase = $pdo->prepare('SELECT ProductCode FROM dbo.ProductPriceMonitor WHERE PriceMonitorID=:id');
         $saved = 0;
         foreach ($items as $code => $item) {
             if (!is_array($item) || empty($item['selected'])) continue;
             // Do not create a monitoring record for products that had no source price when the queue loaded.
             if ((string) ($item['has_base_price'] ?? '0') !== '1') continue;
             $code = trim((string) $code);
+            $baseMonitorId = max(0, (int) ($item['based_on_price_monitor_id'] ?? 0));
+            if ($baseMonitorId > 0) {
+                $validateBase->execute(['id' => $baseMonitorId]);
+                $baseProductCode = $validateBase->fetchColumn();
+                if ($baseProductCode === false || trim((string) $baseProductCode) !== $code) {
+                    http_response_code(422);
+                    exit('قیمت مبنای انتخاب‌شده برای این کالا معتبر نیست.');
+                }
+            }
             $priceText = str_replace(',', '', trim((string) ($item['price'] ?? '')));
             // Selected rows with an empty or zero price are optional and must not be inserted.
             if ($priceText === '' || (is_numeric($priceText) && (float) $priceText == 0.0)) continue;
@@ -652,7 +666,7 @@ final class PriceController
                 ? $gross * (1 + $discount / 100)
                 : $gross * (1 - $discount / 100);
             $net = round($operation === '1' ? $stageTwoPrice + $stageTwoPrice * $agreementPercent / 100 : $stageTwoPrice - $stageTwoPrice * $agreementPercent / 100, 2);
-            $insert->execute(['code'=>$code,'date'=>$date,'source'=>$listName,'price'=>$price,'unit'=>$unitId,'agreement'=>$agreementId,'discount'=>$discount,'gross'=>$gross,'operation'=>(int)$operation,'net'=>$net,'agreement_percent'=>$agreementPercent,'userid'=>Auth::userId()]);
+            $insert->execute(['code'=>$code,'date'=>$date,'source'=>$listName,'price'=>$price,'unit'=>$unitId,'agreement'=>$agreementId,'discount'=>$discount,'gross'=>$gross,'operation'=>(int)$operation,'net'=>$net,'agreement_percent'=>$agreementPercent,'userid'=>Auth::userId(),'based_on_monitor_id'=>$baseMonitorId > 0 ? $baseMonitorId : null]);
             $saved++;
         }
         if ($saved < 1) { http_response_code(422); exit('حداقل یک کالا را انتخاب کنید.'); }
