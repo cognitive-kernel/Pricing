@@ -185,6 +185,27 @@ $(function(){
   const statusFilter=document.getElementById('status-filter');if(statusFilter)statusFilter.addEventListener('change',function(){document.getElementById('filter')?.requestSubmit();});
   function initPriceActionRows(){document.querySelectorAll('.price-action-row[data-href]').forEach(function(row){if(row._priceActionBound)return;row._priceActionBound=true;row.addEventListener('dblclick',function(event){if(event.target.closest('a,button,input,form,select,textarea'))return;window.location.href=row.dataset.href;});});}
   function initPriceForm(){const form=document.getElementById('price-form');if(!form||form._priceValidationBound)return;form._priceValidationBound=true;form.addEventListener('submit',function(event){const required=Number(form.dataset.requiredSources||0);let filled=0;for(let i=0;i<3;i++){const source=form.querySelector('[name="prices['+i+'][source]"]');const price=form.querySelector('[name="prices['+i+'][price]"]');const unit=form.querySelector('[name="prices['+i+'][unit_id]"]');const date=form.querySelector('[name="prices['+i+'][inquiry_date]"]');const hasAny=(source?.value||'').trim()!==''||(price?.value||'').trim()!==''||(unit?.value||'0')!=='0'||(date?.value||'').trim()!=='';if(hasAny)filled++;}if(filled<required){event.preventDefault();alert('برای این وضعیت حداقل '+required+' قیمت جدید بازار باید ثبت شود.');}});}
+  function initPaymentAgreementDropdowns(){
+    document.querySelectorAll('.payment-agreement-dropdown').forEach(function(dropdown){
+      if(dropdown._paymentAgreementDropdownBound)return;
+      dropdown._paymentAgreementDropdownBound=true;
+      const summary=dropdown.querySelector('.payment-agreement-summary');
+      const checkboxes=Array.from(dropdown.querySelectorAll('input[type="checkbox"]'));
+      function updateSummary(){
+        const selected=checkboxes.filter(box=>box.checked);
+        if(!summary)return;
+        if(!selected.length){summary.textContent='انتخاب توافق پرداخت';return;}
+        if(selected.length===1){
+          const label=dropdown.querySelector('label[for="'+selected[0].id+'"]');
+          summary.textContent=label?label.textContent.trim():'۱ توافق انتخاب شد';
+          return;
+        }
+        summary.textContent=selected.length+' توافق انتخاب شد';
+      }
+      checkboxes.forEach(function(box){box.addEventListener('change',updateSummary);});
+      updateSummary();
+    });
+  }
   function initCompanyItemsSearch(){
     const input=document.getElementById('company-items-search');
     const table=document.getElementById('company-items-table');
@@ -207,7 +228,7 @@ $(function(){
     filter();
   }
   function initCompanyRowSave(){const table=document.getElementById('company-items-table');if(!table||table._companySaveBound)return;table._companySaveBound=true;table.addEventListener('click',async function(event){const button=event.target.closest('.company-row-save');if(!button)return;const row=button.closest('.company-item-row');const price=row.querySelector('.company-final-price');const agreements=Array.from(row.querySelectorAll('.company-agreement:checked'));const message=row.querySelector('.company-row-message');const amount=(price?.value||'').trim();if(!amount||!Number.isFinite(Number(amount))||Number(amount)<=0){price?.focus();message.textContent=' مبلغ معتبر وارد کنید.';return;}if(!agreements.length){row.querySelector('.company-agreement')?.focus();message.textContent=' حداقل یک توافق پرداخت را انتخاب کنید.';return;}button.disabled=true;message.textContent=' در حال ثبت…';try{const body=new URLSearchParams({_csrf:document.getElementById('company-row-csrf')?.value||'',company_code:document.getElementById('company-row-code')?.value||'',product_code:row.dataset.productCode||'',final_price:amount});agreements.forEach(function(agreement){body.append('payment_agreement_ids[]',agreement.value);});const response=await fetch('/pricing/public/products/bulk-save-row',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8','X-Requested-With':'XMLHttpRequest'},body:body.toString(),credentials:'same-origin'});const result=await response.json();if(!response.ok||!result.success)throw new Error(result.message||'ثبت ردیف انجام نشد.');row.classList.add('table-success');message.textContent=' ثبت شد ('+agreements.length+' توافق)';}catch(error){message.textContent=' '+(error.message||'خطا در ثبت ردیف');}finally{button.disabled=false;}});}
-  initCompanyItemsSearch();initCompanyRowSave();initPriceActionRows();initPriceForm();
+  initPaymentAgreementDropdowns();initCompanyItemsSearch();initCompanyRowSave();initPriceActionRows();initPriceForm();
 
   function initPriceApprovals(){
     const form=document.getElementById('approval-decision-form');
