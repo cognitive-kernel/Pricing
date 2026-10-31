@@ -23,8 +23,7 @@
         </div>
         <div class="table-responsive">
             <table class="table table-striped table-hover align-middle mb-0" id="company-items-table">
-                <thead><tr><th>کد</th><th>نام</th><th>علامت کالا</th>    <th>کارشناس</th>
-<th>تاریخ رصد</th><th>منبع</th><th>توافق پرداخت</th><th>واحد</th><th>مبلغ نهایی</th><th>ثبت</th></tr></thead>
+                <thead><tr><th>کد</th><th>نام</th><th>علامت کالا</th><th>کارشناس</th><th>تاریخ رصد</th><th>منبع</th><th>توافق پرداخت</th><th>واحد</th><th>مبلغ نهایی</th><th>ثبت</th></tr></thead>
                 <tbody>
                 <?php if (!$members): ?>
                     <tr><td colspan="10" class="text-center">موردی برای نمایش وجود ندارد.</td></tr>
