@@ -81,7 +81,7 @@ $(function(){
     const firstValue=document.getElementById('first-value');
     const secondType=document.getElementById('second-adjustment');
     const secondValue=document.getElementById('second-value');
-    const agreement=document.getElementById('queue-payment-agreement');
+    const agreementOptions=Array.from(document.querySelectorAll('#queue-payment-agreement-options .queue-payment-agreement-option'));
     const masterInquiryDate=document.getElementById('queue-master-inquiry-date');
     function syncInquiryDates(){
       if(!masterInquiryDate) return;
@@ -98,7 +98,8 @@ $(function(){
         const grossCell=row.querySelector('.queue-gross-price');
         const finalCell=row.querySelector('.queue-final-price');
         const agreementCell=row.querySelector('.queue-agreement-title');
-        if(agreementCell&&agreement) agreementCell.textContent=agreement.selectedIndex>0?agreement.options[agreement.selectedIndex].text:'—';
+        const agreementTitles=agreementOptions.filter(function(option){return option.checked;}).map(function(option){return option.nextElementSibling?.textContent.trim()||'';}).filter(Boolean);
+        if(agreementCell) agreementCell.textContent=agreementTitles.join('، ')||'—';
         if(mode==='global'&&(!check||!check.checked)) return;
         const enteredPrice=priceInput?priceInput.value.trim():'';
         if(enteredPrice===''||!Number.isFinite(Number(enteredPrice))){if(grossCell)grossCell.textContent='—';if(finalCell)finalCell.childNodes[0].textContent='—';return;}
@@ -147,7 +148,7 @@ $(function(){
       if(grossCell)grossCell.textContent=row.dataset.queueOriginalGross||'—';
       if(finalCell&&finalCell.childNodes[0])finalCell.childNodes[0].textContent=row.dataset.queueOriginalFinal||'—';
     };
-    [firstType,firstValue,secondType,secondValue,agreement].filter(Boolean).forEach(function(control){control.addEventListener('input',function(){render('global');});control.addEventListener('change',function(){render('global');});});
+    [firstType,firstValue,secondType,secondValue,...agreementOptions].filter(Boolean).forEach(function(control){control.addEventListener('input',function(){render('global');});control.addEventListener('change',function(){render('global');});});
     if(secondType)secondType.addEventListener('change',syncSecondStageToSelectedRows);
     if(secondValue){secondValue.addEventListener('input',syncSecondStageToSelectedRows);secondValue.addEventListener('change',syncSecondStageToSelectedRows);}
     table.addEventListener('input',function(event){if(event.target.matches('.queue-saved-price,.queue-discount,.queue-agreement-percent')){const row=event.target.closest('.queue-price-row');if(row)render('row',row);}});
@@ -205,7 +206,7 @@ $(function(){
     input.addEventListener('input',filter);
     filter();
   }
-  function initCompanyRowSave(){const table=document.getElementById('company-items-table');if(!table||table._companySaveBound)return;table._companySaveBound=true;table.addEventListener('click',async function(event){const button=event.target.closest('.company-row-save');if(!button)return;const row=button.closest('.company-item-row');const price=row.querySelector('.company-final-price');const agreement=row.querySelector('.company-agreement');const message=row.querySelector('.company-row-message');const amount=(price?.value||'').trim();if(!amount||!Number.isFinite(Number(amount))||Number(amount)<=0){price?.focus();message.textContent=' مبلغ معتبر وارد کنید.';return;}if(!agreement?.value){agreement?.focus();message.textContent=' توافق پرداخت را انتخاب کنید.';return;}button.disabled=true;message.textContent=' در حال ثبت…';try{const body=new URLSearchParams({_csrf:document.getElementById('company-row-csrf')?.value||'',company_code:document.getElementById('company-row-code')?.value||'',product_code:row.dataset.productCode||'',payment_agreement_id:agreement.value,final_price:amount});const response=await fetch('/pricing/public/products/bulk-save-row',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8','X-Requested-With':'XMLHttpRequest'},body:body.toString(),credentials:'same-origin'});const result=await response.json();if(!response.ok||!result.success)throw new Error(result.message||'ثبت ردیف انجام نشد.');row.classList.add('table-success');message.textContent=' ثبت شد';}catch(error){message.textContent=' '+(error.message||'خطا در ثبت ردیف');}finally{button.disabled=false;}});}
+  function initCompanyRowSave(){const table=document.getElementById('company-items-table');if(!table||table._companySaveBound)return;table._companySaveBound=true;table.addEventListener('click',async function(event){const button=event.target.closest('.company-row-save');if(!button)return;const row=button.closest('.company-item-row');const price=row.querySelector('.company-final-price');const agreements=Array.from(row.querySelectorAll('.company-agreement:checked'));const message=row.querySelector('.company-row-message');const amount=(price?.value||'').trim();if(!amount||!Number.isFinite(Number(amount))||Number(amount)<=0){price?.focus();message.textContent=' مبلغ معتبر وارد کنید.';return;}if(!agreements.length){row.querySelector('.company-agreement')?.focus();message.textContent=' حداقل یک توافق پرداخت را انتخاب کنید.';return;}button.disabled=true;message.textContent=' در حال ثبت…';try{const body=new URLSearchParams({_csrf:document.getElementById('company-row-csrf')?.value||'',company_code:document.getElementById('company-row-code')?.value||'',product_code:row.dataset.productCode||'',final_price:amount});agreements.forEach(function(agreement){body.append('payment_agreement_ids[]',agreement.value);});const response=await fetch('/pricing/public/products/bulk-save-row',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8','X-Requested-With':'XMLHttpRequest'},body:body.toString(),credentials:'same-origin'});const result=await response.json();if(!response.ok||!result.success)throw new Error(result.message||'ثبت ردیف انجام نشد.');row.classList.add('table-success');message.textContent=' ثبت شد ('+agreements.length+' توافق)';}catch(error){message.textContent=' '+(error.message||'خطا در ثبت ردیف');}finally{button.disabled=false;}});}
   initCompanyItemsSearch();initCompanyRowSave();initPriceActionRows();initPriceForm();
 
   function initPriceApprovals(){
