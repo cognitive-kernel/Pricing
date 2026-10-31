@@ -42,14 +42,24 @@
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
                         <label class="form-label">توافق پرداخت</label>
-                        <select name="payment_agreement_id" class="form-select" required>
-                            <option value="">انتخاب توافق پرداخت</option>
+                        <div class="border rounded p-3 payment-agreement-list" role="group" aria-label="انتخاب توافق‌های پرداخت">
                             <?php foreach (($paymentAgreements ?? []) as $agreement): ?>
-                                <option value="<?= (int) $agreement['PaymentAgreementID'] ?>" <?= (int) $selectedPaymentAgreementId === (int) $agreement['PaymentAgreementID'] ? 'selected' : '' ?>>
-                                    <?= Security::e((string) $agreement['Title']) ?>
-                                </option>
+                                <?php $agreementId = (int) $agreement['PaymentAgreementID']; ?>
+                                <div class="form-check">
+                                    <input class="form-check-input payment-agreement-checkbox" type="checkbox"
+                                           name="payment_agreement_ids[]" id="payment-agreement-<?= $agreementId ?>"
+                                           value="<?= $agreementId ?>"
+                                           <?= in_array($agreementId, (array) ($selectedPaymentAgreementIds ?? []), true) ? 'checked' : '' ?>>
+                                    <label class="form-check-label" for="payment-agreement-<?= $agreementId ?>">
+                                        <?= Security::e((string) $agreement['Title']) ?>
+                                    </label>
+                                </div>
                             <?php endforeach; ?>
-                        </select>
+                            <?php if (empty($paymentAgreements)): ?>
+                                <span class="text-muted">توافق پرداختی در دسترس نیست.</span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="form-text">می‌توانید یک یا چند توافق پرداخت را انتخاب کنید.</div>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">درصد توافق پرداخت</label>
