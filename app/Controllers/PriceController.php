@@ -520,7 +520,7 @@ final class PriceController
         $prices = [];
         $requiredSources = 0;
         $paymentAgreements = [];
-        $selectedPaymentAgreementId = 0;
+        $selectedPaymentAgreementIds = [];
 
         if ($editing) {
             // This form is intentionally independent of products/Rahkaran relations.
@@ -561,14 +561,12 @@ final class PriceController
             $s = $pdo->prepare('SELECT m.PriceMonitorID,m.ProductCode,CONVERT(varchar(19),m.InquiryDate,120) AS InquiryDate,m.Source,m.Price,m.UnitID,m.PaymentAgreementID,m.discountperc,m.grossprice,m.opration,m.netamount,m.payagrementperc,CONVERT(varchar(19),m.CreatedDate,120) AS CreatedDate FROM dbo.ProductPriceMonitor m WHERE m.ProductCode=:code ORDER BY m.InquiryDate DESC,m.PriceMonitorID DESC');
             $s->execute(['code' => $productCode]);
             $prices = $s->fetchAll();
-            $agreementIds = array_values(array_unique(array_map(static fn(array $row): int => (int) ($row['PaymentAgreementID'] ?? 0), $prices)));
+            $agreementIds = array_values(array_unique(array_filter(array_map(static fn(array $row): int => (int) ($row['PaymentAgreementID'] ?? 0), $prices), static fn(int $agreementId): bool => $agreementId > 0)));
+            $selectedPaymentAgreementIds = $agreementIds;
             $agreementTitles = RahkaranPriceService::instance()->paymentAgreementTitlesByIds($agreementIds);
             foreach ($prices as &$priceRow) {
                 $agreementId = (int) ($priceRow['PaymentAgreementID'] ?? 0);
                 $priceRow['PaymentAgreementTitle'] = $agreementTitles[$agreementId] ?? '';
-                if ($selectedPaymentAgreementId < 1 && $agreementId > 0) {
-                    $selectedPaymentAgreementId = $agreementId;
-                }
             }
             unset($priceRow);
 
@@ -578,7 +576,7 @@ final class PriceController
             }
         }
 
-        View::render($editing ? 'prices/edit' : 'prices/create', compact('product', 'prices', 'requiredSources', 'paymentAgreements', 'selectedPaymentAgreementId'));
+        View::render($editing ? 'prices/edit' : 'prices/create', compact('product', 'prices', 'requiredSources', 'paymentAgreements', 'selectedPaymentAgreementIds'));
     }
 
     private function requiredSourcesFromMarketDate(?string $marketDate): int
@@ -604,7 +602,7 @@ final class PriceController
         $pdo = Database::connection();
         $listCode = trim((string) ($_POST['list_code'] ?? ''));
         $listName = trim((string) ($_POST['list_name'] ?? ''));
-        $agreementId = (int) ($_POST['payment_agreement_id'] ?? 0);
+        $agreementIds = array_values(array_unique(array_filter(array_map('intval', (array) ($_POST['payment_agreement_ids'] ?? [])), static fn(int $agreementId): bool => $agreementId > 0)));
         $items = $_POST['items'] ?? [];
         $firstAdjustment = (string) ($_POST['first_adjustment'] ?? 'increase');
         $firstValue = (float) ($_POST['first_value'] ?? 0);
@@ -613,9 +611,9 @@ final class PriceController
             http_response_code(422);
             exit('درصدهای تنظیم قیمت نامعتبر است.');
         }
-        if ($listCode === '' || $listName === '' || $agreementId < 1 || !is_array($items)) {
+        if ($listCode === '' || $listName === '' || !$agreementIds || !is_array($items)) {
             http_response_code(422);
-            exit('لیست، توافق پرداخت و اقلام معتبر الزامی است.');
+            exit('لیست، حداقل یک توافق پرداخت و اقلام معتبر الزامی است.');
         }
         $listQuery = $pdo->prepare('SELECT COUNT(*) FROM dbo.SupplierLIST WHERE listcode=:code AND listname=:name');
         $listQuery->execute(['code' => $listCode, 'name' => $listName]);
@@ -624,6 +622,13 @@ final class PriceController
             exit('لیست انتخاب‌شده معتبر نیست.');
         }
         $service = RahkaranPriceService::instance();
+        $validAgreementIds = array_fill_keys(array_map(static fn(array $agreement): int => (int) ($agreement['PaymentAgreementID'] ?? 0), $service->paymentAgreements()), true);
+        foreach ($agreementIds as $agreementId) {
+            if (!isset($validAgreementIds[$agreementId])) {
+                http_response_code(422);
+                exit('یکی از توافق‌های پرداخت انتخاب‌شده معتبر نیست.');
+            }
+        }
         $insert = $pdo->prepare('INSERT INTO dbo.ProductPriceMonitor(ProductCode,InquiryDate,Source,Price,UnitID,PaymentAgreementID,discountperc,grossprice,opration,netamount,payagrementperc,userid,isexported,Approved,BasedOnPriceMonitorID,CreatedDate) VALUES(:code,:date,:source,:price,:unit,:agreement,:discount,:gross,:operation,:net,:agreement_percent,:userid,0,0,:based_on_monitor_id,GETDATE())');
         $validateBase = $pdo->prepare('SELECT ProductCode FROM dbo.ProductPriceMonitor WHERE PriceMonitorID=:id');
         $saved = 0;
@@ -672,7 +677,9 @@ final class PriceController
                 ? $gross * (1 + $discount / 100)
                 : $gross * (1 - $discount / 100);
             $net = round($operation === '1' ? $stageTwoPrice + $stageTwoPrice * $agreementPercent / 100 : $stageTwoPrice - $stageTwoPrice * $agreementPercent / 100, 2);
-            $insert->execute(['code'=>$code,'date'=>$date,'source'=>$listName,'price'=>$price,'unit'=>$unitId,'agreement'=>$agreementId,'discount'=>$discount,'gross'=>$gross,'operation'=>(int)$operation,'net'=>$net,'agreement_percent'=>$agreementPercent,'userid'=>Auth::userId(),'based_on_monitor_id'=>$baseMonitorId > 0 ? $baseMonitorId : null]);
+            foreach ($agreementIds as $agreementId) {
+                $insert->execute(['code'=>$code,'date'=>$date,'source'=>$listName,'price'=>$price,'unit'=>$unitId,'agreement'=>$agreementId,'discount'=>$discount,'gross'=>$gross,'operation'=>(int)$operation,'net'=>$net,'agreement_percent'=>$agreementPercent,'userid'=>Auth::userId(),'based_on_monitor_id'=>$baseMonitorId > 0 ? $baseMonitorId : null]);
+            }
             $saved++;
         }
         if ($saved < 1) { http_response_code(422); exit('حداقل یک کالا را انتخاب کنید.'); }
@@ -704,10 +711,19 @@ final class PriceController
             http_response_code(422);
             exit('واحد کالا در راهکاران پیدا نشد.');
         }
-        $paymentAgreementId = (int) ($_POST['payment_agreement_id'] ?? 0);
-        if ($paymentAgreementId < 1) {
+        $paymentAgreementIds = array_values(array_unique(array_filter(array_map('intval', (array) ($_POST['payment_agreement_ids'] ?? [])), static fn(int $agreementId): bool => $agreementId > 0)));
+        if (!$paymentAgreementIds) {
             http_response_code(422);
-            exit('توافق پرداخت الزامی است.');
+            exit('حداقل یک توافق پرداخت را انتخاب کنید.');
+        }
+
+        $rahkaranService = RahkaranPriceService::instance();
+        $validAgreementIds = array_fill_keys(array_map(static fn(array $agreement): int => (int) ($agreement['PaymentAgreementID'] ?? 0), $rahkaranService->paymentAgreements()), true);
+        foreach ($paymentAgreementIds as $agreementId) {
+            if (!isset($validAgreementIds[$agreementId])) {
+                http_response_code(422);
+                exit('یکی از توافق‌های پرداخت انتخاب‌شده معتبر نیست.');
+            }
         }
 
         $paymentAgreementPercent = (float) ($_POST['payment_agreement_percent'] ?? 0);
@@ -813,14 +829,17 @@ final class PriceController
             $s->bindValue(':source', $row[0], PDO::PARAM_STR);
             $s->bindValue(':price', (string) $row[1], PDO::PARAM_STR);
             $s->bindValue(':unit', (int) $unitId, PDO::PARAM_INT);
-            $s->bindValue(':payment_agreement_id', (int) $paymentAgreementId, PDO::PARAM_INT);
-            $s->bindValue(':discountperc', (int) round($row[4]), PDO::PARAM_INT);
-            $s->bindValue(':grossprice', number_format((float) $row[5], 2, '.', ''), PDO::PARAM_STR);
-            $s->bindValue(':opration', (int) $row[6], PDO::PARAM_INT);
-            $s->bindValue(':netamount', number_format((float) $row[7], 2, '.', ''), PDO::PARAM_STR);
-            $s->bindValue(':payagrementperc', (int) round($paymentAgreementPercent), PDO::PARAM_INT);
-            $s->bindValue(':userid', Auth::userId(), PDO::PARAM_INT);
-            $s->execute();
+            foreach ($paymentAgreementIds as $paymentAgreementId) {
+                $s->bindValue(':payment_agreement_id', (int) $paymentAgreementId, PDO::PARAM_INT);
+                $s->bindValue(':discountperc', (int) round($row[4]), PDO::PARAM_INT);
+                $s->bindValue(':grossprice', number_format((float) $row[5], 2, '.', ''), PDO::PARAM_STR);
+                $s->bindValue(':opration', (int) $row[6], PDO::PARAM_INT);
+                $s->bindValue(':netamount', number_format((float) $row[7], 2, '.', ''), PDO::PARAM_STR);
+                $s->bindValue(':payagrementperc', (int) round($paymentAgreementPercent), PDO::PARAM_INT);
+                $s->bindValue(':userid', Auth::userId(), PDO::PARAM_INT);
+                $s->execute();
+            }
+            continue;
         }
 
         AuditService::log(Auth::userId(), 'price.monitor.create', 'ProductPriceMonitor', $postedCode, null, [
