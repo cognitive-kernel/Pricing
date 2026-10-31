@@ -165,6 +165,8 @@ final class PriceController
             $pageRows
         ))));
 
+        $expertsByCode = $codes ? RahkaranPriceService::instance()->expertsByCodes($codes) : [];
+
         $prices = [];
         if ($codes) {
             $in = implode(',', array_fill(0, count($codes), '?'));
@@ -208,6 +210,7 @@ final class PriceController
                 'id' => 0,
                 'product_code' => $code,
                 'product_name' => (string) ($row['Name'] ?? ''),
+                'expert' => (string) ($expertsByCode[$code] ?? ''),
                 'unit_id' => $unitId,
                 'unit_name' => $unitName,
                 'registered_at' => null,
