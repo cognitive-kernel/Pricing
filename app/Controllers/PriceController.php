@@ -313,6 +313,7 @@ final class PriceController
                     foreach ($members as &$member) {
                         $code = trim((string) ($member['code'] ?? ''));
                         $rahkaranRow = $rahkaranByCode[$code] ?? [];
+                        $member['secondcode'] = (string) ($rahkaranRow['secondcode'] ?? '');
 
                         if ($sourcePaymentAgreementId > 0) {
                             $marketRow = $marketByCode[$code];
