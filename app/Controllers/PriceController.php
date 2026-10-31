@@ -278,6 +278,7 @@ final class PriceController
 
                 if ($codes) {
                     $rahkaranByCode = $service->rowsByCodes($codes);
+                    $expertsByCode = $service->expertsByCodes($codes);
 
                     $in = implode(',', array_fill(0, count($codes), '?'));
                     $agreementFilterSql = $sourcePaymentAgreementId > 0 ? ' AND PaymentAgreementID = ?' : '';
@@ -317,6 +318,7 @@ final class PriceController
                         $code = trim((string) ($member['code'] ?? ''));
                         $rahkaranRow = $rahkaranByCode[$code] ?? [];
                         $member['secondcode'] = (string) ($rahkaranRow['secondcode'] ?? '');
+                        $member['expert'] = (string) ($expertsByCode[$code] ?? '');
 
                         if ($sourcePaymentAgreementId > 0) {
                             $marketRow = $marketByCode[$code];
