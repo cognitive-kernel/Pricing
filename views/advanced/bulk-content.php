@@ -36,12 +36,22 @@
                         <td><input class="form-control form-control-sm" value="<?= Security::e($todayJalali) ?>" readonly aria-label="تاریخ رصد"></td>
                         <td class="company-source"><?= Security::e($selectedCompanyName ?? '') ?></td>
                         <td>
-                            <select class="form-select form-select-sm company-agreement" required aria-label="توافق پرداخت">
-                                <option value="">انتخاب توافق پرداخت</option>
+                            <div class="company-agreement-list" role="group" aria-label="توافق‌های پرداخت">
                                 <?php foreach (($paymentAgreements ?? []) as $agreement): ?>
-                                    <option value="<?= (int) $agreement['PaymentAgreementID'] ?>"><?= Security::e((string) $agreement['Title']) ?></option>
+                                    <?php $agreementId = (int) $agreement['PaymentAgreementID']; ?>
+                                    <div class="form-check">
+                                        <input class="form-check-input company-agreement" type="checkbox"
+                                               id="company-agreement-<?= Security::e((string) ($member['code'] ?? '')) ?>-<?= $agreementId ?>"
+                                               value="<?= $agreementId ?>">
+                                        <label class="form-check-label small" for="company-agreement-<?= Security::e((string) ($member['code'] ?? '')) ?>-<?= $agreementId ?>">
+                                            <?= Security::e((string) $agreement['Title']) ?>
+                                        </label>
+                                    </div>
                                 <?php endforeach; ?>
-                            </select>
+                                <?php if (empty($paymentAgreements)): ?>
+                                    <span class="text-muted small">توافقی موجود نیست.</span>
+                                <?php endif; ?>
+                            </div>
                         </td>
                         <td><?= Security::e((string) ($member['unit_name'] ?? '')) ?: '—' ?></td>
                         <td><input type="number" min="0.01" step="any" inputmode="decimal" class="form-control form-control-sm company-final-price" placeholder="مبلغ نهایی" required aria-label="مبلغ نهایی"></td>
