@@ -23,15 +23,17 @@
         </div>
         <div class="table-responsive">
             <table class="table table-striped table-hover align-middle mb-0" id="company-items-table">
-                <thead><tr><th>کد</th><th>نام</th><th>علامت کالا</th><th>تاریخ رصد</th><th>منبع</th><th>توافق پرداخت</th><th>واحد</th><th>مبلغ نهایی</th><th>ثبت</th></tr></thead>
+                <thead><tr><th>کد</th><th>نام</th><th>علامت کالا</th>    <th>کارشناس</th>
+<th>تاریخ رصد</th><th>منبع</th><th>توافق پرداخت</th><th>واحد</th><th>مبلغ نهایی</th><th>ثبت</th></tr></thead>
                 <tbody>
                 <?php if (!$members): ?>
-                    <tr><td colspan="9" class="text-center">موردی برای نمایش وجود ندارد.</td></tr>
+                    <tr><td colspan="10" class="text-center">موردی برای نمایش وجود ندارد.</td></tr>
                 <?php else: foreach ($members as $member): ?>
                     <tr class="company-item-row" data-product-code="<?= Security::e((string) ($member['code'] ?? '')) ?>">
                         <td><?= Security::e((string) ($member['code'] ?? '')) ?></td>
                         <td><?= Security::e((string) ($member['name'] ?? '')) ?></td>
                         <td><?= Security::e((string) ($member['secondcode'] ?? '')) ?></td>
+                        <td><?= Security::e((string) ($member['expert'] ?? '')) ?></td>
                         <td><input class="form-control form-control-sm" value="<?= Security::e($todayJalali) ?>" readonly aria-label="تاریخ رصد"></td>
                         <td class="company-source"><?= Security::e($selectedCompanyName ?? '') ?></td>
                         <td>
