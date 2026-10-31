@@ -60,6 +60,18 @@ document.addEventListener('DOMContentLoaded', function () {
         let firstInvalid = null;
 
         form.querySelector('.client-validation-error')?.remove();
+        if (!form.querySelector('.payment-agreement-checkbox:checked')) {
+            event.preventDefault();
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-warning client-validation-error mt-3';
+            alert.setAttribute('role', 'alert');
+            alert.textContent = 'حداقل یک توافق پرداخت را انتخاب کنید.';
+            const agreementList = form.querySelector('.payment-agreement-list');
+            if (agreementList) agreementList.insertAdjacentElement('beforebegin', alert);
+            else form.prepend(alert);
+            agreementList?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
 
         rows.forEach(function (row) {
             row.querySelectorAll('.is-invalid').forEach(function (input) {
