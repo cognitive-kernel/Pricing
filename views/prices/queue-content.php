@@ -66,25 +66,26 @@
                 <div class="w-100"></div>
                 <div class="col-md-6">
                     <label class="form-label">توافق پرداخت</label>
-                    <div id="queue-payment-agreement-options" class="border rounded p-3 payment-agreement-list" role="group" aria-label="انتخاب توافق‌های پرداخت">
-                        <div class="row row-cols-1 row-cols-md-2 g-2">
+                    <div id="queue-payment-agreement-options" class="dropdown payment-agreement-list payment-agreement-dropdown" data-bs-auto-close="outside">
+                        <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start payment-agreement-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="payment-agreement-summary">انتخاب توافق پرداخت</span>
+                        </button>
+                        <div class="dropdown-menu w-100 p-2 payment-agreement-menu" style="max-height:260px;overflow-y:auto" role="group" aria-label="انتخاب توافق‌های پرداخت">
                             <?php foreach (($paymentAgreements ?? []) as $agreement): ?>
                                 <?php $agreementId = (int) $agreement['PaymentAgreementID']; ?>
-                                <div class="col">
-                                    <div class="form-check">
-                                        <input class="form-check-input queue-payment-agreement-option" type="checkbox"
-                                               name="payment_agreement_ids[]" id="queue-payment-agreement-<?= $agreementId ?>"
-                                               value="<?= $agreementId ?>">
-                                        <label class="form-check-label" for="queue-payment-agreement-<?= $agreementId ?>">
-                                            <?= Security::e((string) $agreement['Title']) ?>
-                                        </label>
-                                    </div>
+                                <div class="form-check">
+                                    <input class="form-check-input queue-payment-agreement-option" type="checkbox"
+                                           name="payment_agreement_ids[]" id="queue-payment-agreement-<?= $agreementId ?>"
+                                           value="<?= $agreementId ?>">
+                                    <label class="form-check-label" for="queue-payment-agreement-<?= $agreementId ?>">
+                                        <?= Security::e((string) $agreement['Title']) ?>
+                                    </label>
                                 </div>
                             <?php endforeach; ?>
+                            <?php if (empty($paymentAgreements)): ?>
+                                <span class="text-muted">توافق پرداختی در دسترس نیست.</span>
+                            <?php endif; ?>
                         </div>
-                        <?php if (empty($paymentAgreements)): ?>
-                            <span class="text-muted">توافق پرداختی در دسترس نیست.</span>
-                        <?php endif; ?>
                     </div>
                     <div class="form-text">یک یا چند توافق پرداخت را انتخاب کنید؛ ثبت برای هر توافق انتخاب‌شده انجام می‌شود.</div>
                 </div>
