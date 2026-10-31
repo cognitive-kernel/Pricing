@@ -100,12 +100,13 @@
                 <thead>
                     <tr>
                         <th><input type="checkbox" id="queue-select-all" aria-label="انتخاب همه کالاها" title="انتخاب همه کالاها"></th>
-                        <th>کد کالا</th><th>نام کالا</th><th>علامت کالا</th><th>تاریخ رصد</th><th>منبع</th><th>قیمت</th><th>منبع قیمت</th><th>درصد تخفیف</th><th>قیمت ناخالص</th><th>عملیات</th><th>مبلغ نهایی</th><th>واحد</th><th>توافق پرداخت</th><th>تاریخ ایجاد</th>
+                        <th>کد کالا</th><th>نام کالا</th><th>علامت کالا</th>    <th>کارشناس</th>
+<th>تاریخ رصد</th><th>منبع</th><th>قیمت</th><th>منبع قیمت</th><th>درصد تخفیف</th><th>قیمت ناخالص</th><th>عملیات</th><th>مبلغ نهایی</th><th>واحد</th><th>توافق پرداخت</th><th>تاریخ ایجاد</th>
                     </tr>
                 </thead>
                 <tbody>
                 <?php if (!$members): ?>
-                    <tr><td colspan="15" class="text-center">موردی برای نمایش وجود ندارد.</td></tr>
+                    <tr><td colspan="16" class="text-center">موردی برای نمایش وجود ندارد.</td></tr>
                 <?php else: foreach ($members as $member): ?>
                     <tr class="queue-price-row" data-base-price="<?= ($member['latest_price'] ?? null) !== null ? Security::e((string) $member['latest_price']) : '' ?>" data-product-code="<?= Security::e((string) ($member['code'] ?? '')) ?>">
                         <td>
@@ -116,6 +117,7 @@
                         <td><?= Security::e((string) ($member['code'] ?? '')) ?></td>
                         <td><?= Security::e((string) ($member['name'] ?? '')) ?></td>
                         <td><?= Security::e((string) ($member['secondcode'] ?? '')) ?></td>
+                        <td><?= Security::e((string) ($member['expert'] ?? '')) ?></td>
                         <td><input class="form-control jalali-date" data-jalali-picker="true" autocomplete="off" inputmode="numeric" name="items[<?= Security::e((string) ($member['code'] ?? '')) ?>][inquiry_date]" value="<?= Security::e($todayJalali) ?>" required></td>
                         <td><?= Security::e((string) ($selectedListName ?? '')) ?></td>
                         <td><input class="form-control queue-saved-price" name="items[<?= Security::e((string) ($member['code'] ?? '')) ?>][price]" value="<?= ($member['latest_price'] ?? null) !== null ? Security::e((string) $member['latest_price']) : '' ?>" inputmode="decimal"></td>
