@@ -110,7 +110,7 @@ SELECT
     s.PartID,
     s.Code,
     s.Name,
-    s.SecondCode,
+    s.SecondCode AS secondcode,
     s.MajorUnit_Remaining,
     p.Announcement_date,
     p.Announcement_price,
