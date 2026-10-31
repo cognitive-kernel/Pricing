@@ -54,7 +54,7 @@ use App\Support\Jalali;
     <?php if ($clickable): ?>data-href="<?= Security::e($marketObservationUrl) ?>" title="برای ثبت رصد بازار دوبار کلیک کنید"<?php endif; ?>>
     <td><?= Security::e((string) $p['product_code']) ?></td>
     <td><?= Security::e((string) $p['product_name']) ?></td>
-    <td><?= Security::e((string) ($rahkaran['SecondCode'] ?? '')) ?></td>
+    <td><?= Security::e((string) ($rahkaran['secondcode'] ?? '')) ?></td>
 
     <td>
         <?php if ($rahkaran): ?>
