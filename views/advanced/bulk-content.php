@@ -36,21 +36,26 @@
                         <td><input class="form-control form-control-sm" value="<?= Security::e($todayJalali) ?>" readonly aria-label="تاریخ رصد"></td>
                         <td class="company-source"><?= Security::e($selectedCompanyName ?? '') ?></td>
                         <td>
-                            <div class="company-agreement-list" role="group" aria-label="توافق‌های پرداخت">
-                                <?php foreach (($paymentAgreements ?? []) as $agreement): ?>
-                                    <?php $agreementId = (int) $agreement['PaymentAgreementID']; ?>
-                                    <div class="form-check">
-                                        <input class="form-check-input company-agreement" type="checkbox"
-                                               id="company-agreement-<?= Security::e((string) ($member['code'] ?? '')) ?>-<?= $agreementId ?>"
-                                               value="<?= $agreementId ?>">
-                                        <label class="form-check-label small" for="company-agreement-<?= Security::e((string) ($member['code'] ?? '')) ?>-<?= $agreementId ?>">
-                                            <?= Security::e((string) $agreement['Title']) ?>
-                                        </label>
-                                    </div>
-                                <?php endforeach; ?>
-                                <?php if (empty($paymentAgreements)): ?>
-                                    <span class="text-muted small">توافقی موجود نیست.</span>
-                                <?php endif; ?>
+                            <div class="dropdown company-agreement-list payment-agreement-dropdown" data-bs-auto-close="outside">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle w-100 text-start payment-agreement-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span class="payment-agreement-summary">انتخاب توافق پرداخت</span>
+                                </button>
+                                <div class="dropdown-menu w-100 p-2 payment-agreement-menu" style="max-height:240px;overflow-y:auto" role="group" aria-label="توافق‌های پرداخت">
+                                    <?php foreach (($paymentAgreements ?? []) as $agreement): ?>
+                                        <?php $agreementId = (int) $agreement['PaymentAgreementID']; ?>
+                                        <div class="form-check">
+                                            <input class="form-check-input company-agreement" type="checkbox"
+                                                   id="company-agreement-<?= Security::e((string) ($member['code'] ?? '')) ?>-<?= $agreementId ?>"
+                                                   value="<?= $agreementId ?>">
+                                            <label class="form-check-label small" for="company-agreement-<?= Security::e((string) ($member['code'] ?? '')) ?>-<?= $agreementId ?>">
+                                                <?= Security::e((string) $agreement['Title']) ?>
+                                            </label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                    <?php if (empty($paymentAgreements)): ?>
+                                        <span class="text-muted small">توافقی موجود نیست.</span>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </td>
                         <td><?= Security::e((string) ($member['unit_name'] ?? '')) ?: '—' ?></td>
