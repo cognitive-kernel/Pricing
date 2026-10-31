@@ -216,6 +216,82 @@ final class RahkaranPriceService
         return $result;
     }
 
+    public function expertsByCodes(array $codes): array
+    {
+        $wanted = array_values(array_unique(array_filter(array_map(
+            static fn($code): string => trim((string) $code),
+            $codes
+        ), static fn(string $code): bool => $code !== '')));
+
+        if (!$wanted) {
+            return [];
+        }
+
+        $in = implode(',', array_fill(0, count($wanted), '?'));
+        $sql = '
+            ;WITH PurchaseGroupPath AS
+            (
+                SELECT
+                    pg.MemberID AS PurchaseItemID,
+                    eg.EntityGroupID AS DirectGroupID,
+                    eg.Code AS DirectGroupCode,
+                    eg.Name AS DirectGroupName,
+                    eg.EntityGroupID AS CurrentGroupID,
+                    eg.Code AS CurrentGroupCode,
+                    eg.Name AS CurrentGroupName,
+                    eg.ParentRef
+                FROM PRC3.PurchaseItemGroupMembers AS pg
+                INNER JOIN GNR3.EntityGroup AS eg
+                    ON eg.EntityGroupID = pg.GroupRef
+                   AND eg.EntityGroupingRef = pg.GroupingRef
+                WHERE pg.GroupingRef = 1897
+
+                UNION ALL
+
+                SELECT
+                    path.PurchaseItemID,
+                    path.DirectGroupID,
+                    path.DirectGroupCode,
+                    path.DirectGroupName,
+                    parent.EntityGroupID,
+                    parent.Code,
+                    parent.Name,
+                    parent.ParentRef
+                FROM PurchaseGroupPath AS path
+                INNER JOIN GNR3.EntityGroup AS parent
+                    ON parent.EntityGroupID = path.ParentRef
+                   AND parent.EntityGroupingRef = 1897
+                WHERE path.CurrentGroupID NOT IN (953, 954, 955, 1761)
+            )
+            SELECT DISTINCT
+                pi.Code AS code,
+                path.CurrentGroupName AS expert_name
+            FROM PurchaseGroupPath AS path
+            INNER JOIN PRC3.PurchaseItem AS pi
+                ON pi.PurchaseItemID = path.PurchaseItemID
+            WHERE path.CurrentGroupID IN (953, 954, 955, 1761)
+              AND pi.Code IN (' . $in . ')
+            OPTION (MAXRECURSION 32767)';
+
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute($wanted);
+
+        $experts = [];
+        foreach ($statement->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $code = trim((string) ($row['code'] ?? ''));
+            $name = trim((string) ($row['expert_name'] ?? ''));
+            if ($code !== '' && $name !== '' && !in_array($name, $experts[$code] ?? [], true)) {
+                $experts[$code][] = $name;
+            }
+        }
+
+        foreach ($experts as $code => $names) {
+            $experts[$code] = implode('، ', $names);
+        }
+
+        return $experts;
+    }
+
     public function partGroupMembers(string $groupRef): array
     {
         $groupRef = trim($groupRef);
