@@ -245,6 +245,11 @@ final class RahkaranPriceService
                     ON eg.EntityGroupID = pg.GroupRef
                    AND eg.EntityGroupingRef = pg.GroupingRef
                 WHERE pg.GroupingRef = 1897
+                  AND pg.MemberID IN (
+                      SELECT PurchaseItemID
+                      FROM PRC3.PurchaseItem
+                      WHERE Code IN (' . $in . ')
+                  )
 
                 UNION ALL
 
@@ -270,7 +275,6 @@ final class RahkaranPriceService
             INNER JOIN PRC3.PurchaseItem AS pi
                 ON pi.PurchaseItemID = path.PurchaseItemID
             WHERE path.CurrentGroupID IN (953, 954, 955, 1761)
-              AND pi.Code IN (' . $in . ')
             OPTION (MAXRECURSION 32767)';
 
         $statement = $this->pdo->prepare($sql);
