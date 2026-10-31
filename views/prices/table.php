@@ -10,6 +10,7 @@ use App\Support\Jalali;
 <tr>
     <th>کد</th>
     <th>نام کالا</th>
+    <th>علامت کالا</th>
     <th>موجودی راهکاران</th>
     <th>اعلامیه راهکاران</th>
     <th>فاکتور راهکاران</th>
@@ -20,7 +21,7 @@ use App\Support\Jalali;
 </thead>
 <tbody>
 <?php if (!$products): ?>
-<tr><td colspan="8" class="text-center">رکوردی یافت نشد.</td></tr>
+<tr><td colspan="9" class="text-center">رکوردی یافت نشد.</td></tr>
 <?php endif; ?>
 
 <?php foreach ($products as $p):
@@ -53,6 +54,7 @@ use App\Support\Jalali;
     <?php if ($clickable): ?>data-href="<?= Security::e($marketObservationUrl) ?>" title="برای ثبت رصد بازار دوبار کلیک کنید"<?php endif; ?>>
     <td><?= Security::e((string) $p['product_code']) ?></td>
     <td><?= Security::e((string) $p['product_name']) ?></td>
+    <td><?= Security::e((string) ($rahkaran['SecondCode'] ?? '')) ?></td>
 
     <td>
         <?php if ($rahkaran): ?>
