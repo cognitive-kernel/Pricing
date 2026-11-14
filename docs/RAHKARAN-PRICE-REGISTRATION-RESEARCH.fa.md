@@ -326,6 +326,61 @@ SYS3.spGetNextId
 
 وجود این Procedureها شناسایی شده، اما متن، پارامترها، ترتیب فراخوانی و رفتار تراکنشی آن‌ها هنوز بررسی نشده است. **هیچ‌کدام را تا زمان بررسی کامل تعریف و فراخوانی رسمی آن‌ها اجرا نکنید.** مرحله بعد پژوهش، استخراج متن کامل Procedureها و بررسی وابستگی‌هایشان به جداول Numbering است.
 
+
+
+### ۱۱.۴. بررسی متن و پارامترهای Procedureها — ۱۴۰۵/۰۸/۲۳
+
+**روش بررسی:** اجرای دو SELECT فقط‌خواندنی روی `sys.procedures`، `sys.parameters` و `OBJECT_DEFINITION`. هیچ Procedureای اجرا نشده است.
+
+**پارامترهای مشاهده‌شده:**
+
+| Procedure | پارامترها |
+|---|---|
+| `CreateNumberingMethod` | `@title nvarchar(128)`، `@componentName nvarchar(500)`، `@entityName nvarchar(200)`، `@numberType int`، `@assignApproach int`، `@checkUniqueness bit`، `@NumberingRangeID bigint OUTPUT`، `@MissedNumberBehavior int`، `@newNumberingId bigint`، `@newAttributeID bigint`، `@newRangeID bigint`، سه پارامتر resetter از نوع `nvarchar(50)` |
+| `CreateNumberingMethodReservation` | `@NumberingMethodRangeID bigint`، `@DomainKey nvarchar(500)`، `@ReservedValue bigint` |
+| `spAddNumberingMethodReservation` | `@NumberingMethodRangeID bigint`، `@DomainKey nvarchar(500)`، `@ReservedValue bigint` |
+| `spRemoveNumberingMethodReservation` | `@NumberingMethodRangeID bigint`، `@DomainKey nvarchar(500)`، `@ReservedValue bigint` |
+| `spRemoveOldNumberingReservations` | پارامتری ندارد |
+
+توجه: `sys.parameters.max_length` برای nvarchar بر حسب بایت است؛ برای نمونه 256 بایت معادل nvarchar(128) است. تعریف متنی Procedureها نیز طول کاراکتری را نشان می‌دهد.
+
+**متن و رفتار مستقیم قابل مشاهده:**
+
+1. **`SYS3.CreateNumberingMethod`**
+   - ابتدا بر اساس `AttributeComponentName` و `AttributeEntityName` وجود روش شماره‌گذاری را بررسی می‌کند و در صورت یافتن، Range موجود را در پارامتر خروجی برمی‌گرداند.
+   - اگر Range پیدا نشود، تراکنش آغاز می‌کند؛ شناسه‌های Method، Attribute و Range را در صورت ندادن ورودی با `SYS3.spGetNextID` می‌گیرد و در سه جدول `NumberingMethod`، `NumberingMethodEntityAttribute` و `NumberingMethodRange` درج می‌کند.
+   - در صورت ارسال resetterها، برای هرکدام شناسه گرفته و در `NumberingReseterAttribute` درج می‌کند؛ سپس Commit می‌کند.
+   - این Procedure سازنده/پیکربندی‌کننده روش شماره‌گذاری است، نه Procedure تخصیص شماره برای PriceList. اجرای آن در جریان ثبت قیمت ممنوع است.
+   - **نکته نیازمند بررسی:** در متن ارائه‌شده برای این Procedure، مدیریت خطا و TRY/CATCH پیرامون تراکنش دیده نمی‌شود؛ رفتار آن در خطا و نیز ایمنی اجرای هم‌زمان باید جداگانه بررسی شود. همچنین بررسی اولیه وجود روش خارج از تراکنش است.
+
+2. **`SYS3.CreateNumberingMethodReservation`**
+   - اگر برای Range موردنظر هیچ رکوردی در `NumberingRangeReservation` وجود نداشته باشد، یک رزرو با DomainKey و ReservedValue درج می‌کند.
+   - شرط `NOT EXISTS` فقط وجود هر رزروی برای همان Range را می‌سنجد و ترکیب سه‌تایی Range/DomainKey/ReservedValue را بررسی نمی‌کند.
+   - در صورت وجود حتی یک رزرو برای Range، این Procedure رزرو جدیدی ایجاد نمی‌کند؛ بنابراین برای تخصیص عادی شماره بعدی مناسب فرض نمی‌شود.
+   - در متن مشاهده‌شده، تراکنش صریح یا مدیریت خطا وجود ندارد.
+
+3. **`SYS3.spAddNumberingMethodReservation`**
+   - رزرو را فقط در صورت نبود ترکیب دقیق `NumberingMethodRangeRef + DomainKey + ReservedSerial` درج می‌کند.
+   - خطای 2601 را فقط وقتی نادیده می‌گیرد که متن خطا نام Unique Index مشخص‌شده `UIX_SYS3_NumberingRangeReservation_NumberingMethodRangeRef_DomainKey_ReservedSerial` را داشته باشد؛ خطاهای دیگر را دوباره پرتاب می‌کند.
+   - در Catch، اگر `@@TRANCOUNT > 0` باشد، `ROLLBACK` اجرا می‌کند. این رفتار ممکن است تراکنش فراخواننده را نیز Rollback کند؛ اثر آن باید در طراحی مرز تراکنش و فراخوانی بررسی شود.
+   - این Procedure به‌تنهایی الگوریتم انتخاب ReservedValue یا شماره بعدی را نشان نمی‌دهد.
+
+4. **`SYS3.spRemoveOldNumberingReservations`**
+   - با `ROW_NUMBER()` رزروهای مثبت را به تفکیک Range و DomainKey بر اساس ReservedSerial نزولی مرتب می‌کند.
+   - تمام رزروهای بعد از ۵۰ رکورد جدیدتر هر گروه را از `NumberingRangeReservation` حذف می‌کند.
+   - این Procedure عملیات DELETE و پاک‌سازی نگهداری است؛ برای پژوهش یا ثبت قیمت نباید اجرا شود.
+
+5. **`SYS3.spRemoveNumberingMethodReservation`**
+   - پارامترهای آن از `sys.parameters` استخراج شده‌اند، اما متن تعریف آن در خروجی ارسالی موجود نیست؛ کوئری بخش تعریف‌ها به‌جای نام واقعی، نام `spRemoveNumberingReservation` را جست‌وجو کرده بود.
+   - بنابراین رفتار حذف یک رزرو مشخص هنوز **مشاهده نشده و نیازمند استخراج متن دقیق** است.
+
+**تفکیک سطح اطمینان:**
+- مشاهده مستقیم: امضاها و رفتارهای بالا مطابق متن Procedureهایی است که در خروجی SQL ارائه شده‌اند.
+- استنباط: `spAddNumberingMethodReservation` از نظر جلوگیری از درج تکراریِ همان ترکیب، از `CreateNumberingMethodReservation` دقیق‌تر است؛ اما هنوز اثبات نشده که این Procedure مسیر رسمی و کامل تخصیص شماره PriceList باشد.
+- نیازمند تأیید: الگوریتم تعیین شماره بعدی، نحوه ساخت DomainKey، اتصال Reservation به INSERT در PriceList، مدیریت rollback و قفل‌گذاری در کد/Procedure فراخواننده، و رفتار Procedure حذف رزرو.
+
+**اثر بر طراحی:** هیچ‌یک از این تعریف‌ها به‌تنهایی مسیر کامل و امن تولید Number برای PriceList را ثابت نمی‌کند. تا زمان ردیابی فراخواننده‌ها و منطق رسمی برنامه راهکاران، نباید مستقیماً Reservation درج/حذف شود یا شماره بعدی محاسبه شود. `CreateNumberingMethod` و `spRemoveOldNumberingReservations` به‌وضوح خارج از مسیر ثبت عادی هستند.
+
 ## ۱۲. Triggerها، Indexها و یکتایی
 
 در بررسی قبلی روی چهار جدول اصلی PriceList، PriceListItem، PriceListResultRow و PriceListConditionRow، Trigger مشاهده نشده است. برای هر جدول، PK یکتا و clustered گزارش شده و Unique Index دیگری برای Number یا ترکیب محصول/توافق پرداخت مشاهده نشده است.
@@ -366,8 +421,8 @@ SYS3.spGetNextId
 
 ## ۱۴. موارد باز و اقدامات بعدی پژوهش
 
-- [ ] استخراج کامل متن و پارامترهای پنج Procedure شماره‌گذاری بخش ۱۱.۳.
-- [ ] ردیابی فراخوانی Procedureها از کد یا Procedureهای دیگر و تعیین مسیر رسمی تخصیص شماره.
+- [x] استخراج پارامترهای پنج Procedure و متن چهار تعریف؛ تعریف `spRemoveNumberingMethodReservation` به علت اشتباه در نام جست‌وجو در خروجی نبود و باید جداگانه استخراج شود.
+- [ ] استخراج تعریف کامل `SYS3.spRemoveNumberingMethodReservation` با نام صحیح و ردیابی فراخوانی همه Procedureهای رزرو از کد/Procedureهای دیگر برای تعیین مسیر رسمی تخصیص شماره.
 - [ ] بررسی رفتار رزرو شماره در حالت موفق، خطا، Rollback، timeout و درخواست‌های هم‌زمان؛ بدون اجرای عملیات مخرب روی محیط عملیاتی.
 - [ ] شناسایی اینکه آیا `CreateNumberingMethodReservation` و `spAddNumberingMethodReservation` بخشی از یک زنجیره‌اند یا کاربردهای جدا دارند.
 - [ ] بررسی دقیق DomainKey و چرایی خالی بودن آن در رزروهای نمونه.
@@ -403,4 +458,4 @@ SYS3.spGetNextId
 
 | تاریخ | تغییر |
 |---|---|
-| ۱۴۰۵/۰۸/۲۳ | ایجاد مستند اولیه از یافته‌های ساختار PriceList، روابط، شناسه‌ها، سیاست قیمت، کاربر ثبت‌کننده، روش شماره‌گذاری ۷۷، بازه و رزروهای مشاهده‌شده و فهرست Procedureهای شماره‌گذاری. |
+| ۱۴۰۵/۰۸/۲۳ | ایجاد مستند اولیه از یافته‌های ساختار PriceList، روابط، شناسه‌ها، سیاست قیمت، کاربر ثبت‌کننده، روش شماره‌گذاری ۷۷، بازه و رزروهای مشاهده‌شده و فهرست Procedureهای شماره‌گذاری. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت پارامترها و تحلیل متن چهار Procedure شماره‌گذاری؛ مشخص‌کردن تفاوت دو روش ایجاد Reservation، رفتار rollback در `spAddNumberingMethodReservation`، حذف رزروهای قدیمی و باقی‌ماندن تعریف Procedure حذف رزرو برای استخراج. |
