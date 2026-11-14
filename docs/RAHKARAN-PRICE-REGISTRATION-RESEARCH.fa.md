@@ -673,6 +673,18 @@ SYS3.spGetNextId
 
 **نتیجه محدود:** این دو جدول، با معیارهای اتصال و بازه آزموده‌شده، مسیر ثبت شماره‌های ۱۰۷ PriceList بررسی‌شده را نشان نمی‌دهند. این نتیجه وجود مسیرهای دیگر، اختلاف نوع/قالب شماره، یا استفاده از شناسه روش متفاوت را رد نمی‌کند. هیچ داده‌ای تغییر نکرده است.
 
+
+### ۱۱.۲۱. ساختار SYS3.NumberingMethod و SYS3.NumberingMethodRange — ۱۴۰۵/۰۸/۲۳
+
+ساختار واقعی دو جدول اصلی روش شماره‌گذاری تأیید شد:
+
+- `SYS3.NumberingMethod`: شناسه و عنوان روش، تاریخ اثرگذاری، نوع شماره، تنظیمات تعداد ارقام و قالب، شیوه تخصیص، وضعیت، کنترل یکتایی و رفتار شماره‌های ازدست‌رفته.
+- `SYS3.NumberingMethodRange`: شناسه بازه، ارجاع به روش، اولویت، شرط Attribute اختیاری، `StartSerial`، `FinishSerial` nullable و `SerialStep`.
+
+**ارتباط با یافته قبلی:** Range=77 قبلاً به‌عنوان بازه روش اعلامیه قیمت بررسی شده است. ساختار جدول با آن یافته سازگار است؛ اما این schema به‌تنهایی الگوریتم انتخاب سریال، DomainKey یا ترتیب عملیات رزرو و ایجاد PriceList را اثبات نمی‌کند.
+
+**مرحله بررسی بعدی:** شناسایی سایر روش‌های شماره‌گذاری که از نظر تنظیمات، مؤلفه/عنوان یا بازه می‌توانند به PriceList مربوط باشند؛ مقایسه داده‌های واقعی با روش ۷۷. هیچ داده‌ای تغییر نکرده است.
+
 ## ۱۲. Triggerها، Indexها و یکتایی
 
 در بررسی قبلی روی چهار جدول اصلی PriceList، PriceListItem، PriceListResultRow و PriceListConditionRow، Trigger مشاهده نشده است. برای هر جدول، PK یکتا و clustered گزارش شده و Unique Index دیگری برای Number یا ترکیب محصول/توافق پرداخت مشاهده نشده است.
@@ -720,7 +732,8 @@ SYS3.spGetNextId
 - [x] بررسی ساختار `ECM.AssignedSerial`؛ ستون‌های Value، NumberingMethodRef، CreationDate، EntityCode/EntityRef و NumberingReservationRef مشخص شدند.
 - [x] آزمون تطبیق `ECM.AssignedSerial.Value` با `SLS3.PriceList.Number` در داده‌های موجود؛ نتیجه خالی بود، پس این مسیر فعلاً تأیید نشد.
 - [x] آزمون تطبیق `SLS3.SalesNumberReservation.TargetNumber` با بازه شماره‌های PriceList (46506–46615)؛ نتیجه خالی بود.
-- [ ] بررسی ساختار و داده‌های `SYS3.NumberingMethod` و `SYS3.NumberingMethodRange` برای فهمیدن اینکه شماره‌گذاری PriceList از چه روش/مؤلفه‌ای عبور می‌کند.
+- [x] بررسی ساختار `SYS3.NumberingMethod` و `SYS3.NumberingMethodRange`؛ ستون‌های تنظیمات روش و بازه شناسایی شدند.
+- [ ] بررسی تمام رکوردهای روش شماره‌گذاری و تطبیق عنوان/تنظیمات/بازه‌ها با نمونه‌های PriceList؛ روش ۷۷ مرجع مقایسه است.
 - [ ] بررسی ماژول‌های رمزگذاری‌شده و کد/لاگ برنامه راهکاران برای یافتن فراخوانی واقعی و مسیر رسمی تخصیص شماره.
 - [x] تطبیق رزروهای Range 77 و DomainKey خالی با `SLS3.PriceList.Number`؛ هر ۱۰۷ رزرو به یک PriceList متمایز متصل شد و هیچ رزرو بدون PriceList باقی نماند.
 - [ ] بررسی رفتار رزرو شماره در حالت موفق، خطا، Rollback، timeout و درخواست‌های هم‌زمان؛ بدون اجرای عملیات مخرب روی محیط عملیاتی. آزمون تمام ۱۰۷ رکورد در بخش ۱۱.۱۵ هیچ وارونگی زمانی یا شناسه‌ای نشان نداد، اما ترتیب دستورات و رفتار شکست همچنان نامشخص است. نمونه ۳۰ رکورد اخیر در بخش ۱۱.۱۴ ترتیب همبسته Serial، CreationDate و PriceListID را نشان می‌دهد، اما ترتیب دستورات و رفتار شکست را اثبات نمی‌کند.
@@ -768,3 +781,4 @@ SYS3.spGetNextId
 | ۱۴۰۵/۰۸/۲۳ | ثبت FKهای `ECM.NumberingReservation`؛ ارتباط با `ECM.NumberingMethod`، کاربران و جدول فرزند `ECM.AssignedSerial` مشخص شد؛ ارتباط مستقیم با SYS3 Range هنوز اثبات نشده است. |
 | ۱۴۰۵/۰۸/۲۳ | ثبت ساختار `ECM.AssignedSerial`؛ وجود Value، CreationDate، EntityCode/EntityRef و ارجاع nullable به NumberingReservation ثبت شد؛ ارتباط با PriceList هنوز نیازمند تطبیق داده است. |
 | ۱۴۰۵/۰۸/۲۳ | آزمون تطبیق شماره‌های PriceList با `ECM.AssignedSerial` و `SLS3.SalesNumberReservation` در بازه 46506–46615 نتیجه خالی داد؛ این دو مسیر با معیار آزموده‌شده تأیید نشدند. |
+| ۱۴۰۵/۰۸/۲۳ | ثبت ساختار `SYS3.NumberingMethod` و `SYS3.NumberingMethodRange`؛ تنظیمات روش و بازه مشخص شد، اما الگوریتم تخصیص/DomainKey هنوز از schema قابل استنتاج نیست. |
