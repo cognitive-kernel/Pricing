@@ -882,3 +882,26 @@ SYS3.spGetNextId
 **محدودیت:** این نتیجه فقط اشیای SQL رمزگذاری‌شده قابل مشاهده در `sys.objects` و انواع انتخاب‌شده را پوشش می‌دهد. کد برنامه راهکاران، اسمبلی‌ها/اجزای خارجی، ماژول‌های عادی با dynamic SQL، سرویس‌ها و منطق سمت کلاینت را پوشش نمی‌دهد. نبود ماژول رمزگذاری‌شده در SYS3/SLS3 نیز به‌تنهایی نبود مسیر تخصیص شماره در برنامه را اثبات نمی‌کند.
 
 **اثر بر طراحی:** مسیر بعدی پژوهش باید بر شناسایی کد/رفتار برنامه رسمی راهکاران و منشأ فراخوانی عملیات ایجاد PriceList متمرکز شود؛ از روی دو تابع HCM3 نباید الگوریتم شماره‌گذاری استنتاج کرد. هیچ داده‌ای تغییر نکرده و هیچ Procedure اجرا نشده است.
+
+
+### ۱۱.۲۶. وابستگی‌های ثبت‌شده در sys.sql_expression_dependencies — ۱۴۰۵/۰۸/۲۳
+
+**روش بررسی:** جست‌وجوی وابستگی‌های ایستای SQL برای اشیای مرجع `PriceList`، `PriceListItem`، `PriceListResultRow`، `PriceListConditionRow`، `NumberingRangeReservation` و `NumberingMethodRange`.
+
+**خروجی:**
+
+| شیء وابسته | نوع | شیء مرجع |
+|---|---|---|
+| SYS3.CreateNumberingMethod | SQL_STORED_PROCEDURE | SYS3.NumberingMethodRange |
+| SYS3.CreateNumberingMethodReservation | SQL_STORED_PROCEDURE | SYS3.NumberingRangeReservation |
+| SYS3.spAddNumberingMethodReservation | SQL_STORED_PROCEDURE | SYS3.NumberingRangeReservation |
+| SYS3.spRemoveNumberingMethodReservation | SQL_STORED_PROCEDURE | SYS3.NumberingRangeReservation |
+| SYS3.spRemoveOldNumberingReservations | SQL_STORED_PROCEDURE | SYS3.NumberingRangeReservation |
+
+در خروجی هیچ وابستگی ایستای ثبت‌شده‌ای به چهار جدول `SLS3.PriceList`، `SLS3.PriceListItem`، `SLS3.PriceListResultRow` و `SLS3.PriceListConditionRow` مشاهده نشد.
+
+**نتیجه:** خروجی با تحلیل قبلی پنج Procedure شماره‌گذاری سازگار است. وابستگی‌های ایستای قابل مشاهده برای دو جدول رزرو/بازه فقط به همان پنج Procedure شناخته‌شده محدود شده‌اند؛ مسیر ثبت PriceList از طریق این فهرست وابستگی‌ها پیدا نشد.
+
+**محدودیت:** `sys.sql_expression_dependencies` تمام وابستگی‌های runtime را نشان نمی‌دهد. نام جدول‌هایی که در dynamic SQL ساخته می‌شوند، کد برنامه خارج از SQL Server، اجزای خارجی و مسیرهایی که وابستگی‌شان قابل ثبت/حل نیست ممکن است در این خروجی دیده نشوند. نبود نتیجه برای جداول PriceList اثبات نمی‌کند که برنامه راهکاران آن‌ها را مستقیماً یا با SQL پویا تغییر نمی‌دهد.
+
+**اثر بر طراحی:** برای تعیین مسیر رسمی ثبت، لازم است رفتار برنامه راهکاران هنگام ایجاد یک PriceList در محیط مجاز مشاهده یا از کد/لاگ برنامه استخراج شود. تا زمان شناسایی آن مسیر، تولید دستی شماره، DomainKey یا رزرو شماره قابل قبول نیست. هیچ داده‌ای تغییر نکرده است.
