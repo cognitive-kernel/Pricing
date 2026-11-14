@@ -979,3 +979,26 @@ SYS3.spGetNextId
 **محدودیت:** نبود Unique Index فقط نبود تضمین یکتایی در ایندکس‌های این چهار جدول را نشان می‌دهد؛ ممکن است برنامه راهکاران قبل از ثبت، یکتایی را در منطق خود کنترل کند. این خروجی رفتار تراکنش، ترتیب ثبت یا الگوریتم شماره‌گذاری را مشخص نمی‌کند.
 
 **اثر بر طراحی:** منطق برنامه نباید یکتایی Number یا ردیف‌ها را به قید یکتای دیتابیس نسبت دهد. کنترل تکرار و هم‌زمانی باید از مسیر رسمی برنامه/تراکنش و قواعد واقعی راهکاران استخراج شود. هیچ داده‌ای تغییر نکرده است.
+
+
+### ۱۱.۳۱. مشخصات کامل Foreign Keyهای جداول PriceList — ۱۴۰۵/۰۸/۲۳
+
+**روش بررسی:** استخراج روابط FK، ستون‌های دو سمت رابطه، رفتار ON DELETE/UPDATE و وضعیت فعال/Trusted بودن قیود برای چهار جدول قیمت.
+
+**نتایج:**
+- تمام Foreign Keyهای گزارش‌شده فعال و Trusted هستند؛ هیچ‌کدام Disabled یا Not Trusted نیستند.
+- تمام روابط دارای `NO_ACTION` برای حذف و به‌روزرسانی هستند؛ بنابراین SQL Server حذف یا تغییر کلید مرجع را در صورت وجود ردیف وابسته خودکار Cascade نمی‌کند.
+- روابط اصلی ساختار:
+  - PriceList به PriceListParameters، Currency، Creator/LastModifier و در صورت مقداردهی به BusinessPolicyها متصل است.
+  - PriceListItem به PriceList، Product، ProductGroup، Unit، Currency و در صورت استفاده به Package، Batch و PartTrackingFactorها متصل است.
+  - PriceListResultRow به PriceList و ابعاد اختیاری از جمله PaymentAgreement، Customer، SalesArea، SalesType، SalesChannel، SalesOrganization، Division، SalesOffice، SalesTerritory، Broker، ProductPack، Plant و Store متصل است.
+  - PriceListConditionRow به BusinessPolicy، BusinessPolicyCondition، PriceList، PriceListItem و در صورت مقداردهی به PriceListResultRow متصل است.
+- `BusinessPolicyConditionRowRef` در خروجی قبلی FK ندارد؛ این رابطه باید از مدل/داده‌های واقعی ConditionRow و Policy بررسی شود، نه با حدس.
+- `TermOfPaymentRef` و `RouteRef` در PriceListResultRow نیز FK گزارش‌شده ندارند؛ نباید برای آن‌ها شناسه یا معنای مرجع را از روی نام فرض کرد.
+- نام FK مربوط به FeePolicy دارای املای غیرمعمول `FK_SLS3_PriceList_FeePol3icyRef` است؛ ستون واقعی آن FeePolicyRef است و این نام صرفاً metadata است.
+
+**هدف پژوهش و چرایی این بررسی:** هدف، پیاده‌سازی امن گزینه «ثبت در راهکاران» در پروژه Pricing است؛ به‌طوری‌که یک یا چند محصول تأییدشده همراه قیمت و شرایط پرداخت در ساختار PriceList ثبت شوند. بررسی FKها مشخص می‌کند هر ردیف ثبت‌شونده باید به کدام رکورد معتبر موجود متصل باشد و از ساخت ارجاع‌های نامعتبر یا حذف/تغییر ناخواسته داده‌های مرجع جلوگیری می‌کند.
+
+**گام‌های هنوز حل‌نشده:** این بررسی ساختار روابط را روشن می‌کند، اما هنوز مسیر رسمی ایجاد PriceList، تولید Number در روش شماره‌گذاری ۷۷، تولید شناسه‌های اصلی، ترتیب درج چهار جدول، مقادیر لازم برای ResultRow/ConditionRow و قواعد اعتبارسنجی برنامه راهکاران را اثبات نمی‌کند. برای تکمیل این موارد باید نمونه‌های واقعی ثبت‌شده و تفاوت بین آن‌ها، یا رفتار برنامه رسمی هنگام ایجاد یک PriceList، بررسی شود.
+
+**ایمنی:** تمام بررسی‌ها فقط خواندنی بوده‌اند؛ هیچ شماره یا شناسه‌ای رزرو نشده و هیچ داده‌ای تغییر نکرده است.
