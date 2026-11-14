@@ -916,3 +916,23 @@ SYS3.spGetNextId
 **اثر بر تحلیل:** Triggerهای جدول‌محور، مسیر ثبت یا تولید شماره را برای این چهار جدول توضیح نمی‌دهند. این نتیجه، منطق سمت برنامه، فراخوانی‌های مستقیم/پویا، Triggerهای سطح دیتابیس یا سرور و اجزای خارجی را رد نمی‌کند. هنوز مسیر رسمی ایجاد PriceList و تخصیص Number مشخص نشده است.
 
 **ایمنی:** هیچ داده‌ای تغییر نکرده و هیچ عملیات رزرو یا تولید شناسه اجرا نشده است.
+
+
+### ۱۱.۲۸. قیود ستون‌ها، Identity و Default جداول PriceList — ۱۴۰۵/۰۸/۲۳
+
+**روش بررسی:** خواندن ویژگی ستون‌های چهار جدول قیمت از `sys.columns`، `sys.default_constraints` و `sys.check_constraints`.
+
+**نتایج قطعی از خروجی:**
+- هیچ‌یک از ستون‌های گزارش‌شده در چهار جدول `PriceList`، `PriceListItem`، `PriceListResultRow` و `PriceListConditionRow` خاصیت Identity ندارند.
+- برای هیچ‌یک از ستون‌های گزارش‌شده Default Constraint مشاهده نشد.
+- هیچ Check Constraint متصل به این چهار جدول در خروجی مشاهده نشد.
+- ستون‌های کلیدی شناسه در هر چهار جدول اجباری و غیر Identity هستند؛ بنابراین تولید شناسه باید از مسیر رسمی سامانه انجام شود و نباید به مقدار پیش‌فرض یا Identity اتکا کرد.
+- `PriceList.Number` و ستون‌های اصلی اجباری PriceList نیز Default ندارند؛ شماره و سایر مقادیر لازم باید از منبع معتبر برنامه استخراج شوند.
+- `PriceList.Version`، `PriceListItem.Version`، `PriceListResultRow.Version` و `PriceListConditionRow.Version` اجباری گزارش شده‌اند، اما در این خروجی Default ندارند. نوع واقعی آن‌ها و رفتار rowversion باید از metadata نوع ستون تأیید شود؛ نباید برای این ستون‌ها مقدار دستی تولید کرد.
+- در `PriceListItem`، `ProductRef` و `ProductGroupRef` nullable هستند، در حالی که `ProductUnitRef`، `CurrencyRef`، `Fee` و `Definitiveness` اجباری‌اند.
+- در `PriceListResultRow`، تمام ابعاد کسب‌وکاری گزارش‌شده nullable هستند؛ فقط شناسه، PriceListRef و Version اجباری‌اند.
+- در `PriceListConditionRow`، ارجاع‌های Policy، Condition، ConditionRow، PriceList و PriceListItem اجباری‌اند؛ `PriceListResultRowRef` و `EndDate` nullable هستند.
+
+**محدودیت:** نبود Default و Check Constraint در این خروجی به معنی نبود تمام قواعد اعتبارسنجی نیست؛ Foreign Key، Unique/Nonclustered Index، قواعد برنامه و منطق سمت سرور همچنان باید جداگانه بررسی شوند. خروجی حاضر نوع داده و دقت عددی ستون‌ها را نیز نشان نمی‌دهد.
+
+**اثر بر طراحی:** ثبت نباید بر Default یا Identity فرضی متکی باشد. همه مقادیر اجباری باید از رکوردهای معتبر و مسیر رسمی راهکاران استخراج شوند؛ ستون‌های Version نباید دستی مقداردهی شوند. هیچ داده‌ای تغییر نکرده است.
