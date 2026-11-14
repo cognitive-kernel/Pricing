@@ -646,6 +646,23 @@ SYS3.spGetNextId
 
 **محدودیت:** نبود FK در خروجی به‌تنهایی نبود ارتباط منطقی یا ارتباط از طریق کد برنامه را ثابت نمی‌کند. هیچ داده‌ای تغییر نکرده است.
 
+
+### ۱۱.۱۹. ساختار جدول ECM.AssignedSerial — ۱۴۰۵/۰۸/۲۳
+
+جدول `ECM.AssignedSerial` دارای ستون‌های کلیدی زیر است:
+
+- `NumberingMethodRef`: روش شماره‌گذاری
+- `SerialPoolRef`: مخزن سریال
+- `EntityCode` و `EntityRef`: نوع و شناسه موجودیت مقصد؛ `EntityRef` nullable است
+- `Value`: مقدار سریال تخصیص‌یافته
+- `Status` و `CreationType`: وضعیت و نوع ایجاد
+- `Creator`، `CreationDate`، `LastModifier` و `LastModificationDate`
+- `NumberingReservationRef`: ارجاع nullable به `ECM.NumberingReservation`
+
+**نتیجه:** این جدول برخلاف `SYS3.NumberingRangeReservation` زمان ایجاد، شماره تخصیص‌یافته و ارجاع اختیاری به رزرو را در یک رکورد نگه می‌دارد. این ساختار برای بررسی مسیر شماره‌گذاری ECM مفید است؛ اما هنوز ثابت نشده که شماره‌های PriceList در روش ۷۷ از این جدول عبور می‌کنند یا خیر.
+
+**محدودیت:** وجود `NumberingMethodRef` در این جدول به‌تنهایی به معنی یکسان بودن شناسه روش ECM با `SYS3.NumberingMethod` یا ارتباط آن با Range=77 نیست. هیچ داده‌ای تغییر نکرده است.
+
 ## ۱۲. Triggerها، Indexها و یکتایی
 
 در بررسی قبلی روی چهار جدول اصلی PriceList، PriceListItem، PriceListResultRow و PriceListConditionRow، Trigger مشاهده نشده است. برای هر جدول، PK یکتا و clustered گزارش شده و Unique Index دیگری برای Number یا ترکیب محصول/توافق پرداخت مشاهده نشده است.
@@ -690,7 +707,8 @@ SYS3.spGetNextId
 - [x] استخراج تعریف کامل `SYS3.spRemoveNumberingMethodReservation`؛ رفتار حذف هدفمند رزرو ثبت شد.\n- [x] جست‌وجوی ارجاع متنی پنج Procedure در سایر ماژول‌های SQL؛ هیچ ردیفی در `sys.sql_modules` برنگشت. این نتیجه مسیر فراخوانی از برنامه، Job یا ماژول‌های غیرقابل مشاهده را رد نمی‌کند.\n- [x] جست‌وجوی فرمان Job Stepها در `msdb` برای عبارات `Numbering`، `Reservation` و `PriceList`؛ هیچ ردیفی برنگشت. این نتیجه نبود Job مرتبط با نام‌ها/فرمان‌های دیگر یا فراخوانی غیرمستقیم را ثابت نمی‌کند.\n- [x] جست‌وجوی Triggerهای متصل به جداول PriceList/شماره‌گذاری و تعریف‌های حاوی NumberingMethod یا PriceList؛ هیچ ردیفی برنگشت. این نتیجه محدود به متادیتای قابل مشاهده و معیارهای جست‌وجو است.\n- [x] محدودسازی جست‌وجوی ارجاع مستقیم به جدول رزرو با نمایش نام اشیا؛ فقط چهار Procedure شناخته‌شده در `SYS3` یافت شدند. این نتیجه مسیرهای غیرمستقیم یا خارج از SQL را رد نمی‌کند.
 - [x] بررسی ساختار دو جدول `SLS3.SalesNumberReservation` و `ECM.NumberingReservation`؛ هر دو ستون زمانی دارند، اما ارتباطشان با رزروهای Range=77 هنوز اثبات نشده است.
 - [x] بررسی FKهای دو جدول؛ زنجیره `ECM.NumberingReservation` ← `ECM.AssignedSerial` و اتصال آن به `ECM.NumberingMethod` مشخص شد؛ برای `SLS3.SalesNumberReservation` FK مرتبطی گزارش نشد.
-- [ ] بررسی ساختار و نمونه داده‌های `ECM.AssignedSerial` برای تعیین اینکه شماره‌های تخصیص‌یافته چه ستون‌هایی دارند و آیا به سریال‌های PriceList مرتبط می‌شوند.
+- [x] بررسی ساختار `ECM.AssignedSerial`؛ ستون‌های Value، NumberingMethodRef، CreationDate، EntityCode/EntityRef و NumberingReservationRef مشخص شدند.
+- [ ] بررسی داده‌های `ECM.AssignedSerial` برای NumberingMethodRefهای مرتبط و تطبیق Value با `PriceList.Number`؛ ابتدا باید معنای شناسه روش و EntityCode از داده‌های واقعی احراز شود.
 - [ ] بررسی ماژول‌های رمزگذاری‌شده و کد/لاگ برنامه راهکاران برای یافتن فراخوانی واقعی و مسیر رسمی تخصیص شماره.
 - [x] تطبیق رزروهای Range 77 و DomainKey خالی با `SLS3.PriceList.Number`؛ هر ۱۰۷ رزرو به یک PriceList متمایز متصل شد و هیچ رزرو بدون PriceList باقی نماند.
 - [ ] بررسی رفتار رزرو شماره در حالت موفق، خطا، Rollback، timeout و درخواست‌های هم‌زمان؛ بدون اجرای عملیات مخرب روی محیط عملیاتی. آزمون تمام ۱۰۷ رکورد در بخش ۱۱.۱۵ هیچ وارونگی زمانی یا شناسه‌ای نشان نداد، اما ترتیب دستورات و رفتار شکست همچنان نامشخص است. نمونه ۳۰ رکورد اخیر در بخش ۱۱.۱۴ ترتیب همبسته Serial، CreationDate و PriceListID را نشان می‌دهد، اما ترتیب دستورات و رفتار شکست را اثبات نمی‌کند.
@@ -736,3 +754,4 @@ SYS3.spGetNextId
 | ۱۴۰۵/۰۸/۲۳ | ثبت فهرست جدول‌های بالقوه مرتبط با شماره‌گذاری/تاریخچه؛ `SLS3.SalesNumberReservation`، `ECM.NumberingReservation` و تاریخچه‌های عمومی برای بررسی ساختاری بعدی مشخص شدند. |
 | ۱۴۰۵/۰۸/۲۳ | ثبت ساختار `SLS3.SalesNumberReservation` و `ECM.NumberingReservation`؛ وجود ستون‌های زمانی ثبت شد، اما ارتباط با رزروهای Range=77 هنوز اثبات نشده است. |
 | ۱۴۰۵/۰۸/۲۳ | ثبت FKهای `ECM.NumberingReservation`؛ ارتباط با `ECM.NumberingMethod`، کاربران و جدول فرزند `ECM.AssignedSerial` مشخص شد؛ ارتباط مستقیم با SYS3 Range هنوز اثبات نشده است. |
+| ۱۴۰۵/۰۸/۲۳ | ثبت ساختار `ECM.AssignedSerial`؛ وجود Value، CreationDate، EntityCode/EntityRef و ارجاع nullable به NumberingReservation ثبت شد؛ ارتباط با PriceList هنوز نیازمند تطبیق داده است. |
