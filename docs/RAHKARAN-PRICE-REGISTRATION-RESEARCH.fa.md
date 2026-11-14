@@ -936,3 +936,25 @@ SYS3.spGetNextId
 **محدودیت:** نبود Default و Check Constraint در این خروجی به معنی نبود تمام قواعد اعتبارسنجی نیست؛ Foreign Key، Unique/Nonclustered Index، قواعد برنامه و منطق سمت سرور همچنان باید جداگانه بررسی شوند. خروجی حاضر نوع داده و دقت عددی ستون‌ها را نیز نشان نمی‌دهد.
 
 **اثر بر طراحی:** ثبت نباید بر Default یا Identity فرضی متکی باشد. همه مقادیر اجباری باید از رکوردهای معتبر و مسیر رسمی راهکاران استخراج شوند؛ ستون‌های Version نباید دستی مقداردهی شوند. هیچ داده‌ای تغییر نکرده است.
+
+
+### ۱۱.۲۹. نوع داده و Foreign Key جداول PriceList — ۱۴۰۵/۰۸/۲۳
+
+**روش بررسی:** استخراج نوع، طول، دقت، مقیاس و Foreign Keyهای چهار جدول از کاتالوگ سیستم SQL Server.
+
+**نتایج مهم:**
+- شناسه‌های اصلی چهار جدول از نوع `bigint` هستند و Identity نیستند.
+- `PriceList.Number` از نوع `nvarchar(100)` و `Title` از نوع `nvarchar(512)` است.
+- تاریخ‌های PriceList و EndDate در ConditionRow از نوع `datetime` با دقت گزارش‌شده scale=3 هستند.
+- `PriceList.Version` و Version سه جدول وابسته از نوع `timestamp` هستند؛ این نوع در SQL Server معادل rowversion است و نباید مقدار آن را در INSERT/UPDATE دستی تعیین کرد.
+- `PriceListItem.Fee`، `Quantity`، `ReductionTolerance`، `AdditionTolerance` و `Weight` از نوع `decimal(28,6)` هستند.
+- `PriceListItem.ProductUnitRef` به `GNR3.Unit.UnitID` و `CurrencyRef` به `GNR3.Currency.CurrencyID` ارجاع می‌دهند. `ProductRef` به `SLS3.Product.ProductID` و `ProductGroupRef` به `GNR3.EntityGroup.EntityGroupID` وصل است.
+- `PriceList.PriceListParametersRef` به `SLS3.PriceListParameters.PriceListParametersID` و `CurrencyRef` به `GNR3.Currency.CurrencyID` متصل است؛ Creator و LastModifier نیز به `SYS3.User.UserID` ارجاع دارند.
+- `PriceListItem.PriceListRef` به PriceList متصل است؛ فیلدهای Package، Batch و PartTrackingFactorها به جداول LGS3 مربوط متصل‌اند.
+- `PriceListResultRow.PriceListRef` به PriceList و PaymentAgreementRef به `SLS3.PaymentAgreement.PaymentAgreementID` متصل است. ابعاد دیگری مانند Customer، SalesArea، SalesType، SalesChannel، SalesOrganization، Division، SalesOffice، SalesTerritory، Broker، ProductPack، Plant و Store نیز FKهای مشخص دارند.
+- `PriceListConditionRow` به PriceList، PriceListItem، PriceListResultRow، BusinessPolicy و BusinessPolicyCondition متصل است. `BusinessPolicyConditionRowRef` در این خروجی FK گزارش‌شده‌ای ندارد.
+- `TermOfPaymentRef` و `RouteRef` در PriceListResultRow نیز در این خروجی FK ثبت‌شده‌ای ندارند؛ نبود FK به‌تنهایی معنای آن‌ها یا معتبر بودن مقادیر را تعیین نمی‌کند.
+
+**محدودیت:** این خروجی فقط Foreign Keyهای ثبت‌شده در metadata را نشان می‌دهد؛ روابط منطقی بدون FK و قواعد برنامه ممکن است وجود داشته باشند. همچنین نوع و طول داده به‌تنهایی مقادیر مجاز Enumها یا قواعد اعتبارسنجی را مشخص نمی‌کند.
+
+**اثر بر طراحی:** پیاده‌سازی باید دقت `decimal(28,6)` را حفظ کند، Version/rowversion را از SQL Server دریافت کند و تمام ارجاع‌ها را با رکوردهای واقعی و معتبر تطبیق دهد. شناسه‌ها و ارجاع‌های بدون FK نباید با حدس یا مقدار ثابت ساخته شوند. هیچ داده‌ای تغییر نکرده است.
