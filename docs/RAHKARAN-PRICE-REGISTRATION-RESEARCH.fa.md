@@ -481,6 +481,32 @@ SYS3.spGetNextId
 **نتیجه فنی:** دیتابیس یکتایی ترکیب سه‌تایی Range + DomainKey + ReservedSerial را enforce می‌کند. این با شرط بررسی تکراری در `spAddNumberingMethodReservation` و مدیریت خطای 2601 هم‌راستا است. این قید فقط از تکرار همان ترکیب جلوگیری می‌کند؛ به‌تنهایی انتخاب Serial آزاد، ترتیب تخصیص، یا مصرف/آزادسازی رزرو را تعیین نمی‌کند.
 
 **محدودیت:** کوئری ستون‌های کلیدی و Included را نشان داد؛ در خروجی حاضر ستون Included وجود نداشت. این بررسی صرفاً ساختار ایندکس را خواند و هیچ داده‌ای تغییر نکرد.
+
+
+### ۱۱.۱۰. ساختار ستون‌های سه جدول شماره‌گذاری — ۱۴۰۵/۰۸/۲۳
+
+**روش بررسی:** استخراج ستون‌ها، نوع داده، Nullable و Identity از کاتالوگ سیستمی برای `SYS3.NumberingMethod`، `SYS3.NumberingMethodRange` و `SYS3.NumberingRangeReservation`.
+
+**یافته‌های مستقیم:**
+
+- `SYS3.NumberingMethod`:
+  - شناسه `NumberingMethodID bigint` اجباری و غیر Identity است.
+  - تنظیمات اصلی شامل `EffectiveDate`، `NumberType`، `NumberDigitsType`، `NumberOfDigits`، `NumberTemplate`، `AssignApproch`، `NumberingMethodState`، `FixedLength`، `CheckUniqueness` و `MissedNumberBehavior` است.
+  - `Version` از نوع `timestamp/rowversion` است و نباید در INSERT مقداردهی شود.
+
+- `SYS3.NumberingMethodRange`:
+  - `NumberingMethodRangeID bigint` و `NumberingMethodRef bigint` اجباری و غیر Identity هستند.
+  - `Priority`، `StartSerial` و `SerialStep` اجباری‌اند؛ `FinishSerial`، `AttributeName` و `AttributeValues` nullable هستند.
+  - `Version` از نوع `timestamp/rowversion` است.
+
+- `SYS3.NumberingRangeReservation`:
+  - `NumberingRangeReservationID bigint` دارای `Identity=1` است؛ برخلاف شناسه‌های Method و Range که در خروجی Identity نبودند.
+  - `NumberingMethodRangeRef bigint`، `DomainKey nvarchar(1000)` و `ReservedSerial bigint` همگی اجباری و غیر Identity هستند.
+  - جدول در خروجی ستون Version ندارد.
+
+**نتیجه طراحی:** برای جدول Reservation، مقدار `NumberingRangeReservationID` باید توسط Identity دیتابیس تولید شود و نباید توسط برنامه مقداردهی شود. در مقابل، این مشاهده به‌تنهایی روش تولید ID برای Method و Range را تغییر نمی‌دهد؛ برای آن‌ها شواهد قبلی درباره `SYS3.spGetNextId` معتبر باقی می‌ماند. ستون‌های `DomainKey` و `ReservedSerial` باید دقیقاً با دامنه و الگوریتم رسمی راهکاران مقداردهی شوند؛ مقدار فرضی یا DomainKey خالی نباید از روی نمونه‌ها تعمیم داده شود.
+
+**محدودیت:** این بررسی فقط metadata ستون‌ها را نشان می‌دهد؛ مقدارهای مجاز، قواعد DomainKey، انتخاب Serial بعدی و رفتار هم‌زمانی از این خروجی قابل استنتاج نیست.
 ## ۱۲. Triggerها، Indexها و یکتایی
 
 در بررسی قبلی روی چهار جدول اصلی PriceList، PriceListItem، PriceListResultRow و PriceListConditionRow، Trigger مشاهده نشده است. برای هر جدول، PK یکتا و clustered گزارش شده و Unique Index دیگری برای Number یا ترکیب محصول/توافق پرداخت مشاهده نشده است.
@@ -558,4 +584,4 @@ SYS3.spGetNextId
 
 | تاریخ | تغییر |
 |---|---|
-| ۱۴۰۵/۰۸/۲۳ | ایجاد مستند اولیه از یافته‌های ساختار PriceList، روابط، شناسه‌ها، سیاست قیمت، کاربر ثبت‌کننده، روش شماره‌گذاری ۷۷، بازه و رزروهای مشاهده‌شده و فهرست Procedureهای شماره‌گذاری. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت پارامترها و تحلیل متن چهار Procedure شماره‌گذاری؛ مشخص‌کردن تفاوت دو روش ایجاد Reservation، رفتار rollback در `spAddNumberingMethodReservation`، حذف رزروهای قدیمی و باقی‌ماندن تعریف Procedure حذف رزرو برای استخراج. |\n| ۱۴۰۵/۰۸/۲۳ | تکمیل تعریف `spRemoveNumberingMethodReservation`؛ ثبت رفتار حذف بر اساس Range، DomainKey و ReservedValue و به‌روزرسانی فهرست اقدامات پژوهش. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت نتیجه جست‌وجوی ارجاع متنی پنج Procedure در `sys.sql_modules`؛ هیچ ارجاع دیگری یافت نشد و محدودیت‌های این نتیجه مستند شد. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت نتیجه جست‌وجوی Job Stepهای SQL Agent برای عبارات Numbering، Reservation و PriceList؛ هیچ تطبیقی یافت نشد و محدودیت‌های نتیجه مستند شد. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت نتیجه جست‌وجوی Triggerهای مرتبط با PriceList و شماره‌گذاری؛ هیچ ردیفی برنگشت و محدودیت‌های نتیجه مستند شد. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت FK جدول `SYS3.NumberingRangeReservation` به `SYS3.NumberingMethodRange` از طریق `NumberingMethodRangeRef`؛ محدودیت استنباط از این رابطه نیز ثبت شد. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت PK خوشه‌ای و ایندکس یکتای سه‌ستونی Range + DomainKey + ReservedSerial در جدول رزرو شماره؛ ارتباط آن با کنترل تکرار در Procedure ثبت شد. |
+| ۱۴۰۵/۰۸/۲۳ | ایجاد مستند اولیه از یافته‌های ساختار PriceList، روابط، شناسه‌ها، سیاست قیمت، کاربر ثبت‌کننده، روش شماره‌گذاری ۷۷، بازه و رزروهای مشاهده‌شده و فهرست Procedureهای شماره‌گذاری. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت پارامترها و تحلیل متن چهار Procedure شماره‌گذاری؛ مشخص‌کردن تفاوت دو روش ایجاد Reservation، رفتار rollback در `spAddNumberingMethodReservation`، حذف رزروهای قدیمی و باقی‌ماندن تعریف Procedure حذف رزرو برای استخراج. |\n| ۱۴۰۵/۰۸/۲۳ | تکمیل تعریف `spRemoveNumberingMethodReservation`؛ ثبت رفتار حذف بر اساس Range، DomainKey و ReservedValue و به‌روزرسانی فهرست اقدامات پژوهش. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت نتیجه جست‌وجوی ارجاع متنی پنج Procedure در `sys.sql_modules`؛ هیچ ارجاع دیگری یافت نشد و محدودیت‌های این نتیجه مستند شد. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت نتیجه جست‌وجوی Job Stepهای SQL Agent برای عبارات Numbering، Reservation و PriceList؛ هیچ تطبیقی یافت نشد و محدودیت‌های نتیجه مستند شد. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت نتیجه جست‌وجوی Triggerهای مرتبط با PriceList و شماره‌گذاری؛ هیچ ردیفی برنگشت و محدودیت‌های نتیجه مستند شد. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت FK جدول `SYS3.NumberingRangeReservation` به `SYS3.NumberingMethodRange` از طریق `NumberingMethodRangeRef`؛ محدودیت استنباط از این رابطه نیز ثبت شد. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت PK خوشه‌ای و ایندکس یکتای سه‌ستونی Range + DomainKey + ReservedSerial در جدول رزرو شماره؛ ارتباط آن با کنترل تکرار در Procedure ثبت شد. |\n| ۱۴۰۵/۰۸/۲۳ | مستندسازی metadata سه جدول NumberingMethod، NumberingMethodRange و NumberingRangeReservation؛ مشخص شد شناسه جدول Reservation از نوع Identity است. |
