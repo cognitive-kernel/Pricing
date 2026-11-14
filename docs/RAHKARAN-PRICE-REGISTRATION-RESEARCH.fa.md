@@ -685,6 +685,61 @@ SYS3.spGetNextId
 
 **مرحله بررسی بعدی:** شناسایی سایر روش‌های شماره‌گذاری که از نظر تنظیمات، مؤلفه/عنوان یا بازه می‌توانند به PriceList مربوط باشند؛ مقایسه داده‌های واقعی با روش ۷۷. هیچ داده‌ای تغییر نکرده است.
 
+
+### ۱۱.۲۲. بررسی ماژول‌های وابسته به SYS3.NumberingRangeReservation و جست‌وجوی گسترده اشیای شماره‌گذاری — ۱۴۰۵/۰۸/۲۳
+
+جست‌وجوی متنی در `sys.sql_modules` برای عبارت‌های `NumberingMethodRange`، `ReservedSerial` و `DomainKey` این اشیا را نشان داد:
+
+- `SYS3.CreateNumberingMethod`
+- `SYS3.CreateNumberingMethodReservation`
+- `SYS3.spAddNumberingMethodReservation`
+- `SYS3.spRemoveNumberingMethodReservation`
+- `SYS3.spRemoveOldNumberingReservations`
+
+جست‌وجوی گسترده‌تر عبارت `NumberingMethod` نیز در ماژول‌های قابل مشاهده فقط همین پنج Procedure را برگرداند. بنابراین در ماژول‌های T-SQL قابل مشاهده، الگوریتم دیگری برای انتخاب `ReservedSerial` یا ساخت `DomainKey` پیدا نشد.
+
+تعریف‌های بررسی‌شده رفتارهای زیر را نشان می‌دهند:
+
+- `CreateNumberingMethod` در صورت نبود روش متناظر، روش، Attribute و Range را ایجاد می‌کند؛ این Procedure شماره یک سند PriceList را تخصیص نمی‌دهد.
+- `CreateNumberingMethodReservation` مقادیر Range، DomainKey و ReservedValue را از فراخواننده می‌گیرد و فقط وقتی هیچ رزروی برای آن Range وجود ندارد، رکورد رزرو ایجاد می‌کند.
+- `spAddNumberingMethodReservation` مقادیر Range، DomainKey و ReservedValue را از فراخواننده می‌گیرد و درج تکراری همان ترکیب سه‌گانه را با ایندکس یکتا کنترل می‌کند.
+- `spRemoveNumberingMethodReservation` رزرو مشخص را بر اساس Range، DomainKey و ReservedValue حذف می‌کند.
+- `spRemoveOldNumberingReservations` رزروهای مثبت قدیمی‌تر از ۵۰ شماره جدید را در هر گروه Range و DomainKey حذف می‌کند؛ اجرای آن در جریان ثبت قیمت مجاز/پیشنهاد نشده است.
+
+**نتیجه:** این Procedureها مصرف‌کننده شماره و دامنه هستند، نه تولیدکننده آن‌ها. برای Range=77، شناسه Range مشخص است؛ اما تعیین معتبر `DomainKey` و الگوریتم تخصیص `ReservedSerial` همچنان به بررسی کد برنامه راهکاران یا مسیر رسمی دیگری نیاز دارد. هیچ Procedure یا دستور تغییردهنده‌ای اجرا نشده است.
+
+### ۱۱.۲۳. بررسی اشیای شماره‌گذاری و ماژول‌های CLR — ۱۴۰۵/۰۸/۲۳
+
+جست‌وجوی اشیای دیتابیس با نام‌های شامل Number، Serial و Reservation، موارد زیر را در حوزه SYS3 نشان داد:
+
+- جدول‌های `SYS3.NumberingMethod`، `SYS3.NumberingMethodEntityAttribute`، `SYS3.NumberingMethodRange`، `SYS3.NumberingRangeReservation` و `SYS3.NumberingReseterAttribute`.
+- Sequenceهای داخلی تولید شناسه برای جدول‌های NumberingMethod، NumberingMethodEntityAttribute، NumberingMethodRange و NumberingReseterAttribute.
+- پنج Procedure شماره‌گذاری ثبت‌شده در بخش ۱۱.۲۲.
+
+همچنین اشیای `ECM.NumberingMethod`، `ECM.NumberingReservation` و `ECM.AssignedSerial` شناسایی شدند. این‌ها زیرسیستم جداگانه‌ای با روابط FK داخلی خود هستند؛ صرف وجود آن‌ها ارتباطی با روش `SYS3` شماره ۷۷ یا PriceList را اثبات نمی‌کند. تطبیق‌های داده‌ای قبلی برای نمونه‌های PriceList نیز این مسیر ECM را تأیید نکرده‌اند.
+
+فهرست ماژول‌های CLR دیتابیس بررسی شد. موارد برگشتی:
+
+| Assembly | Schema.Object | نوع |
+|---|---|---|
+| PairAttendanceDataCLR | HCM3.fnPairAttendanceDataCLR | CLR_TABLE_VALUED_FUNCTION |
+| PairAttendanceDataCLR | HCM3.fnPairAttendanceDataSortedCLR | CLR_TABLE_VALUED_FUNCTION |
+| PolicyHelper | SYS3.fnMinifyValue | CLR_SCALAR_FUNCTION |
+| SqlPersianDateHelper | SYS3.fnAddPersianMonth | CLR_SCALAR_FUNCTION |
+| SqlPersianDateHelper | SYS3.fnAddPersianYear | CLR_SCALAR_FUNCTION |
+| SqlPersianDateHelper | SYS3.fnGetDateFromPersianDate | CLR_SCALAR_FUNCTION |
+| SqlPersianDateHelper | SYS3.fnGetPersianDayOfMonth | CLR_SCALAR_FUNCTION |
+| SqlPersianDateHelper | SYS3.fnGetPersianDaysInMonth | CLR_SCALAR_FUNCTION |
+| SqlPersianDateHelper | SYS3.fnGetPersianMonth | CLR_SCALAR_FUNCTION |
+| SqlPersianDateHelper | SYS3.fnGetPersianYear | CLR_SCALAR_FUNCTION |
+| SqlPersianDateHelper | SYS3.fnGetPersianYearMonth | CLR_SCALAR_FUNCTION |
+| SqlZipHelper | SYS3.fnUnZipValue | CLR_SCALAR_FUNCTION |
+| SqlZipHelper | SYS3.fnZipValue | CLR_SCALAR_FUNCTION |
+
+**نتیجه محدود:** در فهرست `sys.assembly_modules` هیچ ماژول CLR با نام یا نقش آشکار مرتبط با تخصیص شماره، Reservation، NumberingMethod یا PriceList مشاهده نشد. ماژول‌های CLR موجود عمدتاً برای حضور و داده‌های منابع انسانی، فشرده‌سازی/بازکردن داده، کوچک‌سازی مقدار و تبدیل تاریخ فارسی هستند. این مشاهده وجود کد شماره‌گذاری در اسمبلی‌های خارجی برنامه، سرویس‌های خارج از SQL Server، ماژول رمزگذاری‌شده یا مسیرهای پویا را رد نمی‌کند.
+
+**اثر بر طراحی:** منطق تولید شماره را نباید از Sequenceهای `SYS3_TableIdGen__...` یا از توابع CLR فهرست‌شده استنتاج کرد. Sequenceهای یادشده برای شناسه داخلی رکوردهای تنظیمات شماره‌گذاری‌اند، نه شماره تجاری PriceList. تا زمان شناسایی فراخواننده رسمی، ثبت واقعی PriceList و رزرو شماره نباید پیاده‌سازی یا اجرا شود. تمام بررسی‌های این بخش فقط خواندنی بوده‌اند.
+
 ## ۱۲. Triggerها، Indexها و یکتایی
 
 در بررسی قبلی روی چهار جدول اصلی PriceList، PriceListItem، PriceListResultRow و PriceListConditionRow، Trigger مشاهده نشده است. برای هر جدول، PK یکتا و clustered گزارش شده و Unique Index دیگری برای Number یا ترکیب محصول/توافق پرداخت مشاهده نشده است.
@@ -734,6 +789,9 @@ SYS3.spGetNextId
 - [x] آزمون تطبیق `SLS3.SalesNumberReservation.TargetNumber` با بازه شماره‌های PriceList (46506–46615)؛ نتیجه خالی بود.
 - [x] بررسی ساختار `SYS3.NumberingMethod` و `SYS3.NumberingMethodRange`؛ ستون‌های تنظیمات روش و بازه شناسایی شدند.
 - [ ] بررسی تمام رکوردهای روش شماره‌گذاری و تطبیق عنوان/تنظیمات/بازه‌ها با نمونه‌های PriceList؛ روش ۷۷ مرجع مقایسه است.
+- [x] جست‌وجوی گسترده ماژول‌های T-SQL برای NumberingMethod، NumberingMethodRange، ReservedSerial و DomainKey؛ فقط پنج Procedure شناخته‌شده پیدا شدند و الگوریتم تخصیص شماره در آن‌ها مشاهده نشد.
+- [x] بررسی فهرست اشیای دیتابیس با نام‌های Number، Serial و Reservation؛ زیرسیستم SYS3 و اشیای جداگانه ECM شناسایی شدند و ارتباط ECM با PriceList/Range=77 اثبات نشد.
+- [x] بررسی `sys.assembly_modules`؛ هیچ CLR module آشکارا مرتبط با شماره‌گذاری PriceList یا رزرو Range=77 مشاهده نشد؛ محدودیت این نتیجه برای کد خارج از SQL و اسمبلی‌های خارجی ثبت شد.
 - [ ] بررسی ماژول‌های رمزگذاری‌شده و کد/لاگ برنامه راهکاران برای یافتن فراخوانی واقعی و مسیر رسمی تخصیص شماره.
 - [x] تطبیق رزروهای Range 77 و DomainKey خالی با `SLS3.PriceList.Number`؛ هر ۱۰۷ رزرو به یک PriceList متمایز متصل شد و هیچ رزرو بدون PriceList باقی نماند.
 - [ ] بررسی رفتار رزرو شماره در حالت موفق، خطا، Rollback، timeout و درخواست‌های هم‌زمان؛ بدون اجرای عملیات مخرب روی محیط عملیاتی. آزمون تمام ۱۰۷ رکورد در بخش ۱۱.۱۵ هیچ وارونگی زمانی یا شناسه‌ای نشان نداد، اما ترتیب دستورات و رفتار شکست همچنان نامشخص است. نمونه ۳۰ رکورد اخیر در بخش ۱۱.۱۴ ترتیب همبسته Serial، CreationDate و PriceListID را نشان می‌دهد، اما ترتیب دستورات و رفتار شکست را اثبات نمی‌کند.
@@ -781,4 +839,5 @@ SYS3.spGetNextId
 | ۱۴۰۵/۰۸/۲۳ | ثبت FKهای `ECM.NumberingReservation`؛ ارتباط با `ECM.NumberingMethod`، کاربران و جدول فرزند `ECM.AssignedSerial` مشخص شد؛ ارتباط مستقیم با SYS3 Range هنوز اثبات نشده است. |
 | ۱۴۰۵/۰۸/۲۳ | ثبت ساختار `ECM.AssignedSerial`؛ وجود Value، CreationDate، EntityCode/EntityRef و ارجاع nullable به NumberingReservation ثبت شد؛ ارتباط با PriceList هنوز نیازمند تطبیق داده است. |
 | ۱۴۰۵/۰۸/۲۳ | آزمون تطبیق شماره‌های PriceList با `ECM.AssignedSerial` و `SLS3.SalesNumberReservation` در بازه 46506–46615 نتیجه خالی داد؛ این دو مسیر با معیار آزموده‌شده تأیید نشدند. |
+| ۱۴۰۵/۰۸/۲۳ | ثبت جست‌وجوی گسترده اشیای شماره‌گذاری و ماژول‌های T-SQL؛ فقط پنج Procedure شناخته‌شده در SYS3 یافت شدند و الگوریتم تولید ReservedSerial/DomainKey مشخص نشد. فهرست CLR نیز بررسی شد و ماژول آشکارا مرتبط با شماره‌گذاری PriceList پیدا نشد؛ محدودیت نتیجه مستند شد. |
 | ۱۴۰۵/۰۸/۲۳ | ثبت ساختار `SYS3.NumberingMethod` و `SYS3.NumberingMethodRange`؛ تنظیمات روش و بازه مشخص شد، اما الگوریتم تخصیص/DomainKey هنوز از schema قابل استنتاج نیست. |
