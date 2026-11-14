@@ -459,6 +459,28 @@ SYS3.spGetNextId
 **محدودیت:** نبود FKهای دیگر در خروجی به معنی نبود قیود یکتا، ایندکس‌ها یا قواعد اعتبارسنجی در کد Procedureها نیست. همچنین این FK به‌تنهایی نحوه انتخاب Serial، DomainKey یا چرخه مصرف رزرو را تعیین نمی‌کند.
 
 **وضعیت:** رابطه FK فوق مستند شد؛ هیچ داده یا ساختار دیتابیس تغییر نکرد.
+
+
+### ۱۱.۹. ایندکس‌ها و یکتایی جدول رزرو شماره — ۱۴۰۵/۰۸/۲۳
+
+**خروجی مستقیم بررسی ایندکس‌های `SYS3.NumberingRangeReservation`:**
+
+1. کلید اصلی خوشه‌ای:
+   - نام: `PK_SYS3_NumberingRangeReservation`
+   - ستون کلید: `NumberingRangeReservationID`
+   - `IsUnique=1` و `IsPrimaryKey=1`
+
+2. ایندکس یکتای غی خوشه‌ای:
+   - نام: `UIX_SYS3_NumberingRangeReservation_NumberingMethodRangeRef_DomainKey_ReservedSerial`
+   - ترتیب کلیدها:
+     1. `NumberingMethodRangeRef`
+     2. `DomainKey`
+     3. `ReservedSerial`
+   - `IsUnique=1`، بدون فیلتر و بدون ستون Included در خروجی.
+
+**نتیجه فنی:** دیتابیس یکتایی ترکیب سه‌تایی Range + DomainKey + ReservedSerial را enforce می‌کند. این با شرط بررسی تکراری در `spAddNumberingMethodReservation` و مدیریت خطای 2601 هم‌راستا است. این قید فقط از تکرار همان ترکیب جلوگیری می‌کند؛ به‌تنهایی انتخاب Serial آزاد، ترتیب تخصیص، یا مصرف/آزادسازی رزرو را تعیین نمی‌کند.
+
+**محدودیت:** کوئری ستون‌های کلیدی و Included را نشان داد؛ در خروجی حاضر ستون Included وجود نداشت. این بررسی صرفاً ساختار ایندکس را خواند و هیچ داده‌ای تغییر نکرد.
 ## ۱۲. Triggerها، Indexها و یکتایی
 
 در بررسی قبلی روی چهار جدول اصلی PriceList، PriceListItem، PriceListResultRow و PriceListConditionRow، Trigger مشاهده نشده است. برای هر جدول، PK یکتا و clustered گزارش شده و Unique Index دیگری برای Number یا ترکیب محصول/توافق پرداخت مشاهده نشده است.
@@ -536,4 +558,4 @@ SYS3.spGetNextId
 
 | تاریخ | تغییر |
 |---|---|
-| ۱۴۰۵/۰۸/۲۳ | ایجاد مستند اولیه از یافته‌های ساختار PriceList، روابط، شناسه‌ها، سیاست قیمت، کاربر ثبت‌کننده، روش شماره‌گذاری ۷۷، بازه و رزروهای مشاهده‌شده و فهرست Procedureهای شماره‌گذاری. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت پارامترها و تحلیل متن چهار Procedure شماره‌گذاری؛ مشخص‌کردن تفاوت دو روش ایجاد Reservation، رفتار rollback در `spAddNumberingMethodReservation`، حذف رزروهای قدیمی و باقی‌ماندن تعریف Procedure حذف رزرو برای استخراج. |\n| ۱۴۰۵/۰۸/۲۳ | تکمیل تعریف `spRemoveNumberingMethodReservation`؛ ثبت رفتار حذف بر اساس Range، DomainKey و ReservedValue و به‌روزرسانی فهرست اقدامات پژوهش. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت نتیجه جست‌وجوی ارجاع متنی پنج Procedure در `sys.sql_modules`؛ هیچ ارجاع دیگری یافت نشد و محدودیت‌های این نتیجه مستند شد. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت نتیجه جست‌وجوی Job Stepهای SQL Agent برای عبارات Numbering، Reservation و PriceList؛ هیچ تطبیقی یافت نشد و محدودیت‌های نتیجه مستند شد. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت نتیجه جست‌وجوی Triggerهای مرتبط با PriceList و شماره‌گذاری؛ هیچ ردیفی برنگشت و محدودیت‌های نتیجه مستند شد. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت FK جدول `SYS3.NumberingRangeReservation` به `SYS3.NumberingMethodRange` از طریق `NumberingMethodRangeRef`؛ محدودیت استنباط از این رابطه نیز ثبت شد. |
+| ۱۴۰۵/۰۸/۲۳ | ایجاد مستند اولیه از یافته‌های ساختار PriceList، روابط، شناسه‌ها، سیاست قیمت، کاربر ثبت‌کننده، روش شماره‌گذاری ۷۷، بازه و رزروهای مشاهده‌شده و فهرست Procedureهای شماره‌گذاری. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت پارامترها و تحلیل متن چهار Procedure شماره‌گذاری؛ مشخص‌کردن تفاوت دو روش ایجاد Reservation، رفتار rollback در `spAddNumberingMethodReservation`، حذف رزروهای قدیمی و باقی‌ماندن تعریف Procedure حذف رزرو برای استخراج. |\n| ۱۴۰۵/۰۸/۲۳ | تکمیل تعریف `spRemoveNumberingMethodReservation`؛ ثبت رفتار حذف بر اساس Range، DomainKey و ReservedValue و به‌روزرسانی فهرست اقدامات پژوهش. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت نتیجه جست‌وجوی ارجاع متنی پنج Procedure در `sys.sql_modules`؛ هیچ ارجاع دیگری یافت نشد و محدودیت‌های این نتیجه مستند شد. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت نتیجه جست‌وجوی Job Stepهای SQL Agent برای عبارات Numbering، Reservation و PriceList؛ هیچ تطبیقی یافت نشد و محدودیت‌های نتیجه مستند شد. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت نتیجه جست‌وجوی Triggerهای مرتبط با PriceList و شماره‌گذاری؛ هیچ ردیفی برنگشت و محدودیت‌های نتیجه مستند شد. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت FK جدول `SYS3.NumberingRangeReservation` به `SYS3.NumberingMethodRange` از طریق `NumberingMethodRangeRef`؛ محدودیت استنباط از این رابطه نیز ثبت شد. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت PK خوشه‌ای و ایندکس یکتای سه‌ستونی Range + DomainKey + ReservedSerial در جدول رزرو شماره؛ ارتباط آن با کنترل تکرار در Procedure ثبت شد. |
