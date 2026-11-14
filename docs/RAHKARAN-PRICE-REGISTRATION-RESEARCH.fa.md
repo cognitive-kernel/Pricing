@@ -381,6 +381,19 @@ SYS3.spGetNextId
 
 **اثر بر طراحی:** هیچ‌یک از این تعریف‌ها به‌تنهایی مسیر کامل و امن تولید Number برای PriceList را ثابت نمی‌کند. تا زمان ردیابی فراخواننده‌ها و منطق رسمی برنامه راهکاران، نباید مستقیماً Reservation درج/حذف شود یا شماره بعدی محاسبه شود. `CreateNumberingMethod` و `spRemoveOldNumberingReservations` به‌وضوح خارج از مسیر ثبت عادی هستند.
 
+
+
+**تکمیل تعریف Procedure حذف رزرو — ۱۴۰۵/۰۸/۲۳**
+
+تعریف کامل `SYS3.spRemoveNumberingMethodReservation` با جست‌وجوی نام صحیح استخراج شد:
+
+- پارامترها: `@NumberingMethodRangeID bigint`، `@DomainKey nvarchar(500)` و `@ReservedValue bigint`.
+- رفتار مستقیم: فقط رکورد(های) منطبق با هر سه شرط `NumberingMethodRangeRef`، `DomainKey` و `ReservedSerial` را از `SYS3.NumberingRangeReservation` حذف می‌کند.
+- در متن مشاهده‌شده، تراکنش صریح، TRY/CATCH یا کنترل تعداد ردیف حذف‌شده وجود ندارد.
+- مشاهده مستقیم: این Procedure حذف هدفمند یک رزرو مشخص را انجام می‌دهد؛ با پاک‌سازی قدیمی `spRemoveOldNumberingReservations` متفاوت است.
+- نیازمند تأیید: اینکه چه بخش‌هایی از نرم‌افزار راهکاران آن را فراخوانی می‌کنند، چه زمانی حذف رزرو مجاز است و آیا حذف در همان تراکنش ایجاد PriceList انجام می‌شود یا خیر.
+- اثر طراحی: این Procedure نیز نباید مستقیماً از پروژه Pricing فراخوانی شود تا زمانی که چرخه رسمی رزرو/مصرف/آزادسازی شماره و قواعد بازیابی از شکست از کد یا مسیر رسمی راهکاران اثبات شود.
+
 ## ۱۲. Triggerها، Indexها و یکتایی
 
 در بررسی قبلی روی چهار جدول اصلی PriceList، PriceListItem، PriceListResultRow و PriceListConditionRow، Trigger مشاهده نشده است. برای هر جدول، PK یکتا و clustered گزارش شده و Unique Index دیگری برای Number یا ترکیب محصول/توافق پرداخت مشاهده نشده است.
@@ -422,7 +435,7 @@ SYS3.spGetNextId
 ## ۱۴. موارد باز و اقدامات بعدی پژوهش
 
 - [x] استخراج پارامترهای پنج Procedure و متن چهار تعریف؛ تعریف `spRemoveNumberingMethodReservation` به علت اشتباه در نام جست‌وجو در خروجی نبود و باید جداگانه استخراج شود.
-- [ ] استخراج تعریف کامل `SYS3.spRemoveNumberingMethodReservation` با نام صحیح و ردیابی فراخوانی همه Procedureهای رزرو از کد/Procedureهای دیگر برای تعیین مسیر رسمی تخصیص شماره.
+- [x] استخراج تعریف کامل `SYS3.spRemoveNumberingMethodReservation`؛ رفتار حذف هدفمند رزرو ثبت شد.\n- [ ] ردیابی فراخوانی همه Procedureهای رزرو از کد/Procedureهای دیگر برای تعیین مسیر رسمی تخصیص شماره.
 - [ ] بررسی رفتار رزرو شماره در حالت موفق، خطا، Rollback، timeout و درخواست‌های هم‌زمان؛ بدون اجرای عملیات مخرب روی محیط عملیاتی.
 - [ ] شناسایی اینکه آیا `CreateNumberingMethodReservation` و `spAddNumberingMethodReservation` بخشی از یک زنجیره‌اند یا کاربردهای جدا دارند.
 - [ ] بررسی دقیق DomainKey و چرایی خالی بودن آن در رزروهای نمونه.
@@ -458,4 +471,4 @@ SYS3.spGetNextId
 
 | تاریخ | تغییر |
 |---|---|
-| ۱۴۰۵/۰۸/۲۳ | ایجاد مستند اولیه از یافته‌های ساختار PriceList، روابط، شناسه‌ها، سیاست قیمت، کاربر ثبت‌کننده، روش شماره‌گذاری ۷۷، بازه و رزروهای مشاهده‌شده و فهرست Procedureهای شماره‌گذاری. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت پارامترها و تحلیل متن چهار Procedure شماره‌گذاری؛ مشخص‌کردن تفاوت دو روش ایجاد Reservation، رفتار rollback در `spAddNumberingMethodReservation`، حذف رزروهای قدیمی و باقی‌ماندن تعریف Procedure حذف رزرو برای استخراج. |
+| ۱۴۰۵/۰۸/۲۳ | ایجاد مستند اولیه از یافته‌های ساختار PriceList، روابط، شناسه‌ها، سیاست قیمت، کاربر ثبت‌کننده، روش شماره‌گذاری ۷۷، بازه و رزروهای مشاهده‌شده و فهرست Procedureهای شماره‌گذاری. |\n| ۱۴۰۵/۰۸/۲۳ | ثبت پارامترها و تحلیل متن چهار Procedure شماره‌گذاری؛ مشخص‌کردن تفاوت دو روش ایجاد Reservation، رفتار rollback در `spAddNumberingMethodReservation`، حذف رزروهای قدیمی و باقی‌ماندن تعریف Procedure حذف رزرو برای استخراج. |\n| ۱۴۰۵/۰۸/۲۳ | تکمیل تعریف `spRemoveNumberingMethodReservation`؛ ثبت رفتار حذف بر اساس Range، DomainKey و ReservedValue و به‌روزرسانی فهرست اقدامات پژوهش. |
