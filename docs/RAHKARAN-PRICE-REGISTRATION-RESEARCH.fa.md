@@ -1042,3 +1042,27 @@ SYS3.spGetNextId
 **اهمیت برای ثبت:** ایجاد صرفاً یک PriceListItem و چند ResultRow کافی نیست. برای هر زوج معتبر Item/ResultRow باید ConditionRow متناظر با BusinessPolicyConditionRowRef صحیح ساخته شود. تعیین اینکه ConditionRowRef از کجا و با چه ورودی/خروجی ساخته یا انتخاب می‌شود، همچنان نیازمند بررسی رکوردهای واقعی BusinessPolicyConditionRow و XML ورودی/خروجی آن‌هاست.
 
 هیچ داده‌ای تغییر نکرده است؛ این بخش صرفاً مستندسازی خروجی خواندنی کاربر است.
+
+
+### ۱۱.۳۴. شناسایی جداول مرجع BusinessPolicyConditionRow و ساختار ورودی/خروجی
+
+**منبع:** خروجی متادیتای `sys.tables/sys.columns` که کاربر در 2026-11-15 ارسال کرد.
+
+**یافته‌های قطعی از متادیتا:**
+- جداول عملیاتی مرتبط در schema `GNR3` عبارت‌اند از:
+  - `GNR3.BusinessPolicy`
+  - `GNR3.BusinessPolicyCondition`
+  - `GNR3.BusinessPolicyConditionRow`
+  - `GNR3.BusinessPolicyInputValue`
+  - `GNR3.BusinessPolicyOutputValue`
+  - `GNR3.BusinessPolicyParameter`
+  - `GNR3.BusinessPolicyParameterAssociation`
+- `GNR3.BusinessPolicyConditionRow` ستون‌های `BusinessPolicyConditionRowID`، `BusinessPolicyConditionRef`، `Index`، `Title`، تاریخ‌های شروع/پایان، `CreationDate`، `ForceToUnload`، `BusinessPolicyInputRef` و `BusinessPolicyOutputRef` را دارد.
+- در جدول عملیاتی `GNR3.BusinessPolicyConditionRow` ستون XML به نام `ParameterValues` وجود ندارد؛ ورودی و خروجی از طریق دو Ref جداگانه نگهداری می‌شوند.
+- `GNR3.BusinessPolicyInputValue.Value` و `GNR3.BusinessPolicyOutputValue.Value` از نوع nvarchar(max) هستند و می‌توانند محل ذخیره محتوای متنی/XML باشند؛ محتوای واقعی هنوز بررسی نشده است.
+- جدول‌های `dbo.BusinessPolicyCondition_14010722_1130` و `dbo.BusinessPolicyConditionRow_14010722_1130` در خروجی وجود دارند و به‌نظر جدول‌های تاریخ‌دار/نسخه‌ای هستند؛ نباید آن‌ها را بدون بررسی به‌جای جداول عملیاتی GNR3 استفاده کرد. جدول Row تاریخ‌دار ستون `ParameterValues` از نوع XML دارد، اما این ستون در جدول عملیاتی فعلی دیده نشد.
+- جدول `GNR3.BusinessPolicyConditionRow` به `BusinessPolicyInputRef` و `BusinessPolicyOutputRef` اشاره دارد؛ جدول‌های مقدار ورودی و خروجی نیز ساختار مستقل دارند. FK و محتوای دقیق این Refها هنوز باید بررسی شود.
+
+**اقدام بعدی:** بررسی رکوردهای واقعی Policy=185 و Condition=163 در جداول عملیاتی GNR3، به‌همراه اتصال Row به InputValue/OutputValue و استخراج امن XML/متن Value. سپس باید تطبیق ردیف‌های ConditionRowRef نمونه‌های PriceList با ردیف‌های فعال و معتبر انجام شود.
+
+هیچ داده‌ای تغییر نکرده است. تمام بررسی‌ها read-only بوده‌اند.
