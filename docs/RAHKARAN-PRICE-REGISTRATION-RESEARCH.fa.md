@@ -1377,3 +1377,31 @@ CREATE PROCEDURE SYS3.spGetNextId
 **گام بعدی:** بررسی مستقیم تعریف FK و نوع ستون `SLS3.PriceListItem.ProductUnitRef` از کاتالوگ سیستم SQL Server.
 
 **ایمنی:** این مرحله فقط شامل SELECT بوده است؛ هیچ شناسه‌ای رزرو و هیچ داده‌ای درج، ویرایش یا حذف نشده است.
+
+
+### ۱۱.۴۳. تأیید قطعی مقصد FK ستون PriceListItem.ProductUnitRef — ۲۰۲۶/۱۱/۱۵
+
+**منبع:** خروجی مستقیم `sys.foreign_key_columns`، `sys.foreign_keys`، `sys.tables`، `sys.schemas` و `sys.columns` در دیتابیس `Rahkaran_sg3` که کاربر ارسال کرد.
+
+| ویژگی | مقدار |
+|---|---|
+| ForeignKeyName | `FK_SLS3_PriceListItem_ProductUnitRef` |
+| Parent | `SLS3.PriceListItem.ProductUnitRef` |
+| Referenced | `GNR3.Unit.UnitID` |
+| DataType | `bigint` |
+| ON DELETE | `NO_ACTION` |
+| ON UPDATE | `NO_ACTION` |
+| is_disabled | 0 |
+| is_not_trusted | 0 |
+
+**نتیجه قطعی:** ستون `SLS3.PriceListItem.ProductUnitRef` باید شناسه `GNR3.Unit.UnitID` را دریافت کند، نه شناسه `SLS3.ProductUnit.ProductUnitID`. کلید خارجی فعال و trusted است. نام ستون نباید باعث اشتباه گرفتن دو شناسه شود.
+
+بنابراین نگاشت داده‌ها به این صورت است:
+- کد محصول Pricing با `SLS3.Product.Number` تطبیق داده می‌شود.
+- `PriceListItem.ProductRef` مقدار `SLS3.Product.ProductID` را می‌گیرد.
+- `PriceListItem.ProductUnitRef` مقدار `SLS3.ProductUnit.UnitRef` را می‌گیرد؛ این مقدار به `GNR3.Unit.UnitID` اشاره دارد.
+- برای اعتبارسنجی سازگاری محصول و واحد، وجود ردیف متناظر در `SLS3.ProductUnit` برای همان `ProductRef` و `UnitRef` و فعال بودن آن باید بررسی شود. `ProductUnitID` صرفاً شناسه ردیف رابطه در جدول `ProductUnit` است و در ستون مذکور درج نمی‌شود.
+
+**اصلاح برداشت قبلی:** احتمال مطرح‌شده در بخش ۱۱.۴۲ درباره درج `ProductUnitID` در `PriceListItem.ProductUnitRef` با بررسی مستقیم FK رد شد. نگاشت صحیح، `UnitRef` است.
+
+**ایمنی:** فقط کاتالوگ سیستمی SQL Server خوانده شد؛ هیچ داده‌ای تغییر نکرده و هیچ شناسه‌ای رزرو نشده است.
