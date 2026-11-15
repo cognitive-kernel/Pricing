@@ -1020,3 +1020,25 @@ SYS3.spGetNextId
 **محدودیت:** به علت `TOP (50)` و cross-product، خروجی فعلی برای نتیجه‌گیری درباره تعداد کامل ردیف‌ها یا همه روابط نمونه‌های 48076 تا 48095 کافی نیست. هیچ مقدار ثابت یا الگوریتم ثبت از این نمونه‌ها استنتاج نمی‌شود.
 
 **گام بعدی:** اجرای کوئری تفکیک‌شده و بدون cross-product برای شمارش Item/ResultRow/ConditionRow و بررسی تطبیق دقیق ConditionRow با ResultRow. هیچ داده‌ای تغییر نکرده است.
+
+
+### ۱۱.۳۳. تطبیق دقیق PriceListItem، ResultRow و ConditionRow در نمونه‌های ۴۸۰۷۶ تا ۴۸۰۹۵
+
+خروجی تفکیک‌شده نشان داد اتصال مستقیم `PriceListConditionRow.PriceListResultRowRef` به `PriceListResultRow.PriceListResultRowID` برقرار است و در تمام ردیف‌های گزارش‌شده وضعیت «اتصال مستقیم» ثبت شده است. بنابراین ConditionRow فقط به سربرگ PriceList وابسته نیست؛ به‌صورت دقیق به یک ResultRow و نیز یک PriceListItem متصل می‌شود.
+
+**الگوهای مشاهده‌شده:**
+- فهرست‌های تک‌محصولی با یک توافق پرداخت: یک Item، یک ResultRow و یک ConditionRow؛ مانند 48077 و 48078.
+- فهرست تک‌محصولی با دو توافق پرداخت: یک Item، دو ResultRow و دو ConditionRow؛ مانند 48076، 48079 و 48082.
+- فهرست تک‌محصولی با چهار توافق پرداخت: یک Item، چهار ResultRow و چهار ConditionRow؛ نمونه 48085.
+- فهرست چندمحصولی با دو توافق پرداخت: نمونه 48086 دارای 11 Item، دو ResultRow و 22 ConditionRow است. برای هر ResultRow یازده ConditionRow وجود دارد و هر ConditionRow به یکی از یازده Item متصل است.
+- نمونه 48090 دارای 10 Item، دو ResultRow و 20 ConditionRow است؛ برای هر توافق پرداخت، ده شرط متناظر با ده Item ثبت شده است.
+- نمونه 48091 دارای 10 Item، یک ResultRow و 10 ConditionRow است.
+- نمونه 48092 دارای دو Item، دو ResultRow و چهار ConditionRow است؛ هر ResultRow به هر دو Item از طریق دو ConditionRow متصل شده است.
+- نمونه‌های 48093 و 48094 هرکدام دو Item، یک ResultRow و دو ConditionRow دارند.
+- نمونه 48095 دارای دو Item، یک ResultRow و دو ConditionRow است.
+
+**نتیجه ساختاری:** در این نمونه‌ها تعداد ConditionRow با حاصل‌ضرب تعداد Item و تعداد ResultRow برابر است و هر زوج Item/ResultRow یک ConditionRow متناظر دارد. این یک الگوی تجربی قوی برای این مجموعه است، نه تضمین قاعده سراسری نرم‌افزار؛ در پیاده‌سازی باید روابط واقعی و الزامات سیاست تجاری خوانده شوند، نه اینکه تعداد یا ترتیب ردیف‌ها hardcode شود.
+
+**اهمیت برای ثبت:** ایجاد صرفاً یک PriceListItem و چند ResultRow کافی نیست. برای هر زوج معتبر Item/ResultRow باید ConditionRow متناظر با BusinessPolicyConditionRowRef صحیح ساخته شود. تعیین اینکه ConditionRowRef از کجا و با چه ورودی/خروجی ساخته یا انتخاب می‌شود، همچنان نیازمند بررسی رکوردهای واقعی BusinessPolicyConditionRow و XML ورودی/خروجی آن‌هاست.
+
+هیچ داده‌ای تغییر نکرده است؛ این بخش صرفاً مستندسازی خروجی خواندنی کاربر است.
