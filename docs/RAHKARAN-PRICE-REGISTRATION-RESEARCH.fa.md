@@ -1089,3 +1089,29 @@ SYS3.spGetNextId
 - هنوز باید ردیف‌های جاری و معتبر Condition=163، Associationهای پارامتر، و تطبیق PriceListConditionRow.BusinessPolicyConditionRowRef با ردیف واقعی سیاست بررسی شود. کوئری بعدی باید ردیف‌های جاری/بدون تاریخ پایان یا دارای بازه اعتبار منطبق با زمان جاری را استخراج کند و هم‌زمان تعریف پارامترها را از جداول Association نشان دهد.
 
 **ایمنی:** این بررسی فقط خواندنی بوده است؛ هیچ داده، شناسه یا شماره‌ای ایجاد، رزرو یا تغییر نشده است.
+
+### ۱۱.۳۶. ساختار واقعی جداول تعریف پارامتر و Association سیاست
+
+**منبع:** خروجی کاربر از sys.tables و sys.columns برای دو جدول GNR3.BusinessPolicyParameter و GNR3.BusinessPolicyParameterAssociation.
+
+**ساختار تأییدشده GNR3.BusinessPolicyParameter:**
+- BusinessPolicyParameterID از نوع bigint و غیر nullable است.
+- مشخصات معنایی پارامتر شامل Name nvarchar(100)، BaseConcept nvarchar(256)، Concept nvarchar(256) و ConceptProperty nvarchar(40) است؛ طول‌ها بر اساس max_length بایتی SQL Server برای nvarchar گزارش شده‌اند.
+- EntityGroupingRef از نوع bigint و nullable است.
+- AssignmentMethod از نوع int و IsDefaultParameter از نوع bit و هر دو اجباری‌اند.
+- اطلاعات تکمیلی/محاسباتی شامل DrillThroughProperty، DrillThroughFieldRef، DrillThroughPrimitiveIndex، DrillThroughPropertyDisplay، IsInternal، IsComputational، ComputationType، GroupingLevel، DrillThroughProviderProperty و ProviderFullName است.
+- Version از نوع timestamp/rowversion است و نباید هنگام درج دستی مقداردهی شود.
+
+**ساختار تأییدشده GNR3.BusinessPolicyParameterAssociation:**
+- BusinessPolicyParameterAssociationID، BusinessPolicyRef و BusinessPolicyParameterRef از نوع bigint و اجباری‌اند.
+- Priority از نوع int و IsDefault از نوع bit و اجباری‌اند.
+- Version از نوع timestamp/rowversion است.
+- این جدول ارتباط پارامتر با سیاست و ترتیب آن را در Priority نگه می‌دارد؛ بنابراین برای اثبات نگاشت جایگاه‌های XML باید Associationهای خود سیاست ۱۸۵ با اتصال به جدول پارامتر خوانده شوند، نه اینکه نام پارامترها از ترتیب XML حدس زده شود.
+
+**محدودیت داده دریافتی:**
+- کاربر فقط نتیجه مجموعه دوم (ساختار ستون‌ها) را ارسال کرده است؛ نتیجه مجموعه اول کوئری قبلی، یعنی ردیف‌های جاری و معتبر شرط ۱۶۳ به همراه XML ورودی/خروجی، هنوز دریافت نشده است.
+- هیچ مقدار پارامتر یا Association برای سیاست ۱۸۵ از این خروجی قابل تعیین نیست؛ فقط ساختار جدول‌ها تأیید شده است.
+
+**گام بعدی:** دریافت خروجی مجموعه اول کوئری قبلی؛ سپس Associationهای سیاست ۱۸۵ از طریق BusinessPolicyParameterAssociation به BusinessPolicyParameter متصل و با ترتیب Priority و XML ردیف‌های جاری تطبیق داده می‌شوند.
+
+**ایمنی:** این مرحله صرفاً بررسی ساختار metadata بوده و هیچ داده‌ای در پایگاه داده تغییر نکرده است.
