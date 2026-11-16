@@ -1,52 +1,63 @@
-# مستند بررسی اتصال ثبت قیمت در راهکاران
+# مستند تحقیق و آزمون ثبت پیش‌نویس اعلامیه قیمت در راهکاران
 
-> وضعیت سند: پژوهش فنی و فقط‌خواندنی  
-> پروژه مصرف‌کننده: `cognitive-kernel/Pricing`  
-> هدف: طراحی قابلیت «ثبت در راهکاران» برای انتقال قیمت‌های تأییدشده به دیتابیس SQL Server راهکاران  
-> آخرین به‌روزرسانی: ۱۴۰۵/۰۸/۲۳  
->
-> **محدودیت مهم:** این سند حاصل بررسی ساختار و نمونه‌داده‌های مشاهده‌شده است؛ هنوز مجوزی برای اجرای `INSERT`، `UPDATE`، `DELETE` یا رزرو شماره در دیتابیس عملیاتی صادر نشده است. هیچ مقدار نمونه‌ای نباید بدون تأیید و اعتبارسنجی در محیط مقصد به‌عنوان مقدار قطعی استفاده شود.
+> مخزن مصرف‌کننده: `cognitive-kernel/Pricing`  
+> مسیر: `docs/RAHKARAN-PRICE-REGISTRATION-RESEARCH.fa.md`  
+> تاریخ بازنگری: ۱۴۰۵/۰۸/۲۵ (۲۰۲۶/۱۱/۱۶)  
+> وضعیت: **ساختار پیش‌نویس در دیتابیس بازیابی‌شده آزموده شده؛ ثبت عملیاتی هنوز تأیید نشده است.**  
+> دامنه قطعی: **فقط ایجاد پیش‌نویس اعلامیه قیمت (`State=1`)؛ بدون تأیید، فعال‌سازی یا ایجاد/خاتمه قوانین قیمت.**
 
-## ۱. هدف و دامنه
+## ۱. خلاصه مدیریتی و سطح اطمینان
 
-در پروژه Pricing قرار است گزینه‌ای با عنوان «ثبت در راهکاران» اضافه شود. این گزینه باید صفحه‌ای برای مشاهده محصولات تأییدشده باز کند، امکان انتخاب یک یا چند محصول را بدهد و پس از تکمیل بررسی‌ها، اطلاعات قیمت را با تراکنش کنترل‌شده در ساختار راهکاران ثبت کند.
+پروژه Pricing باید بتواند قیمت‌های تأییدشده در *خود پروژه Pricing* را، پس از انتخاب و تأیید ارسال توسط کاربر، در راهکاران **صرفاً به‌عنوان پیش‌نویس** ثبت کند. تأیید در Pricing به معنی تأیید PriceList در راهکاران نیست. اجرای عملیات تأیید راهکاران، تغییر `State` به ۲، ساخت قوانین قیمت و خاتمه قوانین قبلی از دامنه فعلی خارج است.
 
-شرایط قطعی طراحی:
+سه سطح شواهد را نباید با هم اشتباه گرفت:
 
-- فقط محصولات تأییدشده و آماده ارسال باید در فهرست قرار بگیرند.
-- وضعیت تأیید، کامل‌بودن گروه و جلوگیری از ثبت مجدد باید در سمت سرور کنترل شود.
-- داده‌های راهکاران و شناسه‌های وابسته باید از دیتابیس و منطق رسمی خود راهکاران استخراج شوند؛ شناسه ثابت یا نمونه ساختگی ممنوع است.
-- برای تولید شناسه از روش رسمی راهکاران استفاده شود؛ استفاده از `MAX()+1` ممنوع است.
-- عملیات ثبت نهایی باید تراکنشی، قابل ممیزی و دارای کنترل هم‌زمانی و idempotency باشد.
-- توسعه کد و انتشار قابلیت از اجرای ثبت واقعی در دیتابیس عملیاتی جدا است.
-- پیش از هر ثبت واقعی، پارامترها، شناسه‌ها، روابط و مقادیر نهایی باید به کاربر گزارش و تأیید شوند.
+1. **ساختار مشاهده‌شده:** جدول‌ها، ستون‌ها، روابط و الگوهای نمونه‌داده در نسخه بررسی‌شده راهکاران.
+2. **آزمون اجراشده:** اسکریپت ایجاد پیش‌نویس روی SQL Server آزمایشی `IT-Soleymani` و دیتابیس بازیابی‌شده `Rahkaran_sg3`، با نتیجه موفق و Rollback مستند.
+3. **سازگاری عملیاتی تأییدنشده:** تخصیص رسمی شماره، اجرای هم‌زمان با UI راهکاران، سازگاری کامل با قواعد برنامه، idempotency و بررسی پیش‌نویس در UI.
 
-## ۲. وضعیت فعلی پروژه Pricing
+**نتیجه:** الگوی درج سربرگ، کالا و ردیف‌های توافق پرداخت در دیتابیس آزمایشی با موفقیت آزموده شده است. این موفقیت به‌تنهایی مجوز درج در دیتابیس عملیاتی نیست.
 
-بر اساس بررسی قبلی کد پروژه:
+## ۲. وضعیت پروژه Pricing و مسیر یکپارچه‌سازی
 
-- اتصال راهکاران در `app/Services/RahkaranPriceService.php` با PDO_SQLSRV انجام می‌شود.
-- تنظیمات اتصال از پیکربندی محیطی دریافت می‌شوند؛ از جمله `RAHKARAN_SERVER`، `RAHKARAN_DATABASE`، `RAHKARAN_UID`، `RAHKARAN_PWD`، `RAHKARAN_CHARSET` و `RAHKARAN_TRUST_SERVER_CERTIFICATE`.
-- سرویس موجود عملیات خواندن اطلاعات محصول، واحد، توافق پرداخت و آخرین قیمت‌ها را پوشش می‌دهد؛ در بررسی انجام‌شده متد ثبت Price List وجود نداشت.
-- `app/Controllers/PriceApprovalController.php` صف تأیید را مدیریت می‌کند: مقدار `Approved=0` قابل انتخاب است، تأیید مقدار ۱ و رد مقدار ۲ را ثبت می‌کند.
-- منطق خروجی اکسل فقط گروه‌هایی را صادر می‌کند که تمام ردیف‌های گروه تأیید شده باشند (`Approved=1`) و هنوز صادر نشده باشند (`isexported=0`).
-- گروه‌بندی قیمت‌ها در `MarketPriceCalculator::groupByPaymentAgreement()` بر اساس `PaymentAgreementID` است.
-- `dbo.PriceApprove` برای ثبت خروجی اکسل استفاده می‌شود و پس از خروجی، `ProductPriceMonitor.isexported` به‌روزرسانی می‌شود.
-- مسیرها در `routes/web.php`، منوها در `views/layout.php` و مجوزها در `database/seed.php` و `PermissionService` تعریف می‌شوند.
+طبق بررسی ثبت‌شده از کد پروژه:
 
-این مسیر اکسل را نباید با ثبت در راهکاران یکی دانست. ثبت در راهکاران باید جریان کاری و وضعیت مستقل و قابل ردیابی داشته باشد تا ارسال موفق به ERP با خروجی اکسل اشتباه نشود.
+- اتصال راهکاران از `app/Services/RahkaranPriceService.php` و `PDO_SQLSRV` انجام می‌شود.
+- تنظیمات محیطی شامل `RAHKARAN_SERVER`، `RAHKARAN_DATABASE`، `RAHKARAN_UID`، `RAHKARAN_PWD`، `RAHKARAN_CHARSET` و `RAHKARAN_TRUST_SERVER_CERTIFICATE` است.
+- `app/Controllers/PriceApprovalController.php` صف تأیید Pricing را مدیریت می‌کند: `Approved=0` در انتظار، `Approved=1` تأیید و `Approved=2` رد.
+- منطق موجود خروجی اکسل فقط گروه‌هایی را صادر می‌کند که تمام ردیف‌هایشان تأیید شده‌اند و `isexported=0` دارند.
+- گروه‌بندی در `MarketPriceCalculator::groupByPaymentAgreement()` بر اساس `PaymentAgreementID` است.
+- `dbo.PriceApprove` و `ProductPriceMonitor.isexported` در مسیر خروجی اکسل استفاده می‌شوند.
+- مسیرهای برنامه در `routes/web.php`، منوها در `views/layout.php` و مجوزها در `database/seed.php` و `PermissionService` تعریف شده‌اند.
 
-## ۳. جداول اصلی شناسایی‌شده در راهکاران
+**اصلاح مهم:** خروجی اکسل و «ثبت در راهکاران» باید دو جریان مستقل با وضعیت و تاریخچه مستقل باشند. تأیید قیمت در Pricing مجوز ساخت پیش‌نویس است، نه تأیید یا اعمال قیمت در راهکاران.
 
-### ۳.۱. `SLS3.PriceList`
+## ۳. محدوده نهایی INSERT برای پیش‌نویس
 
-ستون‌های مشاهده‌شده:
+| جدول | عملیات موردنیاز | تعداد در آزمون یک‌کالا/دو توافق |
+|---|---|---:|
+| `SLS3.PriceList` | INSERT سربرگ | ۱ |
+| `SLS3.PriceListItem` | INSERT کالا و قیمت | ۱ |
+| `SLS3.PriceListResultRow` | INSERT توافق پرداخت | ۲ |
+| `SYS3.NumberingRangeReservation` | رزرو شماره در آزمون؛ **مسیر رسمی هنوز اثبات نشده** | ۱ |
+| `SLS3.PriceListConditionRow` | **بدون تغییر** | ۰ |
+| `GNR3.BusinessPolicyConditionRow` | **بدون تغییر** | ۰ |
+| `GNR3.BusinessPolicyInputValue` | **بدون تغییر** | ۰ |
+| `GNR3.BusinessPolicyOutputValue` | **بدون تغییر** | ۰ |
 
-| ستون | نوع / وضعیت |
+در این دامنه `State=1` درج می‌شود و هیچ عملیات تأیید، ساخت قانون، تغییر قانون فعال، خاتمه قانون قبلی یا تولید XML/Hash سیاست قیمت انجام نمی‌شود.
+
+**دقت:** تعداد ResultRow باید از توافق‌های واقعی انتخاب‌شده در Pricing تعیین شود. وجود دو ردیف در آزمون، قاعده عمومی «همیشه دو توافق» نیست.
+
+## ۴. ساختار جداول و روابط اصلی
+
+### ۴.۱. `SLS3.PriceList`
+
+| ستون | مشخصات مشاهده‌شده |
 |---|---|
-| `PriceListID` | bigint، کلید اصلی، بدون Identity |
-| `PriceListParametersRef` | bigint، اجباری |
-| `Number` | nvarchar(100)، اجباری |
+| `PriceListID` | bigint، PK، بدون Identity |
+| `PriceListParametersRef` | bigint، اجباری؛ FK به پارامترهای PriceList |
+| `Number` | nvarchar(100)، اجباری؛ **شماره تجاری، متفاوت از ID** |
 | `Title` | nvarchar(512)، اجباری |
 | `StartDate` | datetime، اجباری |
 | `EndDate` | datetime، nullable |
@@ -54,110 +65,130 @@
 | `SalesDocumentType` | int، اجباری |
 | `CurrencyRef` | bigint، اجباری |
 | `State` | int، اجباری |
-| `CreationDate` | datetime، اجباری |
-| `LastModificationDate` | datetime، اجباری |
-| `Creator` | bigint، اجباری |
-| `LastModifier` | bigint، اجباری |
-| `Version` | timestamp/rowversion؛ نباید در INSERT مقداردهی شود |
-| `FeeMapperPolicyRef` | bigint، nullable |
-| `FeePolicyRef` | bigint، nullable |
+| `CreationDate`, `LastModificationDate` | datetime، اجباری |
+| `Creator`, `LastModifier` | bigint، اجباری؛ FK به `SYS3.User` |
+| `FeeMapperPolicyRef`, `FeePolicyRef` | bigint، nullable |
 | `ConfirmationDate` | datetime، nullable |
+| `Version` | rowversion؛ **نباید در INSERT مقداردهی شود** |
 
-### ۳.۲. `SLS3.PriceListItem`
+### ۴.۲. `SLS3.PriceListItem`
 
-| ستون | نوع / وضعیت |
+| ستون | مشخصات مشاهده‌شده |
 |---|---|
-| `PriceListItemID` | bigint، کلید اصلی، بدون Identity |
-| `PriceListRef` | bigint، اجباری |
-| `RowNumber` | int، اجباری |
-| `ProductRef` | bigint، nullable |
+| `PriceListItemID` | bigint، PK، بدون Identity |
+| `PriceListRef` | bigint، FK به PriceList |
+| `RowNumber` | int، اجباری؛ از ۱ شروع می‌شود |
+| `ProductRef` | bigint، nullable؛ در سناریوی کالا مقدار دارد |
 | `ProductGroupRef` | bigint، nullable |
-| `ProductUnitRef` | bigint، اجباری |
-| `PackageRef` | bigint، nullable |
-| `Quantity` | decimal(28,6)، nullable |
+| `ProductUnitRef` | bigint، اجباری؛ FK به `GNR3.Unit` |
+| `PackageRef`, `Quantity` | nullable؛ Quantity از نوع decimal(28,6) |
 | `CurrencyRef` | bigint، اجباری |
 | `Fee` | decimal(28,6)، اجباری |
-| `Definitiveness` | int، اجباری |
-| `ReductionTolerance` | decimal(28,6)، nullable |
-| `AdditionTolerance` | decimal(28,6)، nullable |
-| `TrackingFactor1..5` | nvarchar(512)، nullable |
-| `PartTrackingFactorRef1..5` | bigint، nullable |
-| `TrackingFactorInputMode1..5` | int، nullable |
-| `TrackingFactorValue` | nvarchar(512)، nullable |
-| `BatchRef` | bigint، nullable |
-| `Version` | timestamp/rowversion؛ نباید در INSERT مقداردهی شود |
+| `Definitiveness` | int، اجباری؛ در نمونه ۱ |
+| `ReductionTolerance`, `AdditionTolerance` | decimal(28,6)، nullable |
+| `TrackingFactor1..5`, `PartTrackingFactorRef1..5`, `TrackingFactorInputMode1..5`, `TrackingFactorValue`, `BatchRef` | فیلدهای جانبی nullable، بسته به سناریو |
+| `Version` | rowversion؛ نباید در INSERT مقداردهی شود |
 
-### ۳.۳. `SLS3.PriceListResultRow`
+### ۴.۳. `SLS3.PriceListResultRow`
 
-- `PriceListResultRowID`: bigint، کلید اصلی.
-- `PriceListRef`: bigint، اجباری.
-- سایر ستون‌های مشاهده‌شده عمدتاً nullable هستند.
-- `PaymentAgreementRef` یکی از ستون‌های مهم این جدول است.
-- `Version` از نوع rowversion است و نباید مقداردهی شود.
+- `PriceListResultRowID` کلید اصلی bigint و غیر Identity است.
+- `PriceListRef` به سربرگ اشاره می‌کند.
+- `PaymentAgreementRef` توافق پرداخت را مشخص می‌کند.
+- سایر فیلدهای مشاهده‌شده عمدتاً nullable هستند؛ `Version` را نباید درج کرد.
 
-### ۳.۴. `SLS3.PriceListConditionRow`
+### ۴.۴. `SLS3.PriceListConditionRow` و سیاست‌ها
 
-- `PriceListConditionRowID`: bigint، کلید اصلی.
-- `BusinessPolicyRef`: bigint، اجباری.
-- `BusinessPolicyConditionRef`: bigint، اجباری.
-- `BusinessPolicyConditionRowRef`: bigint، اجباری.
-- `PriceListRef`: bigint، اجباری.
-- `PriceListItemRef`: bigint، اجباری.
-- `PriceListResultRowRef`: bigint، nullable.
-- `EndDate`: datetime، nullable.
-- `Version`: rowversion.
+جدول ConditionRow به PriceList، Item، ResultRow و ساختار BusinessPolicy وصل است. برای **ثبت پیش‌نویس** هیچ رکوردی در آن درج نمی‌شود. جزئیات آن در بخش ۱۰ صرفاً برای حفظ نتایج تحقیق تاریخی آمده است و جزو عملیات اجرایی فعلی نیست.
 
-**نکته:** فهرست کامل ستون‌ها و تمام constraintهای این جدول‌ها باید پیش از پیاده‌سازی نهایی دوباره از همان نسخه دیتابیس مقصد استخراج شود. این سند جایگزین بررسی schema واقعی محیط مقصد نیست.
+### ۴.۵. کنترل روابط
 
-## ۴. روابط کلید خارجی مشاهده‌شده
+کلیدهای خارجی، CHECK، DEFAULT و ایندکس‌ها باید از **همان دیتابیس مقصد** بازخوانی شوند. وجود FK جداگانه برای محصول و واحد، لزوماً مجاز بودن **زوج محصول/واحد** را ثابت نمی‌کند؛ این زوج باید با `SLS3.ProductUnit` کنترل شود.
 
-- `PriceList.Creator` و `PriceList.LastModifier` به `SYS3.User.UserID` اشاره می‌کنند.
-- `PriceList.CurrencyRef` به `GNR3.Currency` اشاره می‌کند.
-- `PriceList.FeeMapperPolicyRef` و `FeePolicyRef` به `GNR3.BusinessPolicy` اشاره می‌کنند.
-- `PriceList.PriceListParametersRef` به `SLS3.PriceListParameters` اشاره می‌کند.
-- `PriceListItem.PriceListRef` به `PriceList`، `ProductRef` به محصول، `ProductUnitRef` به `GNR3.Unit`، `ProductGroupRef` به `GNR3.EntityGroup` و `CurrencyRef` به ارز اشاره می‌کند.
-- `PriceListResultRow.PriceListRef` به `PriceList` و `PaymentAgreementRef` به توافق پرداخت اشاره می‌کند.
-- `PriceListConditionRow` به BusinessPolicy، BusinessPolicyCondition، PriceList، PriceListItem و در صورت وجود به PriceListResultRow مرتبط است.
+## ۵. شناسه داخلی و شماره تجاری: دو موضوع مستقل
 
-رابطه و قید مرجع دقیق `BusinessPolicyConditionRowRef` هنوز نیازمند بررسی مستقل است؛ از روی نام ستون نباید مقصد FK را حدس زد.
+### ۵.۱. شناسه داخلی
 
-## ۵. تولید شناسه رکوردها
-
-چهار جدول اصلی دارای شناسه‌هایی هستند که در بررسی انجام‌شده Identity نبودند. Sequenceهای رسمی مرتبط شناسایی شده‌اند:
-
-- `dbo.SYS3_TableIdGen__SLS3.PriceList`
-- `dbo.SYS3_TableIdGen__SLS3.PriceListItem`
-- `dbo.SYS3_TableIdGen__SLS3.PriceListResultRow`
-- `dbo.SYS3_TableIdGen__SLS3.PriceListConditionRow`
-
-روش رسمی مشاهده‌شده:
+برای `PriceListID`، `PriceListItemID` و `PriceListResultRowID` از روش شناسایی‌شده راهکاران استفاده می‌شود:
 
 ```sql
-SYS3.spGetNextId
-    @TableName,
-    @Id OUTPUT,
-    @IncValue = 1,
-    @IsLegacy = 0
+EXEC SYS3.spGetNextId 'SLS3.PriceList', @PriceListID OUTPUT;
+EXEC SYS3.spGetNextId 'SLS3.PriceListItem', @PriceListItemID OUTPUT;
+EXEC SYS3.spGetNextId 'SLS3.PriceListResultRow', @ResultRowID OUTPUT;
 ```
 
-یادداشت‌ها:
+این Stored Procedure از Sequenceهای داخلی با الگوی `SYS3_TableIdGen__<TableName>` و اطلاعات ReplicationSiteId استفاده می‌کند. **Sequence با ROLLBACK به عقب برنمی‌گردد.** در صورت نبود Sequence، خود Procedure ممکن است آن را ایجاد کند؛ حتی خواندن با `@IncValue=0` الزاماً بدون اثر جانبی نیست.
 
-- این Stored Procedure شناسه را با منطق داخلی راهکاران تولید می‌کند و اطلاعات `ReplicationSiteId` را در شناسه لحاظ می‌کند.
-- مقدار `@IncValue=0` فقط در صورت وجود قبلی Sequence، مقدار فعلی را بدون پیشروی می‌خواند؛ اگر Sequence وجود نداشته باشد، خود Procedure آن را ایجاد کرده و یک مقدار اولیه مصرف می‌کند. بنابراین این فراخوانی بدون بررسی وجود Sequence، read-only تضمین‌شده نیست (بخش ۱۱.۲۴).
-- برای هر جدول باید نام جدول متناظر به روش رسمی ارائه شود.
-- فراخوانی واقعی برای رزرو شناسه هنوز انجام نشده و نباید در مرحله پژوهش اجرا شود.
-- استفاده از `MAX()+1`، تولید دستی شناسه یا فراخوانی مستقیم Sequence به‌جای روش رسمی ممنوع است.
+استفاده از `MAX(PriceListID)+1` یا ساخت دستی شناسه داخلی ممنوع است.
 
-## ۶. پارامترهای Price List
+### ۵.۲. شماره تجاری PriceList
 
-جدول `SLS3.PriceListParameters` بررسی شده است. دو رکورد مشاهده‌شده:
+روش مشاهده‌شده:
 
-| PriceListParametersID | StartDate | EndDate | PriceListType | SalesDocumentType | Model |
+| ویژگی | مقدار مشاهده‌شده |
+|---|---|
+| `SYS3.NumberingMethod.NumberingMethodID` | 77 |
+| عنوان | اعلامیه قیمت |
+| Component | `SystemGroup.Sales.PriceList` |
+| Entity | `PriceList` |
+| قالب | `*سریال` |
+| `NumberType` | 1 |
+| `NumberDigitsType` | 2 |
+| `NumberOfDigits` | 0 |
+| `AssignApproch` | 1 |
+| `CheckUniqueness` | 1 |
+| `MissedNumberBehavior` | 0 |
+| `NumberingMethodRangeID` | 77 |
+| `StartSerial` / `SerialStep` | 1 / 1 |
+| `FinishSerial` | NULL |
+| DomainKey نمونه‌های مشاهده‌شده | رشته خالی |
+
+روش ۲۰ مربوط به `SystemGroup.Logistics.VoucherPricing` و روش ۳۰۷ مربوط به TriplePriceList است؛ برای اعلامیه قیمت فروش عادی، روش ۷۷ مرتبط‌ترین مورد مشاهده‌شده است.
+
+### ۵.۳. جدول رزرو شماره
+
+`SYS3.NumberingRangeReservation` دارای ستون‌های زیر است:
+
+- `NumberingRangeReservationID bigint IDENTITY(1,1)`؛ توسط دیتابیس تولید می‌شود.
+- `NumberingMethodRangeRef bigint NOT NULL`.
+- `DomainKey nvarchar(1000) NOT NULL`.
+- `ReservedSerial bigint NOT NULL`.
+
+ایندکس یکتا: `UIX_SYS3_NumberingRangeReservation_NumberingMethodRangeRef_DomainKey_ReservedSerial`.
+
+تطبیق داده‌ای قبلی نشان داد ۱۰۷ رزرو Range=77 در بازه ۴۶۵۰۶ تا ۴۶۶۱۵ با ۱۰۷ PriceList متمایز تطبیق داشته‌اند. این مشاهده رابطه قوی میان شماره تجاری و رزرو را نشان می‌دهد، اما ترتیب رسمی فراخوانی‌ها، نحوه انتخاب شماره، یا تضمین هم‌زمانی را ثابت نمی‌کند.
+
+### ۵.۴. Procedureهای مرتبط با شماره‌گذاری
+
+| Procedure | رفتار مشاهده‌شده | استفاده در ثبت فعلی |
+|---|---|---|
+| `SYS3.CreateNumberingMethod` | ایجاد تنظیمات روش شماره‌گذاری در صورت نبود | خیر |
+| `SYS3.CreateNumberingMethodReservation` | درج اولیه تنها در نبود هر رزرو برای Range | خیر |
+| `SYS3.spAddNumberingMethodReservation` | درج رزرو مشخص در صورت نبود ترکیب سه‌گانه | مسیر کامل تخصیص شماره نیست |
+| `SYS3.spRemoveNumberingMethodReservation` | حذف رزرو مشخص | خیر |
+| `SYS3.spRemoveOldNumberingReservations` | حذف رزروهای قدیمی‌تر از ۵۰ شماره اخیر هر دامنه | خیر |
+
+در متن مشاهده‌شده `spAddNumberingMethodReservation`، خطای 2601 مربوط به ایندکس یکتا به‌طور خاص مدیریت می‌شود و مسیر Catch ممکن است تراکنش فراخواننده را Rollback کند. این Procedure مقدار `ReservedValue` را **از فراخواننده دریافت می‌کند** و خود الگوریتم انتخاب شماره بعدی نیست.
+
+جست‌وجوی متنی در `sys.sql_modules`، Jobها، Triggerها و CLRها مسیر کامل تولید شماره را پیدا نکرد. این نتیجه، وجود منطق در کد کلاینت، ماژول رمزگذاری‌شده یا سرویس خارجی را رد نمی‌کند.
+
+### ۵.۵. الگوریتم آزمایشی و محدودیت آن
+
+در اسکریپت آزمون، شماره پیشنهادی با بزرگ‌ترین مقدار عددی `PriceList.Number` و بزرگ‌ترین `ReservedSerial` برای Range=77/DomainKey خالی، به‌علاوه ۱، انتخاب شد؛ سپس رزرو مستقیماً درج شد.
+
+**این روش در محیط آزمایشی کار کرده است، اما الگوریتم رسمی راهکاران اثبات نشده و برای اجرای هم‌زمان عملیاتی قابل اتکا نیست.** `sp_getapplock` اختصاصی ما تنها نویسندگانی را هماهنگ می‌کند که همان Resource را قفل می‌کنند؛ لزوماً نرم‌افزار راهکاران را هماهنگ نمی‌کند.
+
+## ۶. پارامترها و داده‌های مرجع
+
+### ۶.۱. پارامتر PriceList
+
+در `SLS3.PriceListParameters` دو رکورد مشاهده شده است:
+
+| ID | StartDate | EndDate | PriceListType | SalesDocumentType | Model |
 |---:|---|---|---:|---:|---:|
 | 1 | 2022-03-21 12:08 | 2022-10-14 23:59 | 1 | 2 | 1 |
 | 2 | 2022-10-15 00:01 | NULL | 1 | 2 | 1 |
 
-برای پارامتر ۲، آیتم‌های زیر مشاهده شده‌اند:
+آیتم‌های مشاهده‌شده پارامتر ۲ (ID / Priority / Ref / Static):
 
 | ID | Priority | Ref | Static |
 |---:|---:|---:|---:|
@@ -174,797 +205,333 @@ SYS3.spGetNextId
 | 23 | 10 | 30 | 0 |
 | 24 | 11 | 31 | 0 |
 
-این مقادیر صرفاً داده‌های مشاهده‌شده‌اند. انتخاب پارامتر فعال و معنای دقیق تمام آیتم‌ها باید با نسخه و تنظیمات دیتابیس مقصد تطبیق داده شود.
+مقدار ۲ در تست استفاده شده است؛ در محیط مقصد باید اعتبار و تناسب آن با تاریخ/نوع اعلامیه کنترل شود.
 
-## ۷. نمونه داده‌های واقعی مشاهده‌شده
-
-در بازه PriceListIDهای 48076 تا 48095، نمونه‌های زیر تکرار شده‌اند:
-
-- `PriceListParametersRef=2`
-- `PriceListType=1`
-- `SalesDocumentType=2`
-- `CurrencyRef=1`
-- `State=2`
-- `Creator=LastModifier=231`
-- `FeeMapperPolicyRef` و `FeePolicyRef` در نمونه‌های مشاهده‌شده NULL بوده‌اند.
-- `ConfirmationDate` در نمونه‌های مشاهده‌شده NULL بوده است.
-- Numberهای متناظر 46596 تا 46615 بوده‌اند؛ بنابراین Number با PriceListID یکسان نیست.
-- Title معمولاً نام محصول یا نام محصول همراه با توافق پرداخت بوده است.
-- StartDate زمان ایجاد رکورد بوده و EndDate معمولاً NULL بوده است.
-- رکورد 48095 نمونه‌ای با EndDate ثبت‌شده و مفهوم پایان‌دادن به اعتبار قیمت در زمان 2026-11-14 15:53 بوده است.
-
-در PriceListItem نمونه‌ها، ProductRef از شناسه محصول در `SLS3.Product.ProductID`، واحد از واحد محصول، CurrencyRef برابر ۱ در نمونه‌های بررسی‌شده، Fee برابر قیمت و Definitiveness برابر ۱ مشاهده شده است. Quantity در نمونه‌های بررسی‌شده NULL بوده و RowNumber از ۱ شروع شده است.
-
-این مقادیر «پیش‌فرض قطعی» نیستند و نباید بدون تطبیق با محصول، توافق پرداخت و سیاست جاری استفاده شوند.
-
-## ۸. توافق‌های پرداخت مشاهده‌شده
-
-نمونه PaymentAgreementRefها:
+### ۶.۲. توافق‌های پرداخت نمونه
 
 | PaymentAgreementRef | عنوان مشاهده‌شده |
 |---:|---|
 | 20 | نقد کارتکش |
-| 21 | نقد 1 الی 15 روزه |
+| 21 | نقد ۱ الی ۱۵ روزه |
 | 23 | چک یک ماهه |
 | 24 | چک سه الی چهار ماهه |
 | 30 | چک دوماهه |
 
-برای هر محصول ممکن است چند توافق پرداخت و در نتیجه چند ردیف نتیجه/شرط قیمت وجود داشته باشد. منطق گروه‌بندی پروژه Pricing نیز بر اساس `PaymentAgreementID` است. نگاشت نهایی باید از جدول مرجع فعال و داده جاری خوانده شود، نه از این جدول نمونه.
+این شناسه‌ها **نمونه داده** هستند و برای ثبت عمومی نباید ثابت فرض شوند. باید نگاشت `PaymentAgreementID` پروژه Pricing به مرجع معتبر راهکاران در زمان اجرا بررسی شود.
 
-## ۹. سیاست قیمت و ردیف‌های شرط
+### ۶.۳. محصول، واحد، ارز و کاربر
 
-موارد زیر در بررسی قبلی مشاهده شده‌اند:
+- `SLS3.Product.Number` کد کالا و `SLS3.Product.ProductID` شناسه ارجاعی `PriceListItem.ProductRef` است.
+- `PriceListItem.ProductUnitRef` به `GNR3.Unit.UnitID` اشاره دارد و زوج محصول/واحد باید در `SLS3.ProductUnit` معتبر و فعال باشد.
+- `CurrencyRef=1` در نمونه‌های بررسی‌شده استفاده شده؛ تطبیق آن با ارز واقعی و واحد مبلغ الزامی است.
+- `Creator=LastModifier=231` در نمونه‌ها دیده شده؛ کاربر `v.baraghani` با UserID=231 در بررسی قبلی فعال گزارش شده و کاربر آن را برای سناریوی نمونه تأیید کرده است. در پیاده‌سازی باید کاربر اجرایی از تنظیمات معتبر خوانده و اعتبارسنجی شود.
+- `Fee` از نوع decimal(28,6) است؛ واحد پول و مقیاس مقدار در زمان ارسال کنترل شود.
 
-- `BusinessPolicyRef=185` با عنوان «اعلامیه قیمت فروش 2».
-- نوع سیاست Fee و TargetBaseConcept برابر SalesDocument و TargetConcept برابر SalesDocumentItem گزارش شده است.
-- `BusinessPolicyConditionRef=163` با ConditionModel=1 و Status=0 مشاهده شده است.
-- ردیف‌های قدیمی Condition 163 با شناسه‌های 1290060 تا 1290079 دارای EndDate برابر 2022-11-30 بوده‌اند؛ این ردیف‌ها منقضی‌اند و نباید برای ثبت جدید استفاده شوند.
-- ردیف‌های جدید Condition 163 در بازه 2361475 تا 2361574 مشاهده شده‌اند؛ بیشتر آن‌ها EndDate=NULL بوده‌اند. دو ردیف 2361573 و 2361574 دارای EndDate برابر 2026-11-14 15:53 گزارش شده‌اند.
-- هر ConditionRow به Input و Output اختصاصی متصل است.
-- در ۲۰ ردیف نمونه بررسی‌شده، مقدار خروجی سیاست با `PriceListItem.Fee` برابر بوده است.
+## ۷. شواهد واقعی درباره State و ساختار پیش‌نویس
 
-### ۹.۱. پارامترهای ورودی سیاست ۱۸۵
+در بررسی تکمیلی دیتابیس آزمایشی:
 
-۱۲ پارامتر در بررسی قبلی گزارش شده‌اند:
+| State | تعداد PriceList | تعداد Item | تعداد ConditionRow |
+|---:|---:|---:|---:|
+| 1 | 177 | 3,808 | 2 |
+| 2 | 46,127 | 1,682,535 | 2,185,882 |
 
-1. ارز / CurrencyRef؛ نمونه مقدار ۱
-2. محصول / ProductRef
-3. طبقه حساب محصول / ProductRef؛ نمونه NULL
-4. واحد سنجش محصول / ProductUnitRef
-5. روش تسویه حساب / PaymentAgreementRef
-6. مشتری / CustomerRef؛ نمونه NULL
-7. SalesAreaRef؛ نمونه NULL
-8. SalesTypeRef؛ نمونه NULL
-9. DivisionRef؛ نمونه NULL
-10. SalesChannelRef؛ نمونه NULL
-11. SalesOrganizationRef؛ نمونه NULL
-12. Quantity؛ نمونه NULL
+**توضیح حیاتی:** دو ConditionRow متعلق به State=1 فقط مربوط به اعلامیه آزمایشی **48143** بودند که در تست قدیمی‌تر با درج قوانین ساخته شده بود؛ نمونه‌های بومی بررسی‌شده State=1 فاقد ConditionRow بودند.
 
-ساختار XML ورودی مشاهده‌شده:
+نمونه‌های پیش‌نویس بومی:
 
-```xml
-<Inputs>
-  <Input>
-    <ValueWithDescription Type="Int64" Value="..." Description="" />
-  </Input>
-</Inputs>
-```
+| PriceListID | Number | عنوان | Item | ResultRow | ConditionRow |
+|---:|---:|---|---:|---:|---:|
+| 48028 | 46548 | گونی نخی درجه یک ایرانی (یاردی)-نقد | 1 | 1 | 0 |
+| 48024 | 46544 | گونی نخی درجه یک ایرانی (یاردی)- یک ماهه | 1 | 1 | 0 |
+| 47964 | 46484 | پایان دادن | 2 | 1 | 0 |
+| 47692 | 46257 | متر میکا | 1 | 4 | 0 |
+| 47328 | 45898 | آچار هیوندا-نقد و15روزه | 1 | 2 | 0 |
+| 47289 | 45859 | گونیا-نقدو15روزه | 1 | 2 | 0 |
+| 46853 | 45436 | تک پلاست-یکماهه | 27 | 0 | 0 |
 
-برای مقادیر NULL نیز Type مربوطه به‌صورت null گزارش شده است. ترتیب، نوع و معنای پارامترها باید از رکوردهای فعال و مرتبط با همان محصول/توافق پرداخت استخراج شود؛ ساخت XML با مقادیر ثابت مجاز نیست.
+**برداشت مبتنی بر داده:** `State=1` با الگوی ثبت پیش‌نویس بدون قوانین قیمت سازگار است. معنای رسمی Enum و رفتار UI هنوز جداگانه اثبات نشده است. در سناریوی فعلی نیازی به تأیید یا تغییر State نیست.
 
-## ۱۰. کاربر ثبت‌کننده
+## ۸. آزمون عملی ثبت پیش‌نویس — ۱۴۰۵/۰۸/۲۵
 
-کاربر با شناسه ۲۳۱ در نمونه‌های آخر PriceList به‌عنوان Creator و LastModifier دیده شده است. اطلاعات غیرحساس مشاهده‌شده:
+### ۸.۱. محیط و ورودی
 
-- UserID: `231`
-- نام کاربری: `v.baraghani`
-- Status: فعال
-- PartyRef: `14499`
-- Type: `1`
-- IsAdministrator: `0`
-- IsLocked: `0`
-
-کاربر تأیید کرده است که ثبت Price List در راهکاران با همین حساب انجام می‌شود؛ بنابراین شناسه ۲۳۱ برای Creator و LastModifier در نمونه‌های بررسی‌شده تأیید شده است. با این حال، پیاده‌سازی باید کاربر/حساب اجرایی پیکربندی‌شده را از منبع معتبر بخواند و در زمان ثبت اعتبار آن را بررسی کند. اطلاعات احراز هویت یا هش گذرواژه نباید در این مستند یا logها درج شود.
-
-## ۱۱. شماره‌گذاری PriceList
-
-### ۱۱.۱. روش شماره‌گذاری مرتبط
-
-در `SYS3.NumberingMethod` و `SYS3.NumberingMethodEntityAttribute` سه روش با نام/مؤلفه مرتبط مشاهده شده‌اند:
-
-| NumberingMethodID | عنوان | AttributeComponentName | AttributeEntityName |
-|---:|---|---|---|
-| 20 | فهرست بها | SystemGroup.Logistics.VoucherPricing | PriceList |
-| 77 | اعلامیه قیمت | SystemGroup.Sales.PriceList | PriceList |
-| 307 | اعلامیه قیمت سه گانه | SystemGroup.PDS.PharmaDistribution | TriplePriceList |
-
-برای قابلیت مورد بررسی در پروژه Pricing، روش ۷۷ با مؤلفه `SystemGroup.Sales.PriceList` مرتبط‌ترین گزینه مشاهده‌شده است. روش ۲۰ متعلق به مؤلفه دیگری است و روش ۳۰۷ برای TriplePriceList است.
-
-تنظیمات مشاهده‌شده روش ۷۷:
-
-| فیلد | مقدار |
-|---|---|
-| NumberingMethodID | 77 |
-| Title | اعلامیه قیمت |
-| EffectiveDate | 2022-01-10 15:03:10.097 |
-| NumberType | 1 |
-| NumberDigitsType | 2 |
-| NumberOfDigits | 0 |
-| NumberTemplate | `*سریال` |
-| AssignApproch | 1 |
-| NumberingMethodState | 1 |
-| FixedLength | NULL |
-| CheckUniqueness | 1 |
-| MissedNumberBehavior | 0 |
-| AttributeComponentName | `SystemGroup.Sales.PriceList` |
-| AttributeEntityName | `PriceList` |
-| IsForSecondNumber | 0 |
-
-### ۱۱.۲. بازه شماره‌گذاری روش ۷۷
-
-از `SYS3.NumberingMethodRange` رکورد زیر مشاهده شده است:
-
-| NumberingMethodRangeID | NumberingMethodRef | Priority | AttributeName | AttributeValues | StartSerial | FinishSerial | SerialStep |
-|---:|---:|---:|---|---|---:|---|---:|
-| 77 | 77 | 1 | NULL | NULL | 1 | NULL | 1 |
-
-برای این بازه، `SYS3.NumberingRangeReservation` شماره‌های رزروشده‌ای را نشان داده که در خروجی مشاهده‌شده از 46506 تا 46615 ادامه دارند. در این خروجی DomainKey خالی بوده است. برخی شماره‌ها در این توالی دیده نشده‌اند؛ بنابراین نباید فرض کرد شماره‌ها بدون شکاف یا دقیقاً متوالی‌اند.
-
-آخرین شماره‌ای که در خروجی ارائه‌شده مشاهده شد 46615 است. این صرفاً آخرین شماره موجود در همان نتیجه است و اثبات نمی‌کند شماره بعدی 46616 خواهد بود. تخصیص شماره باید فقط با سازوکار رسمی خود راهکاران انجام شود.
-
-### ۱۱.۳. Stored Procedureهای شناسایی‌شده
-
-جست‌وجوی متون ماژول‌های SQL، پنج Stored Procedure زیر را پیدا کرده است:
-
-| Schema | نام Procedure | نوع |
-|---|---|---|
-| SYS3 | `CreateNumberingMethod` | SQL_STORED_PROCEDURE |
-| SYS3 | `CreateNumberingMethodReservation` | SQL_STORED_PROCEDURE |
-| SYS3 | `spAddNumberingMethodReservation` | SQL_STORED_PROCEDURE |
-| SYS3 | `spRemoveNumberingMethodReservation` | SQL_STORED_PROCEDURE |
-| SYS3 | `spRemoveOldNumberingReservations` | SQL_STORED_PROCEDURE |
-
-وجود این Procedureها شناسایی شده، اما متن، پارامترها، ترتیب فراخوانی و رفتار تراکنشی آن‌ها هنوز بررسی نشده است. **هیچ‌کدام را تا زمان بررسی کامل تعریف و فراخوانی رسمی آن‌ها اجرا نکنید.** مرحله بعد پژوهش، استخراج متن کامل Procedureها و بررسی وابستگی‌هایشان به جداول Numbering است.
-
-
-
-### ۱۱.۴. بررسی متن و پارامترهای Procedureها — ۱۴۰۵/۰۸/۲۳
-
-**روش بررسی:** اجرای دو SELECT فقط‌خواندنی روی `sys.procedures`، `sys.parameters` و `OBJECT_DEFINITION`. هیچ Procedureای اجرا نشده است.
-
-**پارامترهای مشاهده‌شده:**
-
-| Procedure | پارامترها |
-|---|---|
-| `CreateNumberingMethod` | `@title nvarchar(128)`، `@componentName nvarchar(500)`، `@entityName nvarchar(200)`، `@numberType int`، `@assignApproach int`، `@checkUniqueness bit`، `@NumberingRangeID bigint OUTPUT`، `@MissedNumberBehavior int`، `@newNumberingId bigint`، `@newAttributeID bigint`، `@newRangeID bigint`، سه پارامتر resetter از نوع `nvarchar(50)` |
-| `CreateNumberingMethodReservation` | `@NumberingMethodRangeID bigint`، `@DomainKey nvarchar(500)`، `@ReservedValue bigint` |
-| `spAddNumberingMethodReservation` | `@NumberingMethodRangeID bigint`، `@DomainKey nvarchar(500)`، `@ReservedValue bigint` |
-| `spRemoveNumberingMethodReservation` | `@NumberingMethodRangeID bigint`، `@DomainKey nvarchar(500)`، `@ReservedValue bigint` |
-| `spRemoveOldNumberingReservations` | پارامتری ندارد |
-
-توجه: `sys.parameters.max_length` برای nvarchar بر حسب بایت است؛ برای نمونه 256 بایت معادل nvarchar(128) است. تعریف متنی Procedureها نیز طول کاراکتری را نشان می‌دهد.
-
-**متن و رفتار مستقیم قابل مشاهده:**
-
-1. **`SYS3.CreateNumberingMethod`**
-   - ابتدا بر اساس `AttributeComponentName` و `AttributeEntityName` وجود روش شماره‌گذاری را بررسی می‌کند و در صورت یافتن، Range موجود را در پارامتر خروجی برمی‌گرداند.
-   - اگر Range پیدا نشود، تراکنش آغاز می‌کند؛ شناسه‌های Method، Attribute و Range را در صورت ندادن ورودی با `SYS3.spGetNextID` می‌گیرد و در سه جدول `NumberingMethod`، `NumberingMethodEntityAttribute` و `NumberingMethodRange` درج می‌کند.
-   - در صورت ارسال resetterها، برای هرکدام شناسه گرفته و در `NumberingReseterAttribute` درج می‌کند؛ سپس Commit می‌کند.
-   - این Procedure سازنده/پیکربندی‌کننده روش شماره‌گذاری است، نه Procedure تخصیص شماره برای PriceList. اجرای آن در جریان ثبت قیمت ممنوع است.
-   - **نکته نیازمند بررسی:** در متن ارائه‌شده برای این Procedure، مدیریت خطا و TRY/CATCH پیرامون تراکنش دیده نمی‌شود؛ رفتار آن در خطا و نیز ایمنی اجرای هم‌زمان باید جداگانه بررسی شود. همچنین بررسی اولیه وجود روش خارج از تراکنش است.
-
-2. **`SYS3.CreateNumberingMethodReservation`**
-   - اگر برای Range موردنظر هیچ رکوردی در `NumberingRangeReservation` وجود نداشته باشد، یک رزرو با DomainKey و ReservedValue درج می‌کند.
-   - شرط `NOT EXISTS` فقط وجود هر رزروی برای همان Range را می‌سنجد و ترکیب سه‌تایی Range/DomainKey/ReservedValue را بررسی نمی‌کند.
-   - در صورت وجود حتی یک رزرو برای Range، این Procedure رزرو جدیدی ایجاد نمی‌کند؛ بنابراین برای تخصیص عادی شماره بعدی مناسب فرض نمی‌شود.
-   - در متن مشاهده‌شده، تراکنش صریح یا مدیریت خطا وجود ندارد.
-
-3. **`SYS3.spAddNumberingMethodReservation`**
-   - رزرو را فقط در صورت نبود ترکیب دقیق `NumberingMethodRangeRef + DomainKey + ReservedSerial` درج می‌کند.
-   - خطای 2601 را فقط وقتی نادیده می‌گیرد که متن خطا نام Unique Index مشخص‌شده `UIX_SYS3_NumberingRangeReservation_NumberingMethodRangeRef_DomainKey_ReservedSerial` را داشته باشد؛ خطاهای دیگر را دوباره پرتاب می‌کند.
-   - در Catch، اگر `@@TRANCOUNT > 0` باشد، `ROLLBACK` اجرا می‌کند. این رفتار ممکن است تراکنش فراخواننده را نیز Rollback کند؛ اثر آن باید در طراحی مرز تراکنش و فراخوانی بررسی شود.
-   - این Procedure به‌تنهایی الگوریتم انتخاب ReservedValue یا شماره بعدی را نشان نمی‌دهد.
-
-4. **`SYS3.spRemoveOldNumberingReservations`**
-   - با `ROW_NUMBER()` رزروهای مثبت را به تفکیک Range و DomainKey بر اساس ReservedSerial نزولی مرتب می‌کند.
-   - تمام رزروهای بعد از ۵۰ رکورد جدیدتر هر گروه را از `NumberingRangeReservation` حذف می‌کند.
-   - این Procedure عملیات DELETE و پاک‌سازی نگهداری است؛ برای پژوهش یا ثبت قیمت نباید اجرا شود.
-
-5. **`SYS3.spRemoveNumberingMethodReservation`**
-   - پارامترهای آن از `sys.parameters` استخراج شده‌اند، اما متن تعریف آن در خروجی ارسالی موجود نیست؛ کوئری بخش تعریف‌ها به‌جای نام واقعی، نام `spRemoveNumberingReservation` را جست‌وجو کرده بود.
-   - بنابراین رفتار حذف یک رزرو مشخص هنوز **مشاهده نشده و نیازمند استخراج متن دقیق** است.
-
-**تفکیک سطح اطمینان:**
-- مشاهده مستقیم: امضاها و رفتارهای بالا مطابق متن Procedureهایی است که در خروجی SQL ارائه شده‌اند.
-- استنباط: `spAddNumberingMethodReservation` از نظر جلوگیری از درج تکراریِ همان ترکیب، از `CreateNumberingMethodReservation` دقیق‌تر است؛ اما هنوز اثبات نشده که این Procedure مسیر رسمی و کامل تخصیص شماره PriceList باشد.
-- نیازمند تأیید: الگوریتم تعیین شماره بعدی، نحوه ساخت DomainKey، اتصال Reservation به INSERT در PriceList، مدیریت rollback و قفل‌گذاری در کد/Procedure فراخواننده، و رفتار Procedure حذف رزرو.
-
-**اثر بر طراحی:** هیچ‌یک از این تعریف‌ها به‌تنهایی مسیر کامل و امن تولید Number برای PriceList را ثابت نمی‌کند. تا زمان ردیابی فراخواننده‌ها و منطق رسمی برنامه راهکاران، نباید مستقیماً Reservation درج/حذف شود یا شماره بعدی محاسبه شود. `CreateNumberingMethod` و `spRemoveOldNumberingReservations` به‌وضوح خارج از مسیر ثبت عادی هستند.
-
-
-
-**تکمیل تعریف Procedure حذف رزرو — ۱۴۰۵/۰۸/۲۳**
-
-تعریف کامل `SYS3.spRemoveNumberingMethodReservation` با جست‌وجوی نام صحیح استخراج شد:
-
-- پارامترها: `@NumberingMethodRangeID bigint`، `@DomainKey nvarchar(500)` و `@ReservedValue bigint`.
-- رفتار مستقیم: فقط رکورد(های) منطبق با هر سه شرط `NumberingMethodRangeRef`، `DomainKey` و `ReservedSerial` را از `SYS3.NumberingRangeReservation` حذف می‌کند.
-- در متن مشاهده‌شده، تراکنش صریح، TRY/CATCH یا کنترل تعداد ردیف حذف‌شده وجود ندارد.
-- مشاهده مستقیم: این Procedure حذف هدفمند یک رزرو مشخص را انجام می‌دهد؛ با پاک‌سازی قدیمی `spRemoveOldNumberingReservations` متفاوت است.
-- نیازمند تأیید: اینکه چه بخش‌هایی از نرم‌افزار راهکاران آن را فراخوانی می‌کنند، چه زمانی حذف رزرو مجاز است و آیا حذف در همان تراکنش ایجاد PriceList انجام می‌شود یا خیر.
-- اثر طراحی: این Procedure نیز نباید مستقیماً از پروژه Pricing فراخوانی شود تا زمانی که چرخه رسمی رزرو/مصرف/آزادسازی شماره و قواعد بازیابی از شکست از کد یا مسیر رسمی راهکاران اثبات شود.
-
-
-
-### ۱۱.۵. جست‌وجوی ارجاع از سایر ماژول‌های SQL — ۱۴۰۵/۰۸/۲۳
-
-**روش بررسی:** جست‌وجوی متنی در `sys.sql_modules` برای پنج نام Procedure شماره‌گذاری، با حذف خود همان پنج Procedure از نتایج. کوئری فقط‌خواندنی بود.
-
-**خروجی مستقیم:** نتیجه ارسالی کاربر فاقد هرگونه ردیف بود؛ یعنی در متن ماژول‌های قابل مشاهده در `sys.sql_modules` هیچ ارجاع متنی دیگری به نام این پنج Procedure پیدا نشد.
-
-**محدودیت تفسیر:**
-- این نتیجه اثبات نمی‌کند که Procedureها در زمان اجرا فراخوانی نمی‌شوند.
-- فراخوانی ممکن است از کد برنامه/کلاینت، ماژول رمزگذاری‌شده، SQL پویا با نام ساخته‌شده، SQL Agent Job، اسمبلی CLR یا مؤلفه‌ای خارج از `sys.sql_modules` انجام شود.
-- جست‌وجوی متنی ممکن است به دلیل تفاوت نام، schema qualification، یا محدودیت دسترسی Metadata برخی ارجاع‌ها را نبیند.
-- خروجی خالی همچنین نشان نمی‌دهد کدام Procedure مسیر رسمی تولید شماره PriceList است.
-
-**وضعیت:** مشاهده مستقیمِ «عدم یافتن ارجاع متنی در ماژول‌های قابل مشاهده»؛ علت و مسیر واقعی فراخوانی همچنان نیازمند تأیید است.
-
-**اثر بر طراحی:** از روی این پنج تعریف و جست‌وجوی وابستگی متنی هنوز نمی‌توان الگوریتم تولید شماره یا چرخه رزرو/مصرف/آزادسازی را بازسازی کرد. فراخوانی مستقیم این Procedureها از پروژه Pricing همچنان تأیید نشده و نباید پیاده‌سازی شود.
-
-
-
-### ۱۱.۶. جست‌وجوی SQL Agent Jobها — ۱۴۰۵/۰۸/۲۳
-
-**روش بررسی:** جست‌وجوی فقط‌خواندنی در `msdb.dbo.sysjobs` و `msdb.dbo.sysjobsteps` برای فرمان‌هایی که شامل `Numbering`، `Reservation` یا `PriceList` باشند.
-
-**خروجی مستقیم:** نتیجه ارسالی کاربر فاقد هرگونه ردیف بود؛ بنابراین در Job Stepهای قابل مشاهده با این عبارات، تطبیقی پیدا نشد.
-
-**محدودیت تفسیر:**
-- این نتیجه نبود هرگونه Job مرتبط را اثبات نمی‌کند؛ نام/فرمان ممکن است از عبارات دیگری استفاده کند یا فراخوانی در Stored Procedure، فایل، PowerShell، SSIS، CmdExec یا سامانه بیرونی پنهان باشد.
-- دسترسی محدود به متادیتای msdb نیز می‌تواند نتایج قابل مشاهده را محدود کند.
-- این بررسی مسیر واقعی تولید یا رزرو شماره PriceList را مشخص نکرد.
-
-**وضعیت:** در جست‌وجوی متنی محدودشده به سه عبارت فوق، Job Step منطبقی مشاهده نشد. هیچ Job یا Procedure اجرا یا تغییری داده نشد.
-
-**اثر بر طراحی:** همچنان شواهد کافی برای پیاده‌سازی تولید شماره یا فراخوانی مستقیم Procedureهای رزرو در Pricing وجود ندارد.
-
-
-### ۱۱.۷. جست‌وجوی Triggerهای مرتبط — ۱۴۰۵/۰۸/۲۳
-
-**روش بررسی:** جست‌وجوی فقط‌خواندنی در `sys.triggers` و `sys.sql_modules` برای Triggerهای متصل به جداول PriceList و شماره‌گذاری، یا تعریف‌هایی که شامل `NumberingMethod` یا `PriceList` باشند.
-
-**خروجی مستقیم:** نتیجه ارسالی کاربر فاقد هرگونه ردیف بود؛ بنابراین در محدوده جست‌وجو هیچ Trigger منطبقی مشاهده نشد.
-
-**محدودیت تفسیر:**
-- نتیجه خالی، نبود Trigger در کل پایگاه داده را ثابت نمی‌کند؛ ممکن است نام جدول‌ها متفاوت باشد یا Triggerهای موردنظر در محدوده متادیتای قابل مشاهده نباشند.
-- این کوئری فقط Triggerهای قابل مشاهده و تعریف‌های متنی آن‌ها را پوشش می‌دهد؛ منطق برنامه، ماژول‌های رمزگذاری‌شده و رویدادهای بیرون از SQL را پوشش نمی‌دهد.
-- مسیر رسمی تولید شماره و چرخه رزرو/مصرف/آزادسازی همچنان مشخص نشده است.
-
-**وضعیت:** در محدوده جست‌وجوی تعریف‌شده، Trigger منطبقی پیدا نشد. هیچ Trigger اجرا یا تغییری داده نشد.
-
-
-### ۱۱.۸. کلید خارجی جدول رزرو شماره — ۱۴۰۵/۰۸/۲۳
-
-**خروجی مستقیم بررسی:** تنها رابطه برگشتی/ورودی پیدا‌شده در محدوده کوئری:
-
-- Constraint: `FK_sys3_NumberingRangeReservation_NumberingMethodRangeRef`
-- جدول فرزند: `SYS3.NumberingRangeReservation`
-- ستون فرزند: `NumberingMethodRangeRef`
-- جدول مرجع: `SYS3.NumberingMethodRange`
-- ستون مرجع: `NumberingMethodRangeID`
-
-**نتیجه:** رزرو شماره به یک Range مشخص از روش شماره‌گذاری متصل است. در خروجی این بررسی FK دیگری به/از جدول `NumberingRangeReservation` مشاهده نشد.
-
-**محدودیت:** نبود FKهای دیگر در خروجی به معنی نبود قیود یکتا، ایندکس‌ها یا قواعد اعتبارسنجی در کد Procedureها نیست. همچنین این FK به‌تنهایی نحوه انتخاب Serial، DomainKey یا چرخه مصرف رزرو را تعیین نمی‌کند.
-
-**وضعیت:** رابطه FK فوق مستند شد؛ هیچ داده یا ساختار دیتابیس تغییر نکرد.
-
-
-### ۱۱.۹. ایندکس‌ها و یکتایی جدول رزرو شماره — ۱۴۰۵/۰۸/۲۳
-
-**خروجی مستقیم بررسی ایندکس‌های `SYS3.NumberingRangeReservation`:**
-
-1. کلید اصلی خوشه‌ای:
-   - نام: `PK_SYS3_NumberingRangeReservation`
-   - ستون کلید: `NumberingRangeReservationID`
-   - `IsUnique=1` و `IsPrimaryKey=1`
-
-2. ایندکس یکتای غی خوشه‌ای:
-   - نام: `UIX_SYS3_NumberingRangeReservation_NumberingMethodRangeRef_DomainKey_ReservedSerial`
-   - ترتیب کلیدها:
-     1. `NumberingMethodRangeRef`
-     2. `DomainKey`
-     3. `ReservedSerial`
-   - `IsUnique=1`، بدون فیلتر و بدون ستون Included در خروجی.
-
-**نتیجه فنی:** دیتابیس یکتایی ترکیب سه‌تایی Range + DomainKey + ReservedSerial را enforce می‌کند. این با شرط بررسی تکراری در `spAddNumberingMethodReservation` و مدیریت خطای 2601 هم‌راستا است. این قید فقط از تکرار همان ترکیب جلوگیری می‌کند؛ به‌تنهایی انتخاب Serial آزاد، ترتیب تخصیص، یا مصرف/آزادسازی رزرو را تعیین نمی‌کند.
-
-**محدودیت:** کوئری ستون‌های کلیدی و Included را نشان داد؛ در خروجی حاضر ستون Included وجود نداشت. این بررسی صرفاً ساختار ایندکس را خواند و هیچ داده‌ای تغییر نکرد.
-
-
-### ۱۱.۱۰. ساختار ستون‌های سه جدول شماره‌گذاری — ۱۴۰۵/۰۸/۲۳
-
-**روش بررسی:** استخراج ستون‌ها، نوع داده، Nullable و Identity از کاتالوگ سیستمی برای `SYS3.NumberingMethod`، `SYS3.NumberingMethodRange` و `SYS3.NumberingRangeReservation`.
-
-**یافته‌های مستقیم:**
-
-- `SYS3.NumberingMethod`:
-  - شناسه `NumberingMethodID bigint` اجباری و غیر Identity است.
-  - تنظیمات اصلی شامل `EffectiveDate`، `NumberType`، `NumberDigitsType`، `NumberOfDigits`، `NumberTemplate`، `AssignApproch`، `NumberingMethodState`، `FixedLength`، `CheckUniqueness` و `MissedNumberBehavior` است.
-  - `Version` از نوع `timestamp/rowversion` است و نباید در INSERT مقداردهی شود.
-
-- `SYS3.NumberingMethodRange`:
-  - `NumberingMethodRangeID bigint` و `NumberingMethodRef bigint` اجباری و غیر Identity هستند.
-  - `Priority`، `StartSerial` و `SerialStep` اجباری‌اند؛ `FinishSerial`، `AttributeName` و `AttributeValues` nullable هستند.
-  - `Version` از نوع `timestamp/rowversion` است.
-
-- `SYS3.NumberingRangeReservation`:
-  - `NumberingRangeReservationID bigint` دارای `Identity=1` است؛ برخلاف شناسه‌های Method و Range که در خروجی Identity نبودند.
-  - `NumberingMethodRangeRef bigint`، `DomainKey nvarchar(1000)` و `ReservedSerial bigint` همگی اجباری و غیر Identity هستند.
-  - جدول در خروجی ستون Version ندارد.
-
-**نتیجه طراحی:** برای جدول Reservation، مقدار `NumberingRangeReservationID` باید توسط Identity دیتابیس تولید شود و نباید توسط برنامه مقداردهی شود. در مقابل، این مشاهده به‌تنهایی روش تولید ID برای Method و Range را تغییر نمی‌دهد؛ برای آن‌ها شواهد قبلی درباره `SYS3.spGetNextId` معتبر باقی می‌ماند. ستون‌های `DomainKey` و `ReservedSerial` باید دقیقاً با دامنه و الگوریتم رسمی راهکاران مقداردهی شوند؛ مقدار فرضی یا DomainKey خالی نباید از روی نمونه‌ها تعمیم داده شود.
-
-**محدودیت:** این بررسی فقط metadata ستون‌ها را نشان می‌دهد؛ مقدارهای مجاز، قواعد DomainKey، انتخاب Serial بعدی و رفتار هم‌زمانی از این خروجی قابل استنتاج نیست.
-
-
-### ۱۱.۱۱. خلاصه الگوی داده‌های رزرو واقعی — ۱۴۰۵/۰۸/۲۳
-
-**روش بررسی:** تجمیع فقط‌خواندنی جدول `SYS3.NumberingRangeReservation` بر اساس `NumberingMethodRangeRef` و `DomainKey` و محاسبه تعداد، کمینه/بیشینه `ReservedSerial` و بیشینه شناسه رزرو.
-
-**یافته‌های مستقیم از خروجی ارسالی:**
-
-- Range شماره `77` دارای `DomainKey` خالی است و ۱۰۷ رزرو دارد؛ کمینه Serial برابر ۴۶۵۰۶، بیشینه ۴۶۶۱۵ و بیشینه `NumberingRangeReservationID` برابر ۱۸۵۹۰۲۸ است.
-- چون ایندکس یکتای سه‌ستونی قبلاً تأیید شده، در این گروه هر Serial حداکثر یک‌بار در همان Range و DomainKey ثبت می‌شود. بازه ۴۶۵۰۶ تا ۴۶۶۱۵ شامل ۱۱۰ عدد است، در حالی که ۱۰۷ رزرو گزارش شده؛ بنابراین سه مقدار در این بازه در حال حاضر در جدول رزرو وجود ندارند. این مشاهده به‌تنهایی ثابت نمی‌کند آن شماره‌ها قابل تخصیص‌اند یا قبلاً مصرف نشده‌اند.
-- Range شماره `33` تعداد زیادی DomainKey متفاوت دارد؛ برای بسیاری از گروه‌ها تعداد رزروها نزدیک یا برابر ۵۰ است و برای برخی گروه‌ها تعدادهای دیگری دیده می‌شود. این الگو با رزروهای دسته‌ای/چنددامنه‌ای سازگار است، اما معنای DomainKey و علت اندازه دسته از این تجمیع قابل اثبات نیست.
-- سایر Rangeها نیز DomainKey خالی یا غیرخالی و تعداد/بازه‌های متفاوت دارند؛ بنابراین DomainKey بخشی از کلید یکتایی و دامنه جداسازی رزروهاست و نباید برای همه Rangeها یک مقدار ثابت فرض شود.
-- `MAX(NumberingRangeReservationID)` فقط بیشترین شناسه ردیف رزرو در هر گروه است و ترتیب زمانی یا آخرین شماره مصرف‌شده را اثبات نمی‌کند.
-
-**نتیجه مهم برای Range 77:** نمونه‌های واقعی رزرو با `NumberingMethodRangeID=77` و DomainKey خالی با شماره‌های ۴۶۵۰۶ تا ۴۶۶۱۵ مشاهده شده‌اند؛ این با نمونه‌های PriceList دارای Numberهای ۴۶۵۹۶ تا ۴۶۶۱۵ هم‌پوشانی دارد. این هم‌پوشانی قرینه‌ای قوی از ارتباط Range 77 با شماره‌گذاری PriceList است، اما برای اثبات چرخه کامل رزرو تا درج PriceList باید ترتیب عملیات و کد فراخواننده بررسی شود.
-
-**محدودیت و ایمنی:** این خروجی تجمیعی شامل تاریخچه تغییرات، وضعیت مصرف/آزادسازی یا ارتباط هر رزرو با PriceList نیست. از روی MAX، MIN یا شکاف‌ها نباید شماره بعدی را محاسبه یا رزرو کرد. هیچ رزروی ایجاد/حذف و هیچ Procedure اجرا نشده است.
-
-### ۱۱.۱۲. محدودسازی جست‌وجوی ارجاع مستقیم به جدول رزرو — ۱۴۰۵/۰۸/۲۳
-
-**روش بررسی:** جست‌وجوی فقط‌خواندنی در `sys.sql_modules` با دو عبارت `NumberingRangeReservation` و `NumberingMethodRangeRef`؛ این بار فقط نام شیء، نوع و طول تعریف نمایش داده شد تا خروجی حجیم متن Procedureها تکرار نشود.
-
-**خروجی مستقیم:**
-
-| Schema | Object | نوع | طول تعریف |
-|---|---|---|---:|
-| SYS3 | CreateNumberingMethodReservation | SQL_STORED_PROCEDURE | 508 |
-| SYS3 | spAddNumberingMethodReservation | SQL_STORED_PROCEDURE | 852 |
-| SYS3 | spRemoveNumberingMethodReservation | SQL_STORED_PROCEDURE | 373 |
-| SYS3 | spRemoveOldNumberingReservations | SQL_STORED_PROCEDURE | 491 |
-
-**نتیجه:** در ماژول‌های SQL قابل مشاهده و مطابق این دو معیار جست‌وجو، فقط همین چهار Procedure مستقیماً به جدول/ستون رزرو اشاره دارند. این نتیجه با بررسی قبلی تعریف همین چهار Procedure سازگار است و شیء SQL دیگری با ارجاع مستقیم در این جست‌وجو پیدا نشد.
-
-**محدودیت:** این نتیجه فراخوانی غیرمستقیم، SQL پویا با نام/عبارت ساخته‌شده در زمان اجرا، کد برنامه راهکاران، ماژول رمزگذاری‌شده یا مؤلفه خارجی را رد نمی‌کند. همچنین به‌تنهایی الگوریتم انتخاب شماره، تولید مقدار `Number` یا چرخه موفقیت/شکست رزرو را مشخص نمی‌کند.
-
-**اثر بر طراحی:** شواهد فعلی برای نوشتن INSERT عملیاتی PriceList و رزرو شماره کافی نیست. باید مسیر فراخوانی در کد برنامه/لایه سرویس راهکاران یا مستندات رسمی آن پیدا شود. هیچ Procedure اجرا و هیچ داده‌ای تغییر نکرده است.
-
-
-### ۱۱.۱۳. تطبیق رزروهای Range 77 با شماره PriceList — ۱۴۰۵/۰۸/۲۳
-
-**روش بررسی:** اتصال فقط‌خواندنی `SYS3.NumberingRangeReservation` به `SLS3.PriceList` با شرط `TRY_CONVERT(BIGINT, PriceList.Number) = ReservedSerial`، محدود به `NumberingMethodRangeRef=77` و `DomainKey=N''`.
-
-**خروجی مستقیم کوئری:**
-
-| شاخص | مقدار |
-|---|---:|
-| TotalReservations | 107 |
-| MatchedPriceLists | 107 |
-| ReservationsWithoutPriceList | 0 |
-| DistinctMatchedPriceLists | 107 |
-
-**نتیجه قطعی در محدوده داده‌های بررسی‌شده:** هر ۱۰۷ رزرو موجود برای Range 77 و DomainKey خالی، دقیقاً به یک رکورد متمایز `SLS3.PriceList` از طریق برابری `ReservedSerial` و مقدار عددی `PriceList.Number` متصل شده است. در این مجموعه هیچ رزروی بدون PriceList و هیچ تطبیق چندگانه‌ای گزارش نشده است. این شواهد ارتباط عملیاتی شماره رزرو با فیلد `PriceList.Number` را به‌طور قوی و مستقیم تأیید می‌کند.
-
-**محدودیت:** این تطبیق فقط وضعیت فعلی ۱۰۷ رزرو موجود را نشان می‌دهد. از آن نمی‌توان الگوریتم انتخاب شماره بعدی، ترتیب فراخوانی رزرو و INSERT، رفتار در تراکنش ناموفق/rollback، یا نحوه بازیابی پس از timeout را استنتاج کرد. همچنین درباره رزروهای حذف‌شده یا سوابقی که دیگر در جدول نیستند اطلاعاتی نمی‌دهد.
-
-**اثر بر طراحی:** در مسیر ثبت PriceList باید مقدار نهایی `Number` با Serial رزروشده توسط سازوکار رسمی راهکاران منطبق باشد؛ تولید دستی Number یا استنتاج شماره بعدی از MAX/MIN همچنان ممنوع است. هیچ Procedure اجرا و هیچ داده‌ای تغییر نکرده است.
-
-
-### ۱۱.۱۴. بررسی نمونه‌های اخیر ترتیب رزرو و ایجاد PriceList — ۱۴۰۵/۰۸/۲۳
-
-**روش بررسی:** نمایش ۳۰ رزرو با بزرگ‌ترین `ReservedSerial` در Range 77 و DomainKey خالی، همراه با شناسه PriceList، مقدار Number، CreationDate، Creator و State؛ اتصال از طریق برابری Serial و Number و مرتب‌سازی نزولی بر اساس Serial.
-
-**یافته‌های مستقیم از خروجی ارسالی:**
-
-- هر ۳۰ ردیف نمایش‌داده‌شده دارای تطبیق `ReservedSerial = PriceList.Number` هستند.
-- شماره‌ها از 46586 تا 46615 به ترتیب نزولی نمایش داده شده‌اند و زمان‌های `CreationDate` نیز در همین خروجی به‌صورت نزولی متناظرند؛ یعنی در این نمونه، شماره بزرگ‌تر با زمان ایجاد جدیدتر همراه است.
-- شناسه‌های `PriceListID` از 48066 تا 48095 نیز در این نمونه با افزایش شماره افزایش یافته‌اند.
-- تمام ۳۰ ردیف `Creator=231` و `State=2` دارند.
-- شناسه‌های `NumberingRangeReservationID` دارای فاصله هستند و نباید آن‌ها را شمارنده پیوسته یا مبنای محاسبه Serial دانست.
-
-**نتیجه:** نمونه اخیر با این الگو سازگار است که رزرو شماره قبل یا در جریان ایجاد PriceList انجام می‌شود و Serial رزروشده در فیلد Number همان PriceList ثبت می‌شود. همراه با تطبیق کامل ۱۰۷ رکورد در بخش ۱۱.۱۳، شواهد ارتباط رزرو و PriceList قوی‌تر شده است.
-
-**محدودیت:** این نمونه صرفاً ترتیب مقادیر در داده نهایی را نشان می‌دهد، نه ترتیب دقیق دستورات در زمان اجرا. از آن نمی‌توان ثابت کرد رزرو حتماً پیش از INSERT رخ داده، هر دو در یک تراکنش‌اند، یا در شکست عملیات رزرو آزاد/حفظ می‌شود. همچنین ثابت‌بودن Creator و State در این ۳۰ نمونه، قاعده عمومی تمام سناریوها را اثبات نمی‌کند.
-
-**اثر بر طراحی:** هنگام پیاده‌سازی باید مسیر واقعی اجرای UI/سرویس راهکاران و رفتار تراکنش و خطا مشخص شود؛ ترتیب مشاهده‌شده به‌تنهایی برای بازسازی الگوریتم تخصیص شماره کافی نیست. هیچ Procedure اجرا و هیچ داده‌ای تغییر نکرده است.
-
-
-### ۱۱.۱۵. سنجش ترتیب Serial، زمان ایجاد و شناسه‌ها در تمام ۱۰۷ رکورد — ۱۴۰۵/۰۸/۲۳
-
-**روش بررسی:** استفاده از CTE و توابع پنجره‌ای `LAG` روی تمام رزروهای Range 77 با DomainKey خالی که به PriceList متناظر متصل شده‌اند؛ مرتب‌سازی بر اساس `ReservedSerial` و شمارش موارد نقض ترتیب در CreationDate، PriceListID و NumberingRangeReservationID.
-
-**خروجی مستقیم:**
-
-| شاخص | مقدار |
-|---|---:|
-| TotalRows | 107 |
-| DateOrderViolations | 0 |
-| PriceListIDOrderViolations | 0 |
-| ReservationIDOrderViolations | 0 |
-
-**نتیجه:** در هر ۱۰۷ ردیف، با افزایش `ReservedSerial` هیچ کاهش/وارونگی در `CreationDate`، `PriceListID` یا `NumberingRangeReservationID` مشاهده نشده است. بنابراین در مجموعه بررسی‌شده، هر سه مقدار در کنار Serial به‌صورت یکنواخت و هم‌جهت مرتب می‌شوند. این یافته، همراه با تطبیق یک‌به‌یک بخش ۱۱.۱۳، شاهد قوی‌تری برای ارتباط چرخه رزرو شماره با ایجاد PriceList فراهم می‌کند.
-
-**محدودیت:** این آزمون فقط ترتیب نهایی داده‌های باقی‌مانده را می‌سنجد؛ هم‌زمانی دقیق دستورات، تقدم قطعی INSERT رزرو بر INSERT PriceList، اتمیک‌بودن دو عملیات، و رفتار خطا، Rollback یا timeout را اثبات نمی‌کند. همچنین درباره رزروهای حذف‌شده یا رکوردهای خارج از مجموعه تطبیق‌یافته نتیجه‌ای نمی‌دهد.
-
-**اثر بر طراحی:** همچنان باید مسیر فراخوانی و مدیریت تراکنش در برنامه رسمی راهکاران مشخص شود. از این الگوی مرتب، الگوریتم تولید Serial بعدی یا مجوز ساخت رزرو دستی قابل استخراج نیست. هیچ Procedure اجرا و هیچ داده‌ای تغییر نکرده است.
-
-
-### ۱۱.۱۶. فهرست جدول‌های مرتبط با شماره‌گذاری و تاریخچه — ۱۴۰۵/۰۸/۲۳
-
-**روش بررسی:** جست‌وجوی نام جدول‌ها در `sys.tables` با الگوهای `%Numbering%`، `%Reservation%`، `%Audit%` و `%History%`.
-
-**یافته‌های مرتبط مستقیم یا بالقوه از خروجی:**
-
-- `SYS3.NumberingRangeReservation`: جدول رزرو مورد بررسی؛ طبق بخش ۱۱.۱۰ فقط چهار ستون دارد و ستون زمانی ندارد.
-- `SLS3.SalesNumberReservation`: جدول رزرو شماره در حوزه فروش؛ ارتباط احتمالی آن با شماره‌گذاری PriceList هنوز اثبات نشده است.
-- `ECM.NumberingReservation`: جدول رزرو در زیرسامانه ECM؛ ارتباط آن با روش شماره‌گذاری فروش مشخص نیست.
-- `SYS3.EntityHistoryRecord` و `SYS3.StateHistory`: جدول‌های تاریخچه عمومی سیستم؛ هنوز مشخص نیست رخدادهای مربوط به رزرو یا PriceList را ثبت می‌کنند یا خیر.
-
-**محدودیت:** تشابه نام جدول به‌تنهایی اثبات‌کننده ارتباط عملیاتی نیست. صرفاً نام جدول‌ها بررسی شده و هنوز ساختار، FKها، داده‌ها یا سیاست ثبت تاریخچه این جدول‌های بالقوه بررسی نشده‌اند.
-
-**مرحله بعد:** ابتدا ستون‌ها و کلیدهای `SLS3.SalesNumberReservation` و `ECM.NumberingReservation` را فقط‌خواندنی استخراج می‌کنیم تا مشخص شود کدام‌یک از نظر ساختار به شماره‌گذاری فروش/PriceList نزدیک‌تر است. هیچ داده‌ای تغییر نکرده است.
-
-
-### ۱۱.۱۷. ساختار دو جدول رزرو بالقوه — ۱۴۰۵/۰۸/۲۳
-
-**۱) `ECM.NumberingReservation`**
-
-این جدول دارای ستون‌های `NumberingMethodRef`، `Count`، `DateType`، `FromDate`، `ToDate`، `Type`، `AssignType`، `State`، `Creator`، `CreationDate` و `LastModificationDate` است. بنابراین زمان ایجاد رکورد در این جدول ثبت می‌شود؛ اما ساختار آن بیشتر نشان‌دهنده یک رزرو/تعریف بازه‌ای وابسته به `NumberingMethod` است و هنوز ارتباط آن با `SYS3.NumberingMethodRange` یا Range=77 اثبات نشده است.
-
-**۲) `SLS3.SalesNumberReservation`**
-
-این جدول شامل `SourceType`، `SourceRef`، `TargetType`، `TargetNumber` و ستون زمانی nullable به نام `Date` است. این ساختار می‌تواند برای ردیابی ارتباط شماره فروش با موجودیت مبدأ/مقصد مفید باشد؛ اما هنوز معلوم نیست رکوردهای آن برای PriceList یا NumberingMethodID=77 استفاده می‌شوند.
-
-**نتیجه:** هر دو جدول ستون‌های بالقوه مفیدی دارند، ولی هیچ‌کدام را نمی‌توان بدون بررسی داده و روابط به‌عنوان تاریخچه قطعی رزروهای `SYS3.NumberingRangeReservation` معرفی کرد. هیچ داده‌ای تغییر نکرده است.
-
-
-### ۱۱.۱۸. روابط کلید خارجی جدول‌های رزرو — ۱۴۰۵/۰۸/۲۳
-
-**خروجی بررسی FKها:**
-
-- `ECM.NumberingReservation.NumberingMethodRef` به `ECM.NumberingMethod.NumberingMethodID` متصل است.
-- `ECM.NumberingReservation.Creator` و `LastModifier` به `SYS3.User.UserID` متصل‌اند.
-- جدول `ECM.AssignedSerial` از طریق ستون `NumberingReservationRef` به `ECM.NumberingReservation.NumberingReservationID` متصل است.
-- برای `SLS3.SalesNumberReservation` در این بررسی FK مرتبطی گزارش نشد.
-
-**نتیجه:** وجود `ECM.AssignedSerial` مسیر داده‌ای مهمی برای بررسی شماره‌های تخصیص‌یافته تحت یک رزرو ECM فراهم می‌کند. بااین‌حال، هنوز هیچ FK مستقیمی میان این زنجیره و `SYS3.NumberingMethodRange` یا `SYS3.NumberingRangeReservation` مشاهده نشده است؛ ارتباط احتمالی با PriceList باید از داده‌ها و تعریف روش‌ها بررسی شود.
-
-**محدودیت:** نبود FK در خروجی به‌تنهایی نبود ارتباط منطقی یا ارتباط از طریق کد برنامه را ثابت نمی‌کند. هیچ داده‌ای تغییر نکرده است.
-
-
-### ۱۱.۱۹. ساختار جدول ECM.AssignedSerial — ۱۴۰۵/۰۸/۲۳
-
-جدول `ECM.AssignedSerial` دارای ستون‌های کلیدی زیر است:
-
-- `NumberingMethodRef`: روش شماره‌گذاری
-- `SerialPoolRef`: مخزن سریال
-- `EntityCode` و `EntityRef`: نوع و شناسه موجودیت مقصد؛ `EntityRef` nullable است
-- `Value`: مقدار سریال تخصیص‌یافته
-- `Status` و `CreationType`: وضعیت و نوع ایجاد
-- `Creator`، `CreationDate`، `LastModifier` و `LastModificationDate`
-- `NumberingReservationRef`: ارجاع nullable به `ECM.NumberingReservation`
-
-**نتیجه:** این جدول برخلاف `SYS3.NumberingRangeReservation` زمان ایجاد، شماره تخصیص‌یافته و ارجاع اختیاری به رزرو را در یک رکورد نگه می‌دارد. این ساختار برای بررسی مسیر شماره‌گذاری ECM مفید است؛ اما هنوز ثابت نشده که شماره‌های PriceList در روش ۷۷ از این جدول عبور می‌کنند یا خیر.
-
-**محدودیت:** وجود `NumberingMethodRef` در این جدول به‌تنهایی به معنی یکسان بودن شناسه روش ECM با `SYS3.NumberingMethod` یا ارتباط آن با Range=77 نیست. هیچ داده‌ای تغییر نکرده است.
-
-
-### ۱۱.۲۰. عدم تطبیق شماره‌های PriceList با دو مسیر رزرو جایگزین — ۱۴۰۵/۰۸/۲۳
-
-دو آزمون read-only روی شماره‌های PriceList در بازه 46506 تا 46615 نتیجه‌ای برنگرداندند:
-
-1. اتصال `ECM.AssignedSerial.Value` به `SLS3.PriceList.Number` هیچ رکورد منطبقی پیدا نکرد؛ همچنین برای `ECM.AssignedSerial.NumberingMethodRef=77` رکوردی مشاهده نشد.
-2. جست‌وجوی `SLS3.SalesNumberReservation.TargetNumber` در همان بازه نیز هیچ ردیفی برنگرداند.
-
-**نتیجه محدود:** این دو جدول، با معیارهای اتصال و بازه آزموده‌شده، مسیر ثبت شماره‌های ۱۰۷ PriceList بررسی‌شده را نشان نمی‌دهند. این نتیجه وجود مسیرهای دیگر، اختلاف نوع/قالب شماره، یا استفاده از شناسه روش متفاوت را رد نمی‌کند. هیچ داده‌ای تغییر نکرده است.
-
-
-### ۱۱.۲۱. ساختار SYS3.NumberingMethod و SYS3.NumberingMethodRange — ۱۴۰۵/۰۸/۲۳
-
-ساختار واقعی دو جدول اصلی روش شماره‌گذاری تأیید شد:
-
-- `SYS3.NumberingMethod`: شناسه و عنوان روش، تاریخ اثرگذاری، نوع شماره، تنظیمات تعداد ارقام و قالب، شیوه تخصیص، وضعیت، کنترل یکتایی و رفتار شماره‌های ازدست‌رفته.
-- `SYS3.NumberingMethodRange`: شناسه بازه، ارجاع به روش، اولویت، شرط Attribute اختیاری، `StartSerial`، `FinishSerial` nullable و `SerialStep`.
-
-**ارتباط با یافته قبلی:** Range=77 قبلاً به‌عنوان بازه روش اعلامیه قیمت بررسی شده است. ساختار جدول با آن یافته سازگار است؛ اما این schema به‌تنهایی الگوریتم انتخاب سریال، DomainKey یا ترتیب عملیات رزرو و ایجاد PriceList را اثبات نمی‌کند.
-
-**مرحله بررسی بعدی:** شناسایی سایر روش‌های شماره‌گذاری که از نظر تنظیمات، مؤلفه/عنوان یا بازه می‌توانند به PriceList مربوط باشند؛ مقایسه داده‌های واقعی با روش ۷۷. هیچ داده‌ای تغییر نکرده است.
-
-
-### ۱۱.۲۲. بررسی ماژول‌های وابسته به SYS3.NumberingRangeReservation و جست‌وجوی گسترده اشیای شماره‌گذاری — ۱۴۰۵/۰۸/۲۳
-
-جست‌وجوی متنی در `sys.sql_modules` برای عبارت‌های `NumberingMethodRange`، `ReservedSerial` و `DomainKey` این اشیا را نشان داد:
-
-- `SYS3.CreateNumberingMethod`
-- `SYS3.CreateNumberingMethodReservation`
-- `SYS3.spAddNumberingMethodReservation`
-- `SYS3.spRemoveNumberingMethodReservation`
-- `SYS3.spRemoveOldNumberingReservations`
-
-جست‌وجوی گسترده‌تر عبارت `NumberingMethod` نیز در ماژول‌های قابل مشاهده فقط همین پنج Procedure را برگرداند. بنابراین در ماژول‌های T-SQL قابل مشاهده، الگوریتم دیگری برای انتخاب `ReservedSerial` یا ساخت `DomainKey` پیدا نشد.
-
-تعریف‌های بررسی‌شده رفتارهای زیر را نشان می‌دهند:
-
-- `CreateNumberingMethod` در صورت نبود روش متناظر، روش، Attribute و Range را ایجاد می‌کند؛ این Procedure شماره یک سند PriceList را تخصیص نمی‌دهد.
-- `CreateNumberingMethodReservation` مقادیر Range، DomainKey و ReservedValue را از فراخواننده می‌گیرد و فقط وقتی هیچ رزروی برای آن Range وجود ندارد، رکورد رزرو ایجاد می‌کند.
-- `spAddNumberingMethodReservation` مقادیر Range، DomainKey و ReservedValue را از فراخواننده می‌گیرد و درج تکراری همان ترکیب سه‌گانه را با ایندکس یکتا کنترل می‌کند.
-- `spRemoveNumberingMethodReservation` رزرو مشخص را بر اساس Range، DomainKey و ReservedValue حذف می‌کند.
-- `spRemoveOldNumberingReservations` رزروهای مثبت قدیمی‌تر از ۵۰ شماره جدید را در هر گروه Range و DomainKey حذف می‌کند؛ اجرای آن در جریان ثبت قیمت مجاز/پیشنهاد نشده است.
-
-**نتیجه:** این Procedureها مصرف‌کننده شماره و دامنه هستند، نه تولیدکننده آن‌ها. برای Range=77، شناسه Range مشخص است؛ اما تعیین معتبر `DomainKey` و الگوریتم تخصیص `ReservedSerial` همچنان به بررسی کد برنامه راهکاران یا مسیر رسمی دیگری نیاز دارد. هیچ Procedure یا دستور تغییردهنده‌ای اجرا نشده است.
-
-### ۱۱.۲۳. بررسی اشیای شماره‌گذاری و ماژول‌های CLR — ۱۴۰۵/۰۸/۲۳
-
-جست‌وجوی اشیای دیتابیس با نام‌های شامل Number، Serial و Reservation، موارد زیر را در حوزه SYS3 نشان داد:
-
-- جدول‌های `SYS3.NumberingMethod`، `SYS3.NumberingMethodEntityAttribute`، `SYS3.NumberingMethodRange`، `SYS3.NumberingRangeReservation` و `SYS3.NumberingReseterAttribute`.
-- Sequenceهای داخلی تولید شناسه برای جدول‌های NumberingMethod، NumberingMethodEntityAttribute، NumberingMethodRange و NumberingReseterAttribute.
-- پنج Procedure شماره‌گذاری ثبت‌شده در بخش ۱۱.۲۲.
-
-همچنین اشیای `ECM.NumberingMethod`، `ECM.NumberingReservation` و `ECM.AssignedSerial` شناسایی شدند. این‌ها زیرسیستم جداگانه‌ای با روابط FK داخلی خود هستند؛ صرف وجود آن‌ها ارتباطی با روش `SYS3` شماره ۷۷ یا PriceList را اثبات نمی‌کند. تطبیق‌های داده‌ای قبلی برای نمونه‌های PriceList نیز این مسیر ECM را تأیید نکرده‌اند.
-
-فهرست ماژول‌های CLR دیتابیس بررسی شد. موارد برگشتی:
-
-| Assembly | Schema.Object | نوع |
-|---|---|---|
-| PairAttendanceDataCLR | HCM3.fnPairAttendanceDataCLR | CLR_TABLE_VALUED_FUNCTION |
-| PairAttendanceDataCLR | HCM3.fnPairAttendanceDataSortedCLR | CLR_TABLE_VALUED_FUNCTION |
-| PolicyHelper | SYS3.fnMinifyValue | CLR_SCALAR_FUNCTION |
-| SqlPersianDateHelper | SYS3.fnAddPersianMonth | CLR_SCALAR_FUNCTION |
-| SqlPersianDateHelper | SYS3.fnAddPersianYear | CLR_SCALAR_FUNCTION |
-| SqlPersianDateHelper | SYS3.fnGetDateFromPersianDate | CLR_SCALAR_FUNCTION |
-| SqlPersianDateHelper | SYS3.fnGetPersianDayOfMonth | CLR_SCALAR_FUNCTION |
-| SqlPersianDateHelper | SYS3.fnGetPersianDaysInMonth | CLR_SCALAR_FUNCTION |
-| SqlPersianDateHelper | SYS3.fnGetPersianMonth | CLR_SCALAR_FUNCTION |
-| SqlPersianDateHelper | SYS3.fnGetPersianYear | CLR_SCALAR_FUNCTION |
-| SqlPersianDateHelper | SYS3.fnGetPersianYearMonth | CLR_SCALAR_FUNCTION |
-| SqlZipHelper | SYS3.fnUnZipValue | CLR_SCALAR_FUNCTION |
-| SqlZipHelper | SYS3.fnZipValue | CLR_SCALAR_FUNCTION |
-
-**نتیجه محدود:** در فهرست `sys.assembly_modules` هیچ ماژول CLR با نام یا نقش آشکار مرتبط با تخصیص شماره، Reservation، NumberingMethod یا PriceList مشاهده نشد. ماژول‌های CLR موجود عمدتاً برای حضور و داده‌های منابع انسانی، فشرده‌سازی/بازکردن داده، کوچک‌سازی مقدار و تبدیل تاریخ فارسی هستند. این مشاهده وجود کد شماره‌گذاری در اسمبلی‌های خارجی برنامه، سرویس‌های خارج از SQL Server، ماژول رمزگذاری‌شده یا مسیرهای پویا را رد نمی‌کند.
-
-**اثر بر طراحی:** منطق تولید شماره را نباید از Sequenceهای `SYS3_TableIdGen__...` یا از توابع CLR فهرست‌شده استنتاج کرد. Sequenceهای یادشده برای شناسه داخلی رکوردهای تنظیمات شماره‌گذاری‌اند، نه شماره تجاری PriceList. تا زمان شناسایی فراخواننده رسمی، ثبت واقعی PriceList و رزرو شماره نباید پیاده‌سازی یا اجرا شود. تمام بررسی‌های این بخش فقط خواندنی بوده‌اند.
-
-
-### ۱۱.۲۴. بررسی خروجی جست‌وجوی ماژول‌های T-SQL و ارزیابی رفتار spGetNextId — ۱۴۰۵/۰۸/۲۳
-
-**روش بررسی:** اجرای جست‌وجوی متنی در تعریف ماژول‌های SQL برای عبارت‌های `PriceList`، `PriceListItem`، `PriceListResultRow`، `PriceListConditionRow`، `spGetNextId` و `NumberingRangeReservation` و دریافت متن تعریف اشیای منطبق.
-
-**نتیجه جست‌وجو:**
-
-- چندین Procedure در حوزه‌های ECM، FIN3، FAM3، FSR3، RPA3، SCM3، HCM3 و سایر بخش‌ها به دلیل استفاده از `SYS3.spGetNextId` در نتیجه ظاهر شدند؛ متن‌های دریافت‌شده آن‌ها برای ساخت Correspondent، اطلاعات دارایی، اسناد مالی، مغایرت‌گیری بانکی، مجوزهای امنیتی، Lookupها یا گزارش‌ها بود و ارتباط مستقیمی با ثبت PriceList نشان ندادند.
-- در میان نتایج، `SYS3.CreateNumberingMethod`، `SYS3.CreateNumberingMethodReservation`، `SYS3.spAddNumberingMethodReservation` و Procedureهای حذف رزرو نیز دیده شدند؛ رفتار آن‌ها قبلاً در بخش ۱۱.۲۲ تحلیل شده است.
-- هیچ تعریف جدیدی از ماژول T-SQL که مستقیماً درج PriceList یا انتخاب `ReservedSerial` و `DomainKey` برای روش ۷۷ را انجام دهد، در خروجی دریافت‌شده مشاهده نشد.
-- وجود عبارت `spGetNextId` در متن یک Procedure به‌تنهایی ارتباط آن Procedure با شماره تجاری PriceList را ثابت نمی‌کند؛ در بسیاری از نتایج، این تابع صرفاً برای شناسه داخلی جدول دیگری استفاده شده است.
-
-**نکته مهم درباره `SYS3.spGetNextId`:**
-
-متن کامل Procedure نشان می‌دهد که در حالت `@IsLegacy=0` ابتدا وجود Sequence متناظر با نام `SYS3_TableIdGen__<TableName>` بررسی می‌شود. اگر Sequence وجود نداشته باشد، Procedure با قفل Application آن را از مقدار `SYS3.TableIdGenBacking.LastId` ایجاد می‌کند و سپس با اجرای `NEXT VALUE FOR` یک مقدار از آن می‌گیرد. پس از آن، اگر `@IncValue=0` باشد، مقدار فعلی Sequence خوانده و به خروجی تبدیل می‌شود؛ اگر مقدار غیرصفر باشد، از `sys.sp_sequence_get_range` برای دریافت بازه استفاده می‌شود.
-
-**اصلاح برداشت قبلی:** عبارت «`@IncValue=0` بدون رزرو شناسه مقدار فعلی را می‌خواند» فقط وقتی Sequence از قبل وجود داشته باشد، بدون پیشروی Sequence معتبر است. اگر Sequence متناظر وجود نداشته باشد، همان فراخوانی می‌تواند Sequence را ایجاد کند و یک مقدار اولیه مصرف کند. بنابراین اجرای `spGetNextId` با `@IncValue=0` نیز بدون بررسی قبلی وجود Sequence، عملیات تضمین‌شده read-only نیست و نباید در پژوهش عملیاتی به‌عنوان کوئری بی‌اثر اجرا شود.
-
-**محدودیت جست‌وجو:** جست‌وجوی متنی `sys.sql_modules.definition` فقط تعریف‌های قابل مشاهده و منطبق با عبارت‌های جست‌وجوشده را پوشش می‌دهد. ماژول‌های رمزگذاری‌شده که تعریفشان NULL است، کد خارج از SQL Server، dynamic SQL با نام‌ها/عبارت‌های متفاوت، اسمبلی‌ها و اجزای برنامه راهکاران را رد نمی‌کند. همچنین خروجی این جست‌وجو به‌تنهایی اثبات نمی‌کند که هیچ مسیر دیگری برای ثبت PriceList وجود ندارد.
-
-**اثر بر طراحی:** تولید شناسه داخلی PriceList و تخصیص شماره تجاری PriceList دو مسئله جدا هستند. برای ادامه باید مسیر فراخوانی از برنامه رسمی راهکاران و ماژول‌های رمزگذاری‌شده/غیرقابل مشاهده بررسی شود. هیچ Procedure یا دستور تغییردهنده‌ای در این مرحله اجرا نشده و هیچ شناسه یا شماره‌ای رزرو نشده است.
-
-## ۱۲. Triggerها، Indexها و یکتایی
-
-در بررسی قبلی روی چهار جدول اصلی PriceList، PriceListItem، PriceListResultRow و PriceListConditionRow، Trigger مشاهده نشده است. برای هر جدول، PK یکتا و clustered گزارش شده و Unique Index دیگری برای Number یا ترکیب محصول/توافق پرداخت مشاهده نشده است.
-
-نتیجه طراحی:
-
-- اتکا به یکتایی دیتابیس برای جلوگیری از ثبت تکراری کافی نیست.
-- بررسی تکراری‌بودن باید در منطق برنامه و داخل مرز تراکنش انجام شود.
-- کنترل هم‌زمانی لازم است تا دو درخواست موازی نتوانند یک درخواست تجاری را دوبار ثبت کنند.
-- یک کلید idempotency پایدار برای هر عملیات انتقال باید در دیتابیس خود Pricing نگهداری شود.
-- قبل از انتخاب قفل یا constraint جدید باید اثر آن بر دیتابیس راهکاران و استانداردهای محصول بررسی شود.
-
-## ۱۳. طرح پیشنهادی جریان ثبت (هنوز پیاده‌سازی نشده)
-
-۱. دریافت محصولات آماده ثبت از صف تأیید پروژه Pricing، با کنترل کامل‌بودن گروه و وضعیت تأیید همه ردیف‌ها.
-
-۲. نمایش محصول، قیمت، واحد، ارز، توافق پرداخت، تاریخ اعتبار و اطلاعات لازم برای بازبینی به کاربر.
-
-۳. دریافت داده‌های مرجع از راهکاران در لحظه یا از cache معتبر با کنترل تازگی: ProductID، ProductUnit، Currency، PaymentAgreement، PriceListParameters، BusinessPolicy و ConditionRow فعال.
-
-۴. تولید پیش‌نمایش عملیات شامل تمام مقادیر و شناسه‌های مقصد، بدون هیچ تغییر در دیتابیس.
-
-۵. ارائه پیش‌نمایش به کاربر و دریافت تأیید صریح.
-
-۶. اجرای ثبت در یک تراکنش SQL Server، با استفاده از سازوکار رسمی تولید ID و شماره‌گذاری راهکاران.
-
-۷. ثبت PriceList، PriceListItem، PriceListResultRow و PriceListConditionRow مطابق الگوی معتبر و کامل راهکاران.
-
-۸. اعتبارسنجی تعداد و ارتباط رکوردهای ایجادشده، قیمت‌ها، توافق پرداخت‌ها و شماره تخصیص‌یافته.
-
-۹. Commit فقط پس از موفقیت تمام کنترل‌ها؛ در غیر این صورت Rollback کامل.
-
-۱۰. ثبت نتیجه در جدول مستقل audit/integration در Pricing، شامل شناسه درخواست، شناسه‌های مقصد، وضعیت، زمان و خطای پاک‌سازی‌شده از اطلاعات حساس.
-
-۱۱. علامت‌گذاری منبع به‌عنوان ارسال‌شده فقط پس از تأیید موفقیت تراکنش مقصد و ثبت نتیجه قابل اتکا؛ شکست یا timeout باید قابل بازیابی و بررسی باشد.
-
-این طرح تا زمان تکمیل بررسی Procedureها، قیود، نمونه‌های معتبر و تأیید پارامترها، مجوز پیاده‌سازی INSERT عملیاتی نیست.
-
-## ۱۴. وضعیت واقعی پژوهش و اقدامات باقی‌مانده
-
-این فهرست بر اساس خروجی‌های ثبت‌شده در سند و بررسی‌های تکمیلی ۲۰۲۶/۱۱/۱۵ بازبینی شده است. مواردی که نتیجه بررسی آن‌ها مشخص شده، حتی اگر نتیجه «عدم یافتن مسیر» باشد، تکمیل‌شده محسوب می‌شوند؛ اما نتیجه منفی به معنی اثبات نبود مسیر در برنامه یا اجزای خارج از SQL Server نیست.
-
-### موارد تکمیل‌شده
-
-- [x] استخراج پارامترها و تعریف پنج Procedure مرتبط با رزرو؛ متن کامل `SYS3.spRemoveNumberingMethodReservation` نیز جداگانه استخراج شد و رفتار حذف هدفمند رزرو ثبت شد.
-- [x] جست‌وجوی ارجاع متنی Procedureهای شماره‌گذاری در سایر ماژول‌های قابل مشاهده SQL؛ ارجاع دیگری پیدا نشد.
-- [x] جست‌وجوی Job Stepهای `msdb` برای عبارت‌های Numbering، Reservation و PriceList؛ نتیجه‌ای پیدا نشد.
-- [x] بررسی Triggerهای مرتبط با جداول PriceList و شماره‌گذاری؛ Trigger مرتبطی در محدوده جست‌وجوی انجام‌شده پیدا نشد.
-- [x] محدودسازی جست‌وجوی ارجاع مستقیم به جدول رزرو؛ چهار Procedure شناخته‌شده SYS3 شناسایی شدند.
-- [x] استخراج ساختار `SLS3.SalesNumberReservation` و `ECM.NumberingReservation`.
-- [x] استخراج FKهای دو جدول و شناسایی زنجیره `ECM.NumberingReservation` ← `ECM.AssignedSerial` و ارتباط آن با `ECM.NumberingMethod`.
-- [x] استخراج ساختار `ECM.AssignedSerial)، شامل Value، NumberingMethodRef، CreationDate، EntityCode/EntityRef و NumberingReservationRef.
-- [x] آزمون تطبیق `ECM.AssignedSerial.Value` با `SLS3.PriceList.Number`؛ نتیجه خالی بود و این مسیر تأیید نشد.
-- [x] آزمون تطبیق `SLS3.SalesNumberReservation.TargetNumber` با شماره‌های PriceList در بازه بررسی‌شده؛ نتیجه خالی بود.
-- [x] استخراج ساختار `SYS3.NumberingMethod` و `SYS3.NumberingMethodRange`.
-- [x] بررسی روش شماره‌گذاری ۷۷، تنظیمات و بازه آن؛ روش ۷۷ با عنوان «اعلامیه قیمت»، قالب `*سریال` و RangeID=77 به‌عنوان روش مرتبط با PriceList شناسایی شد.
-- [x] جست‌وجوی گسترده ماژول‌های T-SQL برای NumberingMethod، NumberingMethodRange، ReservedSerial و DomainKey؛ الگوریتم تخصیص شماره در ماژول‌های قابل مشاهده پیدا نشد.
-- [x] بررسی نتایج جست‌وجوی PriceList و `spGetNextId` و تفکیک استفاده عمومی از شناسه‌ساز از منطق شماره تجاری.
-- [x] بررسی اشیای دیتابیس با نام‌های Number، Serial و Reservation؛ زیرسیستم‌های SYS3 و ECM شناسایی شدند، اما ارتباط اجرایی ECM با PriceList/Range=77 اثبات نشد.
-- [x] بررسی `sys.assembly_modules`؛ CLR module آشکارا مرتبطی در محدوده بررسی پیدا نشد.
-- [x] تطبیق رزروهای Range=77 با `SLS3.PriceList.Number`؛ در بررسی مستندشده، هر ۱۰۷ رزرو به یک PriceList متمایز متصل شد و رزرو بدون PriceList مشاهده نشد.
-- [x] استخراج ترتیب و معنای ۱۲ پارامتر سیاست ۱۸۵ از `GNR3.BusinessPolicyParameterAssociation`.
-- [x] اثبات نگاشت کد محصول به `SLS3.Product.Number)، مقدار `PriceListItem.ProductRef` به `ProductID` و مقدار `PriceListItem.ProductUnitRef` به `GNR3.Unit.UnitID` از طریق FK واقعی.
-- [x] بررسی نمونه زوج‌های محصول/واحد در `SLS3.ProductUnit` و تعیین قاعده اعتبارسنجی زوج محصول و واحد فعال.
-- [x] استخراج ساختار `GNR3.BusinessPolicyConditionRow` و مشخص‌شدن ستون‌های ارجاعی `BusinessPolicyInputRef` و `BusinessPolicyOutputRef`.
-- [x] استخراج FKهای `BusinessPolicyConditionRow)؛ ارجاع ورودی به `BusinessPolicyInputValue.BusinessPolicyInputValueID` و ارجاع خروجی به `BusinessPolicyOutputValue.BusinessPolicyOutputValueID` تأیید شد.
-- [x] استخراج ساختار `GNR3.BusinessPolicyInputValue` و `GNR3.BusinessPolicyOutputValue)؛ هر دو دارای `Value nvarchar(max)` و `HashedValue varchar(32)` هستند.
-- [x] شمارش ردیف‌های فعال Condition=163 در زمان اجرای کوئری: ۱۲٬۵۹۷ ردیف؛ هر ردیف InputRef متمایز داشت و هیچ OutputRef خالی نبود.
-- [x] بررسی استفاده مجدد از خروجی‌ها: ۵٬۷۵۷ OutputRef متمایز برای ۱۲٬۵۹۷ ردیف شرط؛ میزان استفاده مشترک هر خروجی محاسبه شد.
-- [x] بررسی ۳۰ خروجی پرتکرار و استخراج XML/HashedValue آن‌ها؛ نمونه خروجی با شناسه ۳۱۱۵ و مقدار ۳٬۶۹۰٬۰۰۰ در ۳۱ ردیف استفاده شده بود.
-- [x] آزمون وجود خروجی‌های تکراری با شناسه‌های متفاوت و ترکیب دقیق یکسان `HashedValue` و `Value` در مجموعه فعال بررسی‌شده؛ هیچ موردی پیدا نشد. این نتیجه فقط درباره داده‌های بررسی‌شده است و الگوریتم تولید هش را اثبات نمی‌کند.
-
-### موارد واقعاً باقی‌مانده
-
-- [ ] بررسی ماژول‌های رمزگذاری‌شده و کد/لاگ برنامه راهکاران برای یافتن فراخوانی واقعی و مسیر رسمی تخصیص شماره؛ جست‌وجوی ماژول‌های قابل مشاهده الگوریتم را پیدا نکرده و ماژول‌های با تعریف NULL را پوشش نمی‌دهد.
-- [ ] تعیین مسیر رسمی رزرو شماره تجاری PriceList، شامل نام API/سرویس یا فراخوانی برنامه‌ای و ترتیب دقیق مراحل تخصیص.
-- [ ] تعیین علت و معنای خالی بودن `DomainKey` در رزروهای Range=77 و اینکه در مسیر رسمی ایجاد PriceList چه مقداری باید داشته باشد.
-- [ ] تعیین نحوه تبدیل قالب `*سریال` به مقدار نهایی `PriceList.Number` و قواعد قالب‌بندی/کنترل یکتایی.
-- [ ] بررسی رفتار رزرو شماره در موفقیت، خطا، Rollback، timeout و درخواست‌های هم‌زمان؛ داده‌های ۱۰۷ رزرو فقط همبستگی زمانی/شناسه‌ای را نشان می‌دهند و ترتیب دستورات یا رفتار شکست را اثبات نمی‌کنند.
-- [ ] تعیین اینکه `CreateNumberingMethodReservation` و `spAddNumberingMethodReservation` در یک زنجیره فراخوانی می‌شوند یا کاربردهای جدا دارند.
-- [ ] استخراج و تطبیق کامل FKها، CHECK constraintها، DEFAULTها، computed columnها و ستون‌های اجباری هر چهار جدول اصلی PriceList با نسخه جاری دیتابیس مقصد؛ بررسی‌های قبلی بخشی از این موارد را پوشش داده‌اند.
-- [ ] شناسایی تمام جدول‌ها و روابط جانبی که UI یا سرویس رسمی راهکاران هنگام ایجاد/تغییر PriceList ایجاد یا به‌روزرسانی می‌کند.
-- [ ] تعیین وضعیت‌های مجاز PriceList و معنای قطعی `State=2` در نسخه جاری از مسیر UI یا منطق رسمی برنامه.
-- [ ] تأیید نهایی `PriceListParametersRef) و آیتم‌های پارامتر فعال در همان نسخه و سناریوی ثبت؛ مقدار ۲ و آیتم‌های آن در داده‌های مشاهده‌شده استخراج شده‌اند، اما رفتار همه سناریوها هنوز تأیید نشده است.
-- [ ] ساخت کوئری تطبیق دقیق ConditionRow برای هر ترکیب واقعی محصول/واحد/توافق پرداخت با لحاظ هر ۱۲ جایگاه ورودی، تاریخ اعتبار، ForceToUnload و سایر ورودی‌های غیر NULL؛ آمار کلی و ساختار ورودی‌ها مشخص شده، اما نگاشت نهایی هر ترکیب هنوز انجام نشده است.
-- [ ] تعیین قاعده گروه‌بندی چند محصول و چند توافق پرداخت در یک یا چند PriceList بر اساس رفتار رسمی UI؛ نمونه‌های واقعی ثبت شده‌اند، اما قاعده عمومی و قطعی هنوز اثبات نشده است.
-- [ ] تعیین NumberingMethod برای تمام حالت‌های موردنیاز؛ روش ۷۷ برای PriceList استاندارد شناسایی شده، اما پوشش همه سناریوهای موردنیاز هنوز تأیید نشده است.
-- [ ] کشف الگوریتم تولید `HashedValue` و قواعد نرمال‌سازی/مقایسه XML ورودی و خروجی؛ ساختار و الگوی استفاده مجدد مشخص شده، اما الگوریتم هش هنوز ناشناخته است.
-- [ ] طراحی idempotency، کنترل هم‌زمانی، retry امن و بازیابی از نتیجه نامعلوم برای فرایند ثبت.
-- [ ] آماده‌سازی آزمون یکپارچه در محیط غیرعملیاتی با داده کنترل‌شده و مقایسه تمام رکوردهای ایجادشده با رکوردهای ساخته‌شده توسط UI رسمی راهکاران.
-- [ ] ارائه خلاصه شناسه‌ها، پارامترها، محصولات، واحدها، شرایط پرداخت و مقادیر نهایی به کاربر برای تأیید پیش از هر ثبت واقعی.
-
-**مرز ایمنی:** تا این مرحله فقط بررسی و خواندن انجام شده است. هیچ INSERT، UPDATE، DELETE یا رزرو شماره جدیدی روی دیتابیس عملیاتی اجرا نشده است. موارد باقی‌مانده باید پیش از تولید اسکریپت نهایی یا هر ثبت واقعی تعیین تکلیف شوند.
-
-
-## ۱۵. تحلیل اسکریپت آزمایشی ایجاد PriceList Draft در دیتابیس بازیابی‌شده — ۱۴۰۵/۰۸/۲۵
-
-### ۱۵.۱. محدوده و محیط آزمون
-
-اسکریپت ارائه‌شده برای ایجاد یک PriceList شامل یک کالا و دو توافق پرداخت در محیط زیر بررسی شده است:
-
-- SQL Server: `IT-Soleymani`
-- Database: `Rahkaran_sg3` (TEST RESTORE / نسخه Backup بازیابی‌شده)
-- ProductID: `31567`، کد کالا: `1011160029`
+- Server: `IT-Soleymani`
+- Database: `Rahkaran_sg3`، نسخه بازیابی‌شده آزمایشی
+- ProductCode: `1011160029`
+- ProductID: `31567`
 - ProductUnitRef: `12`
 - Fee: `420001.000000`
-- PaymentAgreementRefها: `20` و `21`
-- NumberingMethodRangeID اعلام‌شده: `77`
-- UserID: `231`
+- CurrencyRef: `1`
 - PriceListParametersRef: `2`
-- مقدار پیش‌فرض `@CommitChanges=0`
+- Creator/LastModifier: `231`
+- PaymentAgreementRef: `20` و `21`
+- State: `1`
+- حالت اجرا: `@CommitChanges=0` (Rollback)
 
-این بررسی، تحلیل ایستای متن SQL است؛ اسکریپت در این مرحله اجرا نشده و هیچ رکوردی ایجاد یا تغییر داده نشده است. چون دیتابیس یک Backup/Restore آزمایشی است، حتی اجرای موفق نیز فقط رفتار همین نسخه بازیابی‌شده را نشان می‌دهد و برای اثبات رفتار دیتابیس عملیاتی، نسخه برنامه، تنظیمات یا مسیر رسمی UI کافی نیست.
+### ۸.۲. خروجی واقعی گزارش‌شده از اجرای اسکریپت
 
-### ۱۵.۲. رفتار موردنظر اسکریپت
+```text
+NewPriceListID        48144
+NewPriceListNumber    46660
+NewItemID             2294828
+CashResultRowID       79361
+FifteenDayResultRowID 79362
+NewFee                420001.000000
+StartDate             2026-11-16 12:51:55.960
+DraftState            1
+ValidationStatus      READY_TO_ROLLBACK
 
-در صورت عبور از کنترل‌ها و قرار دادن `@CommitChanges=1`، اسکریپت قصد دارد این رکوردها را درج کند:
+PriceListID           48144
+Number                46660
+Title                 جاقفلی-نقد و15روزه-پیش نویس تست
+State                 1
+PriceListItemID       2294828
+ProductRef            31567
+ProductUnitRef        12
+Fee                   420001.000000
 
-| جدول | تعداد | نقش |
-|---|---:|---|
-| `SLS3.PriceList` | ۱ | سربرگ PriceList |
-| `SLS3.PriceListItem` | ۱ | کالا، واحد و Fee |
-| `SLS3.PriceListResultRow` | ۲ | دو توافق پرداخت ۲۰ و ۲۱ |
-| `SYS3.NumberingRangeReservation` | ۱ | رزرو شماره تجاری انتخاب‌شده |
+PriceListResultRowID  PaymentAgreementRef
+79361                 20
+79362                 21
 
-برای شناسه چهار رکورد اصلی از `SYS3.spGetNextId` استفاده شده است. اسکریپت هیچ ردیفی در `SLS3.PriceListConditionRow` درج نمی‌کند و هیچ BusinessPolicy یا ConditionRow جدیدی ایجاد نمی‌کند. در نتیجه، این عملیات صرفاً ایجاد ساختار اولیه یک پیش‌نویس است؛ ایجاد دو ResultRow به‌تنهایی به معنی ایجاد دو قیمت قابل محاسبه یا اتصال آن‌ها به قواعد تخفیف/قیمت نیست.
+FinalStatus           ROLLED_BACK_SUCCESSFULLY
+TestedPriceListID     48144
+TestedPriceListNumber 46660
+```
 
-### ۱۵.۳. کنترل‌های ایمنی و تراکنش
+**نتیجه اثبات‌شده:** INSERTهای آزمون و اعتبارسنجی‌ها داخل تراکنش موفق بوده‌اند و سپس Rollback انجام شده است. شناسه 48144 و شماره 46660 در این اجرا **به معنی رکورد دائمی نیستند**. مصرف شناسه‌های Sequence می‌تواند پس از Rollback باقی بماند.
 
-کنترل‌های موجود:
+### ۸.۳. آزمون فقط‌خواندنی وضعیت شماره‌ها
 
-- تطبیق نام سرور با `IT-Soleymani`.
-- تطبیق نام دیتابیس با `Rahkaran_sg3`.
-- جلوگیری از اجرا در صورت وجود تراکنش باز در session.
-- استفاده از `XACT_ABORT ON`، `TRY/CATCH` و تراکنش صریح.
-- گرفتن Application Lock انحصاری با مالکیت Transaction و timeout ده ثانیه.
-- استفاده از `UPDLOCK, HOLDLOCK` هنگام خواندن بیشینه شماره‌ها.
-- کنترل وجود کالا با تطبیق هم‌زمان ProductID و Number.
-- کنترل تعداد رکوردهای درج‌شده و عدم وجود ConditionRow برای PriceList جدید.
-- Rollback در حالت پیش‌فرض و در مسیر خطا.
+کوئری زیر با تعریف کامل متغیرها اجرا شده است؛ نسخه ناقص فاقد `DECLARE` باعث خطای SQL Server 137 می‌شود:
 
-Application Lock فقط با پردازش‌هایی هماهنگ می‌شود که همان Resource را با سازوکار سازگار قفل کنند. برنامه رسمی راهکاران یا سایر اسکریپت‌ها الزاماً از Resource با نام `Pricing_Test_PriceList_Draft` استفاده نمی‌کنند؛ بنابراین این قفل به‌تنهایی مانع رزرو هم‌زمان شماره توسط مسیر رسمی ERP نیست. قفل‌های جدولی/بازه‌ای نیز باید با Index، Isolation Level و طرح اجرایی واقعی بررسی شوند و نباید آن‌ها را هماهنگی قطعی با همه نویسندگان دیتابیس تلقی کرد.
+```sql
+USE Rahkaran_sg3;
+GO
+SET NOCOUNT ON;
+DECLARE @MaxList BIGINT;
+DECLARE @MaxReserved BIGINT;
+DECLARE @NextSerial BIGINT;
 
-### ۱۵.۴. نکات پرریسک و موارد نیازمند اصلاح یا اثبات
+SELECT @MaxList = MAX(TRY_CONVERT(BIGINT, Number))
+FROM SLS3.PriceList;
 
-۱. **تولید شماره تجاری با MAX:** اسکریپت مقدار `MAX(TRY_CONVERT(BIGINT, Number))` را از PriceList و `MAX(ReservedSerial)` را از جدول رزرو می‌خواند و عدد بزرگ‌تر را یک واحد افزایش می‌دهد. این روش با قاعده مستندشده پروژه مبنی بر عدم استفاده از `MAX()+1` برای تخصیص شناسه/شماره رسمی تعارض دارد. همچنین قالب `*سریال`، قواعد NumberDigitsType، دامنه شماره‌گذاری و رفتار رسمی تخصیص را اعمال نمی‌کند. تا زمان کشف و اعتبارسنجی مسیر رسمی شماره‌گذاری، این الگوریتم نباید مبنای ثبت واقعی قرار گیرد.
+SELECT @MaxReserved = MAX(ReservedSerial)
+FROM SYS3.NumberingRangeReservation
+WHERE NumberingMethodRangeRef = 77
+  AND DomainKey = N'';
 
-۲. **تفسیر RangeID و DomainKey:** مقدار ۷۷ در سند به‌عنوان NumberingMethodRangeID مرتبط با روش ۷۷ مشاهده شده است؛ اما اسکریپت با فرض معتبر بودن همین Range و `DomainKey=N''` مستقیماً رزرو درج می‌کند. خالی بودن DomainKey در نمونه رزروها، به‌تنهایی اثبات نمی‌کند که درج دستی با همین مقدار مسیر رسمی و مجاز است. باید قواعد انتخاب Range و DomainKey از مسیر برنامه رسمی مشخص شود.
+SET @NextSerial =
+    CASE WHEN ISNULL(@MaxList, 0) > ISNULL(@MaxReserved, 0)
+         THEN ISNULL(@MaxList, 0) + 1
+         ELSE ISNULL(@MaxReserved, 0) + 1 END;
 
-۳. **رزرو مستقیم شماره:** درج مستقیم در `SYS3.NumberingRangeReservation` بدون اجرای زنجیره رسمی تخصیص شماره، ممکن است قواعد داخلی، قالب‌بندی، کنترل یکتایی یا ثبت جانبی مورد انتظار راهکاران را دور بزند. وجود یک رکورد رزرو و نبودن شماره تکراری در همین اسکریپت، معادل تأیید سازگاری با Numbering Engine نیست.
+SELECT @MaxList AS MaxPriceListNumber,
+       @MaxReserved AS MaxReservedSerial,
+       @NextSerial AS SuggestedNextSerial,
+       CASE WHEN @MaxList = @MaxReserved
+            THEN N'هماهنگ' ELSE N'نیازمند بررسی اختلاف' END AS NumberingStatus;
+```
 
-۴. **تفاوت شناسه داخلی و شماره تجاری:** `spGetNextId` برای تولید شناسه‌های PK استفاده شده و نباید با الگوریتم شماره تجاری PriceList یکی دانسته شود. مطابق بررسی بخش ۱۱.۲۴، در صورت نبود Sequence متناظر، فراخوانی این Procedure حتی با تنظیمات خاص می‌تواند باعث ایجاد Sequence و مصرف مقدار شود. بنابراین Rollback تراکنش لزوماً اثر جانبی Sequence/شناسه‌ساز را برنمی‌گرداند؛ یادداشت ابتدای اسکریپت در این مورد ضروری و درست است.
+خروجی گزارش‌شده در ۲۰۲۶/۱۱/۱۶ ساعت ۱۳:۰۸ به وقت +۰۳:۳۰:
 
-۵. **عدم اعتبارسنجی زوج کالا و واحد:** اسکریپت وجود کالا را در `SLS3.Product` بررسی می‌کند، اما اعتبار `ProductUnitRef=12` برای همان کالا و فعال‌بودن رابطه محصول/واحد را کنترل نمی‌کند. مطابق یافته‌های قبلی سند، باید زوج Product و Unit از رابطه معتبر `SLS3.ProductUnit` بررسی شود؛ صرف معتبر بودن جداگانه ProductID و UnitID کافی نیست.
+| MaxPriceListNumber | MaxReservedSerial | SuggestedNextSerial | NumberingStatus |
+|---:|---:|---:|---|
+| 46660 | 46660 | 46661 | هماهنگ |
 
-۶. **ثابت‌بودن پارامترها و شناسه‌های مرجع:** `PriceListParametersRef=2`، `CurrencyRef=1`، `PriceListType=1`، `SalesDocumentType=2`، `UserID=231`، توافق‌های پرداخت ۲۰ و ۲۱ و RangeID=77 در اسکریپت ثابت هستند. این مقادیر در داده‌های بررسی‌شده سابقه دارند، اما باید در زمان اجرا در همان نسخه دیتابیس بازیابی‌شده و برای سناریوی موردنظر دوباره اعتبارسنجی شوند. به‌ویژه Fee با واحد پول اعلام‌شده IRR باید با CurrencyRef و مقیاس مبلغ در همان دیتابیس تطبیق داده شود.
+**تفسیر دقیق:** در لحظه بررسی، بزرگ‌ترین شماره عددی PriceList و بزرگ‌ترین رزرو Range=77/DomainKey خالی برابر بودند. `46661` فقط شماره **پیشنهادی تشخیصی** است، نه شماره تضمین‌شده برای INSERT بعدی. این خروجی به‌تنهایی ثابت نمی‌کند کدام اجرا شماره 46660 را دائمی ثبت کرده است؛ برای اثبات، باید رکورد مشخص PriceList و Reservation با SELECT بررسی شود. به‌ویژه این نتیجه را نباید به Rollback آزمایش 48144 نسبت داد.
 
-۷. **وضعیت Draft:** اسکریپت مقدار `State=1` را Draft فرض می‌کند. در نمونه‌های PriceList مستندشده، State=2 مشاهده شده است؛ معنای قطعی State=1 و State=2 هنوز از Enum، UI یا منطق رسمی برنامه اثبات نشده است. بنابراین نام‌گذاری `Draft` در عنوان و خروجی اسکریپت فعلاً یک فرض آزمون است، نه نتیجه قطعی درباره گردش‌کار راهکاران.
+### ۸.۴. آزمون قبلی که نباید با پیش‌نویس خالص اشتباه شود
 
-۸. **عدم ایجاد ConditionRow:** درج دو `PriceListResultRow` فقط دو توافق پرداخت را به سربرگ متصل می‌کند. هیچ `PriceListConditionRow`، BusinessPolicyRef، BusinessPolicyConditionRef، BusinessPolicyConditionRowRef یا ورودی/خروجی سیاست ثبت نمی‌شود. این با هدف محدود اسکریپت سازگار است، اما تا زمانی که ساختار کامل و معتبر ConditionRow ایجاد نشود، نباید انتظار داشت موتور قیمت‌گذاری راهکاران برای این پیش‌نویس قیمت نهایی یا قواعد پرداخت متناظر را محاسبه کند.
+در آزمون قبلی، PriceListID=`48143`، Number=`46659` و Fee=`420001` ثبت و COMMIT شده بود، **اما آن اسکریپت برخلاف دامنه فعلی قوانین قیمت را نیز ساخته و قوانین قدیمی را خاتمه داده بود**:
 
-۹. **کنترل عدم وجود ConditionRow:** بررسی `NOT EXISTS` پس از درج، نبود شرط برای PriceList تازه‌ساخته‌شده را کنترل می‌کند؛ اما چون خود اسکریپت هیچ ConditionRow درج نکرده است، این کنترل بیشتر یک assertion برای حفظ محدوده اسکریپت است و صحت قیمت‌گذاری را اثبات نمی‌کند.
+- PriceListItemID=`2294827`.
+- PriceListResultRowIDها: `79359` و `79360`.
+- PriceListConditionRowIDها: `2315574` و `2315575`.
+- BusinessPolicyConditionRowIDها: `2361675` و `2361676`.
+- OutputValueID=`70009`.
+- قوانین قبلی مرتبط با PriceListID=`46716` خاتمه داده شدند.
 
-۱۰. **کنترل تکراری‌بودن عملیات تجاری:** اسکریپت وجود PriceList قبلی برای همان کالا، مبلغ، توافق‌های پرداخت یا شناسه درخواست را بررسی نمی‌کند. Application Lock فقط اجرای هم‌زمان همین اسکریپت را تا حدی هماهنگ می‌کند و idempotency پایدار برای اجرای مجدد ندارد. اجرای مجدد می‌تواند پیش‌نویس تکراری ایجاد کند.
+این وضعیت در دیتابیس **آزمایشی** ممکن است با چرخه عادی پیش‌نویس ناسازگار باشد. هیچ اصلاح، حذف یا بازگشایی خودکار نباید بدون بررسی وابستگی‌ها و نسخه پشتیبان انجام شود. از این آزمون برای اثبات «ثبت پیش‌نویس بدون تغییر قوانین» استفاده نشود.
 
-۱۱. **قالب و یکتایی Number:** تبدیل Serial به `NVARCHAR(50)` بدون اعمال قالب `*سریال` انجام می‌شود. بررسی Duplicate فقط برای رشته عددی تولیدشده است و با تنظیمات CheckUniqueness و رفتار رسمی NumberingMethod جایگزین نمی‌شود.
+## ۹. قالب SQL آزمایشی و کنترل‌ها
 
-۱۲. **محدوده کنترل محصول:** کنترل اولیه تطبیق ProductID و Number مفید است، ولی وضعیت فعال کالا، معتبر بودن واحد برای کالا، ارز، توافق پرداخت، پارامترهای PriceList و مجاز بودن ترکیب آن‌ها را بررسی نمی‌کند.
+این بخش **الگوی ساختار** است، نه اسکریپت مجاز تولید. نمونه کامل قبلی در آزمون اجرا شده و شامل کنترل سرور، تراکنش، قفل و چهار نوع درج بود.
 
-۱۳. **زمان و اعتبار قیمت:** `StartDate` برابر زمان شروع اسکریپت و `EndDate=NULL` است؛ بنابراین در صورت Commit، رکورد با شروع اعتبار فوری و بدون تاریخ پایان درج می‌شود. این رفتار باید با سیاست کسب‌وکار و timezone/تقویم مورد استفاده راهکاران تطبیق داده شود.
+```sql
+-- الگوی مفهومی: شناسه‌ها و شماره باید پیش از اجرا
+-- از مسیر معتبر و با کنترل‌های مرجع/هم‌زمانی تولید شوند.
+BEGIN TRANSACTION;
 
-۱۴. **کنترل نام سرور:** مقایسه دقیق `SERVERPROPERTY('ServerName')` با نام ثابت، یک حفاظ مفید است؛ اما به‌تنهایی تضمین نمی‌کند دیتابیس واقعاً نسخه Backup/Restore موردنظر باشد. بهتر است علاوه بر نام سرور و دیتابیس، شناسه/اثر انگشت محیط آزمون و نشانه‌های قابل اتکای نسخه Restore نیز کنترل شوند.
+-- 1) تخصیص/رزرو معتبر شماره تجاری (مسیر رسمی هنوز نامشخص)
+-- 2) SYS3.spGetNextId برای سربرگ، کالا و ResultRowها
+-- 3) INSERT SLS3.PriceList با State=1
+-- 4) INSERT SLS3.PriceListItem برای کالاهای انتخاب‌شده
+-- 5) INSERT SLS3.PriceListResultRow برای توافق‌های انتخاب‌شده
+-- 6) کنترل تعداد، روابط و نبود ConditionRow
+-- 7) COMMIT فقط در محیط مجاز و پس از تأیید
 
-۱۵. **رفتار خروجی در حالت Rollback:** خروجی‌های پیش از Rollback شناسه‌ها و شماره آزمایشی را نمایش می‌دهند؛ این مقادیر پس از Rollback به معنی وجود رکورد دائمی نیستند. مقدارهای شناسه تولیدشده توسط `spGetNextId` نیز ممکن است مصرف‌شده باقی بمانند.
+-- هیچ INSERT/UPDATE/DELETE در جداول BusinessPolicy
+-- و هیچ UPDATE روی قوانین قیمت قبلی انجام نمی‌شود.
+ROLLBACK TRANSACTION; -- صرفاً نمایش الگو
+```
 
-### ۱۵.۵. ارزیابی کلی
+کنترل‌های اثبات‌شده در اسکریپت آزمون: `SET XACT_ABORT ON`، `TRY/CATCH`، `BEGIN TRANSACTION`، `sp_getapplock`، `UPDLOCK/HOLDLOCK`، تطبیق سرور/دیتابیس، بررسی کد و ProductID، کنترل تعداد رکوردها، Rollback پیش‌فرض و Rollback خطا.
 
-| موضوع | ارزیابی |
+محدودیت‌ها: `sp_getapplock` اختصاصی با موتور شماره‌گذاری ERP هماهنگی تضمین‌شده ندارد؛ وضعیت Restore با نام سرور به‌تنهایی اثبات نمی‌شود؛ Rollback Sequence را به عقب برنمی‌گرداند؛ کنترل زوج کالا/واحد و idempotency در نمونه فعلی ناقص است.
+
+## ۱۰. یافته‌های تاریخی سیاست قیمت (خارج از دامنه اجرایی فعلی)
+
+این بخش صرفاً برای حفظ تحقیق قبلی است؛ هیچ‌کدام از اشیای زیر نباید در جریان «ثبت پیش‌نویس» تغییر کنند.
+
+- `GNR3.BusinessPolicy` شناسه ۱۸۵: «اعلامیه قیمت فروش 2».
+- `GNR3.BusinessPolicyCondition` شناسه ۱۶۳؛ ConditionModel=1، Status=0 در نمونه.
+- پارامترهای ورودی سیاست در ۱۲ جایگاه: ارز، محصول، طبقه حساب محصول، واحد، توافق پرداخت، مشتری، SalesArea، SalesType، Division، SalesChannel، SalesOrganization و Quantity.
+- `GNR3.BusinessPolicyConditionRow` شامل `BusinessPolicyInputRef` و `BusinessPolicyOutputRef` است.
+- `GNR3.BusinessPolicyInputValue` و `GNR3.BusinessPolicyOutputValue` هر دو `Value nvarchar(max)` و `HashedValue varchar(32)` دارند.
+- در نمونه‌های بررسی‌شده، مقدار Output با `PriceListItem.Fee` هم‌راستا بوده است.
+- در بررسی قبلی ۱۲٬۵۹۷ ردیف فعال Condition=163 و ۵٬۷۵۷ OutputRef متمایز گزارش شده بود؛ این آمار متعلق به همان زمان بررسی است.
+- نمونه خروجی قیمت آزمون قدیمی: `<Outputs><Output><ValueWithDescription Type="Decimal" Value="420001.000000" Description="420001/000000" /></Output></Outputs>`.
+- در آزمون تکمیلی، مقدار هش خروجی با `MD5` از بایت‌های UTF-16LE متن XML در ۲۰ نمونه تطبیق داده شد:
+
+```sql
+-- @XmlValue از نوع NVARCHAR(MAX) و حاوی متن دقیق XML است.
+SELECT CONVERT(VARCHAR(32),
+       HASHBYTES('MD5', CONVERT(VARBINARY(MAX), @XmlValue)), 2);
+```
+
+**حد اعتبار:** این یافته درباره نمونه‌های آزموده‌شده است؛ قواعد کلی نرمال‌سازی XML و هش ورودی‌ها به‌طور کامل اثبات نشده است. برای دامنه فعلی تولید هیچ Hash یا XML لازم نیست.
+
+## ۱۱. معماری پیشنهادی قابلیت «ثبت در راهکاران»
+
+1. نمایش گروه‌های کامل و تأییدشده در Pricing؛ صرفاً `Approved=1` برای تمام ردیف‌های گروه.
+2. انتخاب یک یا چند کالا/گروه توسط کاربر و نمایش کد کالا، نام، قیمت، واحد، ارز، توافق پرداخت و تاریخ.
+3. اعتبارسنجی سمت سرور: وضعیت تأیید، کامل‌بودن گروه، مجوز کاربر، زوج محصول/واحد، توافق‌ها، ارز، پارامتر PriceList و حساب ثبت‌کننده.
+4. تولید پیش‌نمایش بدون DML و دریافت تأیید صریح کاربر.
+5. اختصاص **کلید درخواست یکتا** در دیتابیس Pricing و قفل‌گذاری مناسب برای جلوگیری از ارسال مجدد.
+6. تعیین شماره تجاری از مسیر معتبر راهکاران؛ **روش فعلی MAX+1 هنوز برای تولید تأیید نشده است**.
+7. گرفتن IDها با `SYS3.spGetNextId` و درج `PriceList` با `State=1`، `PriceListItem` و `PriceListResultRow` در تراکنش کنترل‌شده.
+8. عدم درج ConditionRow، عدم ساخت BusinessPolicy و عدم تغییر قوانین قبلی.
+9. اعتبارسنجی رکوردهای درج‌شده؛ Commit فقط در صورت موفقیت.
+10. ثبت audit در Pricing: شناسه درخواست، ID/Number اعلامیه، اقلام، وضعیت، زمان، خطای امن و وضعیت بازیابی.
+11. مدیریت نتیجه نامعلوم (timeout/قطع اتصال بعد از Commit): پیش از retry، بررسی نتیجه قبلی با کلید درخواست و شناسه مقصد.
+12. تغییر وضعیت «ارسال‌شده به راهکاران» در Pricing **مستقل از** `isexported` خروجی اکسل.
+
+**ملاحظه:** اگر یک درخواست شامل چند کالا با توافق‌های متفاوت باشد، قواعد اینکه یک PriceList یا چند PriceList ساخته شود هنوز باید با نمونه‌های معتبر راهکاران و نیاز تجاری تعیین شود.
+
+## ۱۲. الزامات ایمنی و اعتبارسنجی قبل از تولید
+
+| موضوع | وضعیت فعلی | اقدام لازم |
+|---|---|---|
+| ساختار سربرگ/آیتم/ResultRow | آزمون تراکنشی موفق | مقایسه با UI روی نسخه مقصد |
+| `State=1` و نبود ConditionRow | با نمونه‌های بومی هم‌راستا | تأیید معنای رسمی در UI/Enum |
+| `spGetNextId` | آزمون موفق | کنترل نسخه و اثر Sequence |
+| شماره‌گذاری تجاری | در تست هماهنگ؛ روش رسمی نامشخص | ردیابی مسیر رسمی و آزمون هم‌زمانی |
+| Reservation | درج مستقیم در تست | تعیین چرخه رسمی رزرو/مصرف/آزادسازی |
+| زوج محصول/واحد | ناقص | اعتبارسنجی با `SLS3.ProductUnit` |
+| پارامترها و توافق‌ها | نمونه‌های ثابت | خواندن و کنترل از دیتابیس مقصد |
+| Idempotency | پیاده‌سازی نشده | کلید یکتا و audit در Pricing |
+| Retry و timeout | پیاده‌سازی نشده | بازیابی از نتیجه نامعلوم |
+| ثبت چندکالا/چندتوافق | فقط نمونه تک‌کالا تست شده | تعیین قاعده گروه‌بندی و آزمون |
+| محیط عملیاتی | هیچ تأیید اجرای DML ندارد | تأیید مستقل، پشتیبان و آزمون نهایی |
+
+## ۱۳. آزمون‌های فقط‌خواندنی پیشنهادی
+
+### ۱۳.۱. کنترل ثبت دائمی یک PriceList مشخص
+
+```sql
+USE Rahkaran_sg3;
+GO
+DECLARE @PriceListID BIGINT = 48144; -- صرفاً مثال؛ ID واقعی COMMIT را وارد کنید
+SELECT p.PriceListID, p.Number, p.Title, p.State,
+       COUNT(DISTINCT i.PriceListItemID) AS ItemCount,
+       COUNT(DISTINCT r.PriceListResultRowID) AS ResultRowCount,
+       COUNT(DISTINCT c.PriceListConditionRowID) AS ConditionCount
+FROM SLS3.PriceList p
+LEFT JOIN SLS3.PriceListItem i ON i.PriceListRef = p.PriceListID
+LEFT JOIN SLS3.PriceListResultRow r ON r.PriceListRef = p.PriceListID
+LEFT JOIN SLS3.PriceListConditionRow c ON c.PriceListRef = p.PriceListID
+WHERE p.PriceListID = @PriceListID
+GROUP BY p.PriceListID, p.Number, p.Title, p.State;
+```
+
+**هشدار:** ID=48144 در خروجی گزارش‌شده Rollback شده بود؛ بنابراین عدم یافتن آن طبیعی است. این کوئری فقط پس از درج ID واقعی اجرای Commit معنی دارد.
+
+### ۱۳.۲. تطبیق شماره 46660 با رکوردهای موجود
+
+```sql
+USE Rahkaran_sg3;
+GO
+SELECT PriceListID, Number, Title, State, CreationDate
+FROM SLS3.PriceList
+WHERE Number = N'46660';
+
+SELECT NumberingRangeReservationID,
+       NumberingMethodRangeRef, DomainKey, ReservedSerial
+FROM SYS3.NumberingRangeReservation
+WHERE NumberingMethodRangeRef = 77
+  AND DomainKey = N''
+  AND ReservedSerial = 46660;
+```
+
+این دو SELECT برای تعیین وجود **رکورد دائمی** و رزرو متناظر لازم‌اند؛ برابری دو مقدار MAX به‌تنهایی چنین چیزی را اثبات نمی‌کند.
+
+### ۱۳.۳. بررسی پیش‌نویس‌های بومی
+
+```sql
+USE Rahkaran_sg3;
+GO
+SELECT p.State,
+       COUNT(DISTINCT p.PriceListID) AS PriceListCount,
+       COUNT(DISTINCT i.PriceListItemID) AS ItemCount,
+       COUNT(DISTINCT c.PriceListConditionRowID) AS ConditionCount
+FROM SLS3.PriceList p
+LEFT JOIN SLS3.PriceListItem i ON i.PriceListRef = p.PriceListID
+LEFT JOIN SLS3.PriceListConditionRow c ON c.PriceListRef = p.PriceListID
+WHERE p.State IN (1,2)
+GROUP BY p.State;
+```
+
+## ۱۴. موارد باز و تصمیم‌های ثبت‌شده
+
+### قطعی برای دامنه فعلی
+
+- [x] هدف فقط **ثبت پیش‌نویس** است؛ تأیید راهکاران حذف شده است.
+- [x] ساختار پایه `PriceList` + `PriceListItem` + `PriceListResultRow` مشخص است.
+- [x] در نمونه‌های بومی State=1، ایجاد ConditionRow مشاهده نشده است.
+- [x] اسکریپت آزمایشی با یک کالا و دو توافق پرداخت تا مرحله اعتبارسنجی موفق و سپس Rollback شده است.
+- [x] `SYS3.spGetNextId` برای شناسه‌های داخلی در آزمون استفاده شده است.
+- [x] در بررسی ۱۳:۰۸، `MaxPriceListNumber=MaxReservedSerial=46660` بوده است.
+- [x] آزمون قدیمی 48143 که قوانین قیمت را تغییر داد، از آزمون پیش‌نویس خالص تفکیک شده است.
+
+### هنوز باز
+
+- [ ] شناسایی مسیر رسمی تولید و رزرو شماره تجاری و آزمون رقابت هم‌زمان با UI.
+- [ ] تعیین قواعد DomainKey، شماره‌گذاری قالب‌دار و رفتار خطا/timeout.
+- [ ] بررسی وجود واقعی PriceList شماره 46660 و منشأ ثبت دائمی آن.
+- [ ] تأیید UI/Enum برای State=1 در نسخه مقصد.
+- [ ] تکمیل اعتبارسنجی زوج محصول/واحد، ارز، توافق‌ها، پارامتر و کاربر.
+- [ ] تعیین سیاست گروه‌بندی چند کالا و چند توافق پرداخت.
+- [ ] طراحی idempotency، audit، retry امن و بازیابی نتیجه نامعلوم در Pricing.
+- [ ] آزمون Commit پیش‌نویس خالص و بررسی آن در UI متصل به دیتابیس آزمایشی، در صورت امکان.
+- [ ] بازبینی تغییرات آزمون قدیمی 48143 پیش از هر آزمون وابسته به قوانین قیمت.
+- [ ] اخذ مجوز و طراحی کنترل‌های تولید قبل از هر INSERT در دیتابیس عملیاتی.
+
+## ۱۵. تاریخچه اصلاحات و تفاوت با نسخه قبلی
+
+| موضوع | اصلاح انجام‌شده |
 |---|---|
-| جداسازی محیط تست | دارای کنترل نام سرور و دیتابیس؛ نیازمند تشخیص قوی‌تر نسخه Restore |
-| تراکنش و Rollback | ساختار پایه مناسب؛ اثر Sequenceها خارج از Rollback باقی می‌ماند |
-| تولید شناسه داخلی | استفاده از Procedure رسمی؛ با اثر جانبی احتمالی Sequence |
-| شماره تجاری PriceList | **تأییدنشده و پرریسک**؛ تخصیص با MAX و رزرو مستقیم |
-| صحت کالا | تطبیق ProductID و کد انجام می‌شود |
-| صحت واحد کالا | کنترل نشده |
-| توافق پرداخت | دو Ref درج می‌شود؛ اعتبار مرجع در زمان اجرا کنترل نشده |
-| وضعیت Draft | فرض State=1 هنوز اثبات نشده |
-| قواعد قیمت‌گذاری | عمداً درج نشده‌اند؛ قابلیت محاسبه قیمت اثبات نشده |
-| جلوگیری از ثبت تکراری | idempotency ندارد |
-| اثبات سازگاری با UI رسمی | انجام نشده |
+| دامنه پروژه | حذف تأیید و ساخت قوانین از عملیات موردنیاز |
+| وضعیت State=1 | افزودن شواهد ۱۷۷ پیش‌نویس و تفکیک دو ConditionRow مصنوعی |
+| نتیجه آزمون | ثبت خروجی واقعی 48144 و `ROLLED_BACK_SUCCESSFULLY` |
+| شماره‌گذاری | ثبت نتیجه 46660/46660/46661 و تفکیک مشاهده از تضمین عملیاتی |
+| خطای Msg 137 | افزودن `DECLARE`های کامل در کوئری تشخیصی |
+| آزمون قدیمی 48143 | ثبت صریح تغییر قوانین قبلی و ممنوعیت تعمیم به پیش‌نویس خالص |
+| الگوریتم هش | افزودن نتیجه آزمون MD5 خروجی؛ خارج از دامنه فعلی |
+| جریان Pricing | جداکردن تأیید داخلی Pricing از تأیید ERP و جداکردن ارسال ERP از خروجی اکسل |
+| ایمنی | حفظ هشدار شماره‌گذاری رسمی، idempotency، هم‌زمانی و اعتبار مرجع |
 
-**نتیجه:** اسکریپت از نظر ساختار تراکنش، کنترل اولیه محیط و جداسازی ایجاد سربرگ/آیتم/توافق پرداخت، یک نمونه آزمایشی قابل تحلیل است؛ اما در وضعیت فعلی برای ثبت واقعی یا حتی نتیجه‌گیری درباره سازگاری کامل با فرآیند رسمی راهکاران تأیید نمی‌شود. مهم‌ترین مانع، تخصیص شماره تجاری از طریق MAX و درج مستقیم Reservation است. پس از آن، اعتبار زوج کالا/واحد، معنای State، اعتبار پارامترها و نبود idempotency باید تعیین تکلیف شوند.
+---
 
-### ۱۵.۶. اقدامات بعدی برای آزمون کنترل‌شده در Backup/Restore
-
-- [ ] فقط‌خواندنی: استخراج DDL، تمام FKها، CHECK/DEFAULTها و Indexهای فعلی چهار جدول و جدول Reservation از همین نسخه Restore.
-- [ ] فقط‌خواندنی: اعتبارسنجی ProductID=31567 و Number=1011160029 و زوج ProductUnitRef=12 از رابطه معتبر محصول/واحد.
-- [ ] فقط‌خواندنی: تأیید وجود و وضعیت فعال PaymentAgreementRefهای ۲۰ و ۲۱، CurrencyRef=1، PriceListParametersRef=2 و کاربر ۲۳۱.
-- [ ] فقط‌خواندنی: استخراج چند PriceList ساخته‌شده با UI رسمی در همین Backup/Restore و مقایسه سربرگ، آیتم، ResultRow، ConditionRow و Reservation.
-- [ ] فقط‌خواندنی: تعیین معنای State=1 و State=2 از منبع معتبر برنامه/دیتابیس.
-- [ ] متوقف تا کشف مسیر رسمی: جایگزینی الگوریتم MAX و درج مستقیم Reservation با API/Procedure رسمی تخصیص شماره.
-- [ ] آزمون جداگانه: بررسی اینکه Rollback چه اثرهایی بر شناسه‌ساز و رزرو شماره دارد؛ این آزمون باید روی Backup/Restore قابل دورریختن انجام شود.
-- [ ] پس از رفع موارد بالا: اجرای Dry-run با `@CommitChanges=0` و ثبت خروجی‌ها؛ سپس فقط با تأیید مستقل و صریح، آزمون Commit در محیط آزمایشی.
-- [ ] مقایسه نتیجه Commit آزمایشی با رکورد مرجع ساخته‌شده توسط UI رسمی و ثبت اختلاف‌ها.
-
-**مرز ایمنی این بررسی:** هیچ دستور DML از اسکریپت ارائه‌شده اجرا نشده است. این مستند، تأیید اجرای اسکریپت یا مجوز استفاده از آن در دیتابیس عملیاتی نیست.
+**مرز نهایی:** این سند شرح تحقیق و آزمون کنترل‌شده است. موفقیت INSERT در دیتابیس بازیابی‌شده و هماهنگی دو MAX، به‌تنهایی صحت شماره‌گذاری رسمی، سازگاری کامل UI یا مجوز اجرای ثبت روی دیتابیس عملیاتی را ثابت نمی‌کند.
