@@ -2,11 +2,13 @@
 
 > مخزن مصرف‌کننده: `cognitive-kernel/Pricing`  
 > مسیر: `docs/RAHKARAN-PRICE-REGISTRATION-RESEARCH.fa.md`  
-> تاریخ بازنگری: ۱۴۰۵/۰۸/۲۶ (۲۰۲۶/۱۱/۱۷)  
-> وضعیت: **ثبت پیش‌نویس خالص با COMMIT در دیتابیس تست موفق بوده است (PriceListID=48147)؛ ثبت عملیاتی هنوز تأیید نشده است.**  
+> تاریخ بازنگری: **۱۴۰۵/۰۸/۲۷ (۲۰۲۶/۱۱/۱۸)**؛ تکمیل پژوهش شماره‌گذاری با بررسی اسمبلی‌های نصب‌شده در IIS  
+> وضعیت: **ثبت پیش‌نویس خالص با COMMIT در دیتابیس تست موفق بوده است (از جمله PriceListID=48147 و آزمون بعدی PriceListID=48197)؛ سرویس عمومی شماره‌گذاری در اسمبلی شناسایی شده، اما روش تخصیص شماره عملیاتی و قابل فراخوانی از Pricing هنوز تأیید نشده است.**  
 > دامنه قطعی: **فقط ایجاد پیش‌نویس اعلامیه قیمت (`State=1`)؛ بدون تأیید، فعال‌سازی یا ایجاد/خاتمه قوانین قیمت.**
 
-> **راهنمای نسخه:** بخش‌های ۱ تا ۱۵ تاریخچه پژوهش و آزمون‌های قبلی هستند. بخش ۱۶ نتایج قطعی جدید و اصلاحات آن‌ها را بیان می‌کند و در صورت تعارض، بر بخش‌های قدیمی مقدم است. بخش ۱۷ SQL کامل آزمون‌شده از نظر ساختار را ارائه می‌کند. روی دیتابیس اصلی هیچ آبجکت جدیدی نباید ساخته یا تغییر داده شود.
+> **راهنمای نسخه:** بخش‌های ۱ تا ۱۵ تاریخچه پژوهش و آزمون‌های قبلی هستند؛ بخش ۱۶ وضعیت آزمایش ثبت پیش‌نویس در ۱۴۰۵/۰۸/۲۶، و بخش ۱۷ SQL **صرفاً آزمایشی** را نگه می‌دارد. **بخش ۱۸ جدیدترین یافته‌های قطعی حاصل از Trace، IIS و تحلیل metadata اسمبلی‌ها در ۱۴۰۵/۰۸/۲۷ است؛ در تعارض مربوط به شماره‌گذاری و مجوز استقرار، بخش ۱۸ مقدم است.** هیچ آبجکتی در دیتابیس عملیاتی نباید ایجاد، اصلاح یا حذف شود.
+
+> **هشدار استقرار (۱۴۰۵/۰۸/۲۷):** وجود `GenerateNewNumber` و `HandlePreSaveNumbering` در `INumberingService` تأیید شد، اما **پیاده‌سازی این متدها، API رسمی قابل‌فراخوانی از PHP، رفتار تراکنشی و هماهنگی با کاربران راهکاران هنوز تأیید نشده است**. کد SQL بخش ۱۷ و هر نسخه مبتنی بر `MAX(Number)+1` **فقط ابزار آزمون در دیتابیس تست** هستند و نباید مبنای استقرار در محیط اصلی باشند.
 
 ## ۱. خلاصه مدیریتی و سطح اطمینان
 
@@ -644,6 +646,8 @@ GROUP BY pl.PriceListID, pl.Number, pl.Title, pl.State;
 
 ## ۱۷. اسکریپت مستقل INSERT پیش‌نویس (با توضیحات درون کد)
 
+> **به‌روزرسانی ۱۴۰۵/۰۸/۲۷:** شماره نمونه `46662` که در کد تاریخی زیر دیده می‌شود، طبق آزمون بعدی **اکنون در دیتابیس تست ثبت و رزرو شده است** (`PriceListID=48197`). این نمونه نباید بدون تعیین شماره جدید معتبر در **محیط تست** دوباره اجرا شود؛ حتی جایگزینی شماره، روش رسمی شماره‌دهی را اثبات نمی‌کند.
+
 این اسکریپت همان نسخه آزمایشی مستقل برای یک کالا و یک توافق پرداخت است. مقدار `@CommitChanges=0` به‌صورت پیش‌فرض تمام درج‌ها را بازمی‌گرداند. مقدار `1` فقط در سرور تست، تغییرات را ثبت می‌کند. شماره نمونه `46662` صرفاً پیشنهادی است و باید آزادبودن آن بررسی شود. شماره `46661` قبلاً در تست ثبت شده و نباید دوباره استفاده شود. این کد برای محیط عملیاتی بدون تکمیل تخصیص شماره و جلوگیری از درخواست تکراری مجاز نیست.
 
 ```sql
@@ -888,3 +892,336 @@ BEGIN CATCH
 END CATCH;
 GO
 ```
+
+---
+
+## ۱۸. پژوهش جدید شماره‌گذاری در IIS و اسمبلی‌های راهکاران — ۱۴۰۵/۰۸/۲۷ (۲۰۲۶/۱۱/۱۸)
+
+> **وضعیت این بخش:** یافته‌های زیر با بررسی سورس صفحه، خروجی PowerShell سرور، فایل‌های ZIP ارسال‌شده و خواندن مستقیم metadata پنج اسمبلی مرتبط و `SystemGroup.Framework.dll` به دست آمده‌اند. **«یافتن اینترفیس/متد» معادل «آزمودن پیاده‌سازی آن» یا «تأیید API رسمی برای Pricing» نیست.** اسناد و آزمون‌های بخش‌های ۱ تا ۱۷ حفظ شده‌اند تا تاریخچه تحقیق از بین نرود.
+
+### ۱۸.۱. پرسش اصلی و نتیجه فعلی
+
+پرسش باز پروژه این بود: **راهکاران مقدار تجاری `SLS3.PriceList.Number` را هنگام ذخیره چگونه تولید می‌کند و Pricing چگونه می‌تواند بدون تداخل با نرم‌افزار اصلی از همان مکانیزم استفاده کند؟**
+
+خلاصه نتایج:
+
+| گزاره | وضعیت شواهد | توضیح |
+|---|---|---|
+| شماره اعلامیه در UI فقط **پس از ذخیره** نمایش داده می‌شود | مشاهده کاربر | به‌تنهایی محل تولید (مرورگر/سرور/کش) را ثابت نمی‌کند |
+| تنظیمات شماره‌گذاری `PriceList` به روش/Range شماره `77` مرتبط‌اند | مشاهده داده و Trace | برای محیط بررسی‌شده؛ تعمیم به سایر نصب‌ها مجاز نیست |
+| `SYS3.spAddNumberingMethodReservation` شماره را **دریافت** می‌کند | مشاهده Trace و امضای SP | پارامتر `@ReservedValue` ورودی است؛ این SP شماره بعدی را محاسبه نمی‌کند |
+| `INumberingService`، متد `GenerateNewNumber` دارد | **تأیید قطعی در metadata DLL** | پیاده‌سازی و زمان فراخوانی هنوز استخراج/آزمون نشده است |
+| `INumberingService`، متد `HandlePreSaveNumbering` دارد | **تأیید قطعی در metadata DLL** | سازوکار احتمالی پیش از ذخیره؛ نقش دقیق آن باید در پیاده‌سازی بررسی شود |
+| `PriceList` اینترفیس `INumberedEntity` را پیاده‌سازی می‌کند | **تأیید قطعی در metadata DLL** | اتصال ساختاری موجودیت اعلامیه به زیرساخت عمومی شماره‌گذاری را نشان می‌دهد |
+| فراخوانی مستقیم سرویس شماره‌دهی از PHP امکان‌پذیر است | **تأیید نشده** | شناسایی متدهای .NET به معنی وجود HTTP API پشتیبانی‌شده نیست |
+| الگوریتم `MAX(Number)+1` با UI راهکاران هم‌زمان و بی‌تداخل است | **اثبات نشده** | نباید برای تولید مورد استفاده قرار گیرد |
+
+**نتیجه عملی:** به جای تولید شماره با SQL حدسی، مسیر پژوهش باید بر یافتن **پیاده‌سازی واقعی `INumberingService` و قرارداد پشتیبانی‌شده فراخوانی آن** متمرکز باشد.
+
+### ۱۸.۲. معماری نصب شناسایی‌شده روی سرور
+
+آدرس مورد بررسی مربوط به فرم اعلامیه قیمت در پوسته ASP.NET است:
+
+```text
+/Shell.aspx?...&page=Sales%2FPriceList%2FPriceListPages%2FEdit.aspx
+```
+
+در HTML پوسته، فرم واقعی از طریق iframe بارگذاری می‌شود:
+
+```text
+/Sales/PriceList/PriceListPages/Edit.aspx?PageID=...
+```
+
+با این حال در نصب بررسی‌شده فایل فیزیکی زیر وجود ندارد:
+
+```text
+E:\Systemgroup\Rahkaran\App\WebRoot\Sales\PriceList\PriceListPages\Edit.aspx
+```
+
+محتوای یک فایل `Edit.aspx` که جداگانه مشاهده شد، آن را `DUMMY FILE FOR IIS TO START ASP.NET FRAMEWORK` معرفی می‌کرد؛ پس آن نمونه نیز سورس منطق تجاری ثبت نیست. **مسیر URL لزوماً به فایلی هم‌نام در WebRoot اشاره نمی‌کند.**
+
+خروجی `web.config` و IIS:
+
+```text
+WebRoot       E:\Systemgroup\Rahkaran\App\WebRoot
+ProcessPath   dotnet
+Arguments     ..\Rahkaran.dll
+HostingModel  inprocess
+``` 
+
+در نتیجه نقطه راه‌اندازی برنامه `E:\Systemgroup\Rahkaran\App\Rahkaran.dll` است. تعداد زیادی DLL ماژولار راهکاران در **ریشه پوشه `App`** قرار دارد، نه فقط `WebRoot\bin`. وجود `SystemGroup.Web.Loader.dll` در `WebRoot\bin` به‌تنهایی مشخص نمی‌کند منطق تجاری در آن اجرا می‌شود.
+
+**محدودیت مهم:** از روی این اطلاعات نمی‌توان نتیجه گرفت که شماره حتماً در مرورگر تولید می‌شود؛ همان‌طور که نمی‌توان نتیجه گرفت که یک API عمومی آماده وجود دارد.
+
+### ۱۸.۳. فایل‌های مربوط به قیمت و شماره‌گذاری
+
+مسیر پایه همه فایل‌های جدول، مگر خلاف آن ذکر شود، `E:\Systemgroup\Rahkaran\App\` است.
+
+| فایل | اندازه مشاهده‌شده | نسخه اسمبلی | نقش/شاهد |
+|---|---:|---|---|
+| `SystemGroup.Framework.dll` | 4,879,360 بایت | `20.0.31.43266` | تعریف `INumberingService` و `INumberedEntity` |
+| `SystemGroup.General.Numbering.Common.dll` | 81,920 بایت | `20.0.31.43266` | قراردادهای business مربوط به روش و رزرو شماره |
+| `SystemGroup.General.Numbering.Web.dll` | 88,576 بایت | `20.0.31.43266` | صفحات مدیریت روش شماره‌گذاری |
+| `SystemGroup.Sales.PriceList.Common.dll` | 282,624 بایت | `20.0.31.43595` | موجودیت `PriceList` و قراردادهای لایه قیمت |
+| `SystemGroup.Sales.PriceList.Web.dll` | 447,488 بایت | `20.0.31.43595` | کلاس صفحه و eventهای فرم اعلامیه قیمت |
+| `SystemGroup.General.Numbering.Business.bin` | 108,040 بایت | نامعلوم | بسته غیراستاندارد اسمبلی PE معمولی نیست |
+| `SystemGroup.General.Numbering.Business.dat` | 175,624 بایت | نامعلوم | بسته غیراستاندارد |
+| `SystemGroup.Sales.PriceList.Business.bin` | 560,136 بایت | نامعلوم | بسته غیراستاندارد |
+| `SystemGroup.Sales.PriceList.Business.dat` | 519,688 بایت | نامعلوم | بسته غیراستاندارد |
+
+چهار فایل `.bin` و `.dat` بررسی‌شده با بایت‌های `53-47-43-52`، معادل ASCII `SGCR`، آغاز می‌شوند؛ برخلاف فایل‌های DLL استاندارد که امضای PE/MZ دارند. این **نشانه یک قالب بسته‌بندی اختصاصی** است؛ درباره رمزگذاری، فشرده‌سازی یا قابلیت بازیابی مستقیم کد **هنوز نتیجه قطعی وجود ندارد**. از تغییرنام، جایگزین‌کردن یا دستکاری این فایل‌ها در سرور باید خودداری شود.
+
+**ردیابی نمونه‌های باینری فقط برای تطبیق نسخه:**
+
+```text
+SystemGroup.Framework.dll
+SHA256 665b2ef83bd8c3c71c9189acdf347ca314ad8e21f03dbf7cde8fc21e469ce366
+
+SystemGroup.General.Numbering.Common.dll
+SHA256 4a99c86b5556cd814f222190021af504d81aedfed9764042d2b95caedb241d58
+
+SystemGroup.Sales.PriceList.Common.dll
+SHA256 0d2e42d41b138a4d1e500872266397cd825bb6e99f55d403430f072508c08923
+```
+
+این Hashها شناسه نمونه‌های خوانده‌شده‌اند، نه اعتبارسنجی امضای ناشر.
+
+### ۱۸.۴. یافته قطعی: `INumberingService` در Framework
+
+خواندن جدول metadata نوع و متدها، بدون اجرای اسمبلی روی سرور، وجود این اینترفیس را تأیید کرد:
+
+```csharp
+namespace SystemGroup.Framework.Numbering
+{
+    // بازنمایی امضای استخراج‌شده؛ نه سورس رسمی سازنده.
+    public interface INumberingService
+    {
+        bool HandlePreSaveNumbering(
+            SystemGroup.Framework.Common.INumberedEntity entity);
+
+        void GenerateNewNumber(
+            SystemGroup.Framework.Common.INumberedEntity entity);
+
+        void ValidateNumber(
+            SystemGroup.Framework.Common.INumberedEntity entity);
+
+        void HandleEntityDelete(
+            SystemGroup.Framework.Common.INumberedEntity entity);
+
+        AssignApprochs GetEntityNumberAssignApproch(System.Type entityType);
+
+        string[] GetActiveNumberingMethodPatternAttributeNames(
+            System.Type entityType);
+
+        void InvalidateCache();
+    }
+}
+```
+
+این قطعه **زیرمجموعه‌ای از متدهای واقعی اینترفیس** است؛ متدهای دیگر آن برای ایجاد روش شماره‌گذاری، دریافت قالب‌ها و ترجمه الگو نیز در metadata وجود دارند. نام عجیب `AssignApproch` عیناً مطابق نام موجود در اسمبلی است، نه اصلاح املایی آن.
+
+امضاهای مرتبط کلیدی:
+
+| متد | خروجی | پارامتر |
+|---|---|---|
+| `HandlePreSaveNumbering` | `bool` | `INumberedEntity entity` |
+| `GenerateNewNumber` | `void` | `INumberedEntity entity` |
+| `ValidateNumber` | `void` | `INumberedEntity entity` |
+| `GetEntityNumberAssignApproch` | `AssignApprochs` | `Type entityType` |
+| `GetActiveNumberingMethodPatternAttributeNames` | `string[]` | `Type entityType` |
+| `HandleEntityDelete` | `void` | `INumberedEntity entity` |
+| `InvalidateCache` | `void` | بدون پارامتر |
+
+**تفسیر محتاطانه:** نام‌های `HandlePreSaveNumbering` و `GenerateNewNumber` نشان می‌دهند کتابخانه قراردادهایی برای شماره‌گذاری موجودیت‌ها پیش/حین ذخیره دارد. اما این فایل فقط **تعریف اینترفیس** را در اختیار می‌گذارد؛ بنابراین الگوریتم شمارنده، سطح قفل، تراکنش، استثناها، نحوه انتخاب Range و محل پیاده‌سازی مشخص نشده‌اند. چون خروجی `GenerateNewNumber` از نوع `void` است و ورودی موجودیتی است که `Number` دارد، **تغییر دادن خود موجودیت یک احتمال فنی است، نه رفتاری که از metadata به‌تنهایی اثبات شود**.
+
+### ۱۸.۵. یافته قطعی: موجودیت `PriceList` یک `INumberedEntity` است
+
+در `SystemGroup.Sales.PriceList.Common.dll` این نوع شناسایی شد:
+
+```text
+SystemGroup.Sales.PriceList.Common.PriceList
+  Base: SystemGroup.Framework.Common.Entity
+  Implements:
+    SystemGroup.Framework.Common.INumberedEntity
+    SystemGroup.Framework.Common.ITrackedEntity
+    System.ComponentModel.INotifyPropertyChanging
+    System.ComponentModel.INotifyPropertyChanged
+```
+
+و این امضاها در metadata موجودیت ثبت شده‌اند:
+
+```csharp
+string get_Number();
+void set_Number(string value);
+PriceListState get_State();
+void set_State(PriceListState value);
+```
+
+خود اینترفیس عمومی نیز در `SystemGroup.Framework.dll` فقط خصوصیت شماره را تعریف می‌کند:
+
+```csharp
+namespace SystemGroup.Framework.Common
+{
+    public interface INumberedEntity
+    {
+        string Number { get; set; }
+    }
+}
+```
+
+بنابراین پیوند ساختاری میان `PriceList` و سرویس شماره‌گذاری **اثبات شده است**: نوع ورودی `INumberingService.GenerateNewNumber` با موجودیت `PriceList` سازگار است. اما هنوز اثبات نشده که مسیر ایجاد اعلامیه در نسخه نصب‌شده دقیقاً همین متد را فراخوانی می‌کند.
+
+### ۱۸.۶. کلاس وبِ فرم اعلامیه قیمت
+
+از `SystemGroup.Sales.PriceList.Web.dll` نوع زیر استخراج شد:
+
+```text
+SystemGroup.Sales.PriceList.Web.PriceListPages.Edit
+```
+
+متدهای مرتبط آن در metadata:
+
+```csharp
+void OnEntitySaving(object sender, SystemGroup.Web.UI.EntitySavingEventArgs e);
+void OnEntityCreated(object sender, SystemGroup.Web.UI.EntityCreatedEventArgs e);
+void OnEntityLoaded(object sender, SystemGroup.Web.UI.EntityLoadedEventArgs e);
+void OnEntityChanged(object sender, SystemGroup.Web.UI.EntityChangedEventArgs e);
+```
+
+متد `OnEntitySaving` دارای بدنه کامپایل‌شده است، ولی **در این مرحله صرفاً وجود، امضا و نشانی metadata آن تأیید شده است**. نقش دقیق هر فراخوانی در بدنه، ترتیب تعامل با `INumberingService` و اجرای ادامه ذخیره در کلاس پایه نیازمند بررسی کنترل‌شده کد/IL است. نباید تنها بر اساس اسم متد، نوع عملیات آن را قطعی تلقی کرد.
+
+در بررسی رشته‌ای اولیه نام `get_NumberingFormats` نیز دیده شد؛ این سرنخ **برای تولید شماره تجاری معتبر نیست** و با `INumberingService.GenerateNewNumber` نباید اشتباه گرفته شود.
+
+### ۱۸.۷. اینترفیس رزرو شماره و تفاوتش با تولید شماره
+
+در `SystemGroup.General.Numbering.Common.dll` این امضاها مشخص شدند:
+
+```csharp
+namespace SystemGroup.General.Numbering.Common
+{
+    public interface INumberingRangeReservationBusiness
+    {
+        void Save(long numberingMethodRangeRef,
+                  string domainKey,
+                  long reservedSerial);
+
+        void RemoveEntity(long numberingMethodRangeRef,
+                          string domainKey,
+                          long reservedSerial);
+    }
+}
+```
+
+همچنین اینترفیس `INumberingMethodBusiness` شامل متدهایی مانند `FetchAllNumberingMethods`، `FetchMethodRangesByNumberMethodRef` و `IsNumberingMethodUsed` است. این‌ها قراردادهای خواندن/مدیریت روش‌اند، نه شواهدی برای الگوریتم شماره بعدی.
+
+در متد `Save`، شماره رزرو (`reservedSerial`) **ورودی** است. این با شواهد SQL مربوط به `SYS3.spAddNumberingMethodReservation` سازگار است؛ بااین‌حال **ارتباط مستقیم بین این دو فراخوانی در بدنه پیاده‌سازی هنوز اثبات نشده است**.
+
+### ۱۸.۸. تطبیق با Trace واقعی ثبت PriceList
+
+در Trace قبلیِ ثبت یک اعلامیه واقعی در محیط بررسی‌شده، نمونه زیر دیده شد:
+
+```text
+PriceListID = 48172
+PriceList.Number = 46690
+NumberingMethodRangeID = 77
+DomainKey = N''
+ReservedValue = 46690
+```
+
+الگوی فراخوانی مشاهده‌شده شامل این مراحل بود:
+
+1. فراخوانی `SYS3.spGetNextId` برای شناسه‌های داخلی `SLS3.PriceList`، `SLS3.PriceListItem` و `SLS3.PriceListResultRow`؛
+2. خواندن/اعتبارسنجی برخی پارامترهای `PriceListParameters`؛
+3. فراخوانی `SYS3.spAddNumberingMethodReservation` با `@ReservedValue=46690`؛
+4. بررسی تکراری نبودن `SLS3.PriceList.Number`؛
+5. درج سربرگ در `SLS3.PriceList` و درج اقلام و ردیف‌های نتیجه/توافق پرداخت.
+
+بخش مهمی از Trace:
+
+```sql
+EXEC [SYS3].[spAddNumberingMethodReservation]
+    @NumberingMethodRangeID = 77,
+    @DomainKey = N'',
+    @ReservedValue = 46690;
+```
+
+**نتیجه مستند:** در بخش استخراج‌شده Trace، شماره تجاری **پیش از فراخوانی رزرو، به‌صورت مقدار آماده در اختیار برنامه قرار داشته است**. هیچ دستور SQL مجزایی که به‌طور قطعی مولد `46690` باشد در همان بخش شناسایی نشده است. این *عدم مشاهده* به معنی اثبات تولید شماره در مرورگر نیست: شماره می‌تواند در لایه میانی، منطق تجاری بسته‌بندی‌شده، حافظه/کش یا در رخدادهای خارج از دامنه Trace تولید شده باشد.
+
+با پیداشدن `INumberingService`، مسیر بررسی جدید **ردیابی فراخوانی‌های `HandlePreSaveNumbering` / `GenerateNewNumber` و پیاده‌سازی آن‌ها** است.
+
+### ۱۸.۹. اصلاح چند برداشت قبلی
+
+- **«`Edit.aspx` را در WebRoot پیدا می‌کنیم و SQL را از متن آن استخراج می‌کنیم»**: در این نصب قابل اتکا نیست؛ URL فرم مجازی است و کد ماژول در اسمبلی‌ها قرار دارد.
+- **«همه DLLها در `WebRoot\bin` هستند»**: نادرست برای این نصب؛ DLLهای اصلی در ریشه `App` پیدا شدند.
+- **«`ReflectionOnlyLoad` صفر نوع برگرداند، پس اینترفیس وجود ندارد»**: نادرست؛ بارگذاری با خطای وابستگی مواجه شد. استخراج مستقیم metadata مستقل از بارگذاری اجرایی، اینترفیس‌ها را نشان داد.
+- **«`get_NumberingFormats` شماره اعلامیه را می‌سازد»**: شواهد کافی ندارد؛ نباید آن را جایگزین سرویس شماره‌گذاری کرد.
+- **«`spAddNumberingMethodReservation` شماره جدید تولید می‌کند»**: نادرست؛ رزروِ شماره از پیش تعیین‌شده را ثبت می‌کند.
+- **«`MAX(Number)+1` با `sp_getapplock` همان شماره‌گذاری رسمی است»**: نادرست؛ قفل اختصاصی Pricing لزوماً توسط رابط کاربری راهکاران رعایت نمی‌شود.
+- **«داشتن `INumberingService` یعنی API قابل‌استفاده مستقیم در PHP داریم»**: اثبات نشده؛ این قرارداد داخلی .NET است و دسترسی، احراز هویت، محدوده تراکنش و پشتیبانی سازنده باید معلوم شود.
+
+### ۱۸.۱۰. وضعیت آخرین تست‌های دیتابیس
+
+علاوه بر نمونه ثبت‌شده در بخش ۱۶ (`PriceListID=48147`، شماره `46661`)، در مرحله بعدی پروژه نتیجه آزمون دیگری روی **دیتابیس تست** گزارش و با کوئری مستقل کنترل شد:
+
+```text
+PriceListID          48197
+PriceList.Number     46662
+State                1
+ItemCount            1
+PaymentCount         1
+ConditionCount       0
+NumberReservation    1
+```
+
+این نیز **اثبات ساختار ذخیره پیش‌نویس در تست** است؛ نه اثبات تخصیص رسمی شماره و نه مجوز استقرار. برای نمونه `48172/46690` شواهد Trace ثبت **از خود راهکاران** داریم؛ آن را با دو مورد درج آزمایشی از بیرون نرم‌افزار اشتباه نکنیم.
+
+### ۱۸.۱۱. گام‌های فنی بعدی، با رعایت محدودیت‌های عملیاتی
+
+1. **بررسی فقط‌خواندنی کد/IL** در یک کپی مجاز از `SystemGroup.Framework.dll`، `SystemGroup.Sales.PriceList.Web.dll` و اسمبلی‌های وابسته؛ در ILSpy متدهای `OnEntitySaving`، `HandlePreSaveNumbering` و `GenerateNewNumber` و مصرف‌کنندگان آن‌ها را جست‌وجو کنیم. از اجرای فراخوانی روی دیتابیس اصلی و دستکاری فایل‌های `.bin`/`.dat` خودداری شود.
+2. **یافتن پیاده‌سازی** `INumberingService` و مکان/روش ثبت سرویس در ساختار Dependency Injection؛ ممکن است در ماژول Business بسته‌بندی‌شده باشد. اگر پیاده‌سازی در فایل‌های در دسترس پیدا نشد، یافته را «ناشناخته» نگه داریم؛ از رمزگشایی یا تغییر قالب اختصاصی بدون مجوز/مسیر رسمی استفاده نکنیم.
+3. **شناسایی قرارداد رسمی یکپارچه‌سازی**: API/SDK یا فرایند واردسازی مورد تأیید راهکاران، شامل ورود داده، شماره‌گذاری، اعتبارسنجی، مجوز و خطاها. فراخوانی متد داخلی .NET از بیرون ممکن است به زمینه نشست و سرویس‌های دیگر وابسته باشد.
+4. **ردیابی هم‌بسته ذخیره** در محیط تست مجاز: زمان رویداد Save، شماره تخصیص‌یافته، Range، Domain، تغییرات SQL، نقش سرویس شماره‌گذاری، محل BEGIN/COMMIT، وضعیت خطا و Retries. اگر Trace ناقص بود، تنها همان بخش موردنیاز تکمیل شود.
+5. **آزمون هم‌زمانی**: در دیتابیس و نصب تست، دو کاربر رابط کاربری و یک درخواست Pricing باید شماره‌های یکتا بگیرند؛ عملکرد در خطای تکرار، لغو، Rollback، قطع ارتباط و ارسال مجدد ثبت شود. هر تست نوشتنی باید مجاز و در محیط تست باشد.
+6. **پیاده‌سازی نهایی در Pricing**: کلید یکتای درخواست و idempotency، ثبت نتیجه/خطا در خود Pricing، اعتبارسنجی محصول/واحد/توافق، کنترل وضعیت `State=1` و عدم تغییر وضعیت تأیید؛ بدون ایجاد یا تغییر آبجکت در دیتابیس اصلی راهکاران.
+
+### ۱۸.۱۲. معیار پایان کار برای فعال‌سازی ثبت عملیاتی
+
+تا زمانی که **همه** موارد زیر مستند و در تست تأیید نشده‌اند، قابلیت ثبت مستقیم اعلامیه در دیتابیس عملیاتی نباید فعال شود:
+
+- [x] شناسه داخلی با `SYS3.spGetNextId` از شماره تجاری تفکیک شده است.
+- [x] ثبت پیش‌نویس `State=1` در پایگاه تست حداقل برای یک کالا/توافق با COMMIT و بررسی مستقل موفق بوده است.
+- [x] `PriceList` به‌عنوان `INumberedEntity` و متدهای `INumberingService` در metadata شناسایی شده‌اند.
+- [x] Range شماره‌گذاری مربوط به نمونه مورد بررسی (`77`) و فراخوانی رزرو در Trace شناسایی شده است.
+- [ ] پیاده‌سازی واقعی شماره‌دهی و ترتیب فراخوانی هنگام Save به‌طور قابل بازتولید مشخص شده است.
+- [ ] مسیر فراخوانی/Import **پشتیبانی‌شده و مجاز** برای Pricing مشخص شده است.
+- [ ] هماهنگی شماره‌گذاری در اجرای هم‌زمان UI راهکاران و Pricing در محیط تست تأیید شده است.
+- [ ] رفتار Rollback، خطای رزرو، Crash، Timeout و ارسال مجدد مشخص و آزموده شده است.
+- [ ] ایجاد پیش‌نویس با چند قلم و چند توافق پرداخت و بازکردن/ویرایش آن در UI تست تأیید شده است.
+- [ ] عدم ایجاد/تغییر آبجکت پایگاه اصلی، سطح دسترسی حداقلی و ثبت رخدادها تصویب شده است.
+
+### ۱۸.۱۳. منابع شواهد و قواعد نگهداری مستند
+
+| منبع | استفاده در این پژوهش |
+|---|---|
+| Trace ثبت اعلامیه راهکاران؛ رویداد `48172/46690` | تمایز شناسه/شماره تجاری، ترتیب رزرو/INSERT |
+| `Rahkaran-Modules.txt` و `Numbering-Code-Clues.txt` | محل فایل‌ها، مشخصات بسته‌ها و نام‌های کشف‌شده |
+| `Numbering-API-Methods.txt` | ثبت شکست روش `ReflectionOnlyLoad`؛ **نه** شاهد نبود اینترفیس |
+| `Rahkaran-Diagnostics.zip` | پنج DLL مرتبط با `PriceList` و `Numbering` برای خواندن مستقیم metadata |
+| `Rahkaran-Diagnostics(1).zip` | `SystemGroup.Framework.dll` و گزارش Hash/کپی سالم |
+| خروجی تنظیمات IIS و PowerShell | مسیر برنامه، مدل Hosting و فایل‌های ماژولار |
+| اسناد/SQL بخش‌های ۱ تا ۱۷ | ساختار و آزمون‌های تاریخی ثبت پیش‌نویس |
+
+**ملاحظات نگهداری:** خود DLLها و بسته‌های اختصاصی را بدون تأیید مالک حقوقی نرم‌افزار وارد مخزن Git نکنید. تنها metadata، روش بازتولید مجاز و نتایج غیرمحرمانه را مستند کنید. اطلاعات ورود، CSRF، Cookie، Authorization، Connection String محرمانه و اطلاعات مشتری نباید در مستند GitHub قرار گیرند.
+
+---
+
+## ۱۹. جمع‌بندی تصمیم فنی در تاریخ ۱۴۰۵/۰۸/۲۷
+
+**۱. بخش ثبت پیش‌نویس:** ساختار INSERT برای یک کالا و یک توافق در تست کار کرده و جداول مورد نیاز شناخته شده‌اند؛ ایجاد قوانین قیمت و تأیید راهکاران در محدوده فعلی نیست.
+
+**۲. بخش شماره‌گذاری:** اکنون نام دقیق قرارداد مرکزی شماره‌گذاری و متدهای اصلی آن معلوم است. `GenerateNewNumber(INumberedEntity)` و `HandlePreSaveNumbering(INumberedEntity)` نقاط بررسی بعدی‌اند، اما مسیر پیاده‌سازی و امکان استفاده از خارج از برنامه هنوز معلوم نیست.
+
+**۳. تصمیم استقرار:** تا روشن‌شدن تخصیص رسمی شماره و اثبات هم‌زمانی با خود راهکاران، **هیچ نسخه‌ای از تخصیص شماره دستی یا `MAX(Number)+1` نباید در محیط تولید فعال شود**؛ حتی اگر روی دیتابیس تست بارها COMMIT موفق داشته باشد.
+
+**۴. تصمیم مستندسازی:** این نسخه جایگزین کامل مستند قبلی است و تمام بخش‌های قدیمی را حفظ می‌کند؛ بخش‌های ۱۸ و ۱۹ حاصل بررسی جدید هستند. هر یافته بعدی باید همراه با نام اسمبلی، نسخه، روش مشاهده، شواهد و وضعیت «تأییدشده/استنباط/نیازمند آزمون» افزوده شود.
+
