@@ -1225,3 +1225,94 @@ NumberReservation    1
 
 **۴. تصمیم مستندسازی:** این نسخه جایگزین کامل مستند قبلی است و تمام بخش‌های قدیمی را حفظ می‌کند؛ بخش‌های ۱۸ و ۱۹ حاصل بررسی جدید هستند. هر یافته بعدی باید همراه با نام اسمبلی، نسخه، روش مشاهده، شواهد و وضعیت «تأییدشده/استنباط/نیازمند آزمون» افزوده شود.
 
+
+
+
+
+
+# یافته‌های تکمیلی مسیر ذخیره و شماره‌گذاری راهکاران
+
+> تاریخ: ۱۴۰۵/۰۸/۳۰ (۲۰۲۶/۱۱/۲۱)  
+> مرجع تکمیلی بخش ۱۸ مستند `docs/RAHKARAN-PRICE-REGISTRATION-RESEARCH.fa.md` در مخزن `cognitive-kernel/Pricing`.  
+> دامنه: تحلیل **ایستا و فقط‌خواندنی** اسمبلی‌های نصب‌شده، بدون اجرای کد راهکاران، تغییر IIS یا نوشتن در SQL Server.  
+> وضعیت: مسیر عمومی اجرای شماره‌گذاری در لایه Business شناسایی شده؛ پیاده‌سازی تخصیص شماره و دسترسی پشتیبانی‌شده از PHP همچنان ناشناخته است.
+
+## ۱. فایل‌های مبنا
+
+- `Rahkaran-Diagnostics(2).zip`: شامل `SystemGroup.Web.dll`، به اندازه `38,438,912` بایت؛ SHA256: `B9B954A87787DEF9E71E426D650D17FA4F0BC26632C4435C44CF336CDFB18350`.
+- بسته‌های قبلی: `SystemGroup.Framework.dll`، `SystemGroup.Sales.PriceList.Web.dll`، `SystemGroup.Sales.PriceList.Common.dll`.
+- روش: خواندن مستقیم جدول‌های metadata (.NET CLI) و توکن‌های فراخوانی در IL، بدون Reflection اجرایی.
+
+## ۲. مسیر ذخیره از صفحه وب
+
+در `SystemGroup.Sales.PriceList.Web.dll` کلاس `SystemGroup.Sales.PriceList.Web.PriceListPages.Edit` از `SgEditorPage<PriceList>` مشتق شده است. در `OnEntitySaving` اختصاصی فرم، فراخوانی کلاس پایه نیز دیده می‌شود؛ برای تولید شماره فراخوانی مستقیمی به `GenerateNewNumber` در همین متد مشاهده نشده است.
+
+در `SystemGroup.Web.dll`:
+
+```text
+SgEditorPage<T>.SaveEntity
+  -> SgEditorPage<T>.DoSaveEntity
+  -> EditorExtensions<T>.SaveEntityWithExtensions
+  -> EditorExtensions<T>.get_EntityBusiness
+       -> IMetaBusinessService.ServiceInterfaceType
+       -> ServiceFactory.Create(Type)
+  -> [سرویس تجاری شناسایی‌شده در metadata] SaveWithExtensions
+```
+
+در `SystemGroup.Sales.PriceList.Common.dll`، قرارداد `IPriceListBusiness` اینترفیس‌های جنریک `IBusinessBase<PriceList>`، `ISaveService<PriceList>` و قراردادهای مرتبط را توسعه می‌دهد. کد concrete business مربوط به PriceList در پنج DLL عمومی استخراج‌شده موجود نیست و در این تحلیل مشاهده نشده است؛ **نمی‌توان با قطعیت گفت در زمان اجرا از کدام override یا پیاده‌سازی استفاده می‌شود**.
+
+## ۳. مسیر عمومی شماره‌گذاری در Framework
+
+در `SystemGroup.Framework.dll` کلاس `SystemGroup.Framework.Business.BusinessBase<T>` دارای متدهای زیر است:
+
+```text
+BusinessBase<T>.SaveWithExtensions
+BusinessBase<T>.Save
+BusinessBase<T>.DoSave
+BusinessBase<T>.OnSavingRecord
+BusinessBase<T>.DoNumberAssignment
+```
+
+از توکن‌های فراخوانی IL، مسیر داخل پیاده‌سازی عمومی چنین شناسایی شد:
+
+```text
+BusinessBase<T>.Save / SaveWithExtensions
+  -> DoSave
+     -> Repository.Save(..., OnSavingRecord, ...)
+        -> OnSavingRecord(record, ...)
+           -> DoNumberAssignment(record)
+              -> record is INumberedEntity ?
+                 -> ServiceFactory.Create<INumberingService>()
+                 -> BeforeNumberingRecord event (اگر مشترک داشته باشد)
+                 -> INumberingService.HandlePreNumbering<T>(eventArgs)
+                 -> INumberingService.HandlePreSaveNumbering(INumberedEntity)
+           -> OnInsertingRecord / OnUpdatingRecord
+           -> SavingRecord event
+```
+
+**سطح اطمینان:** وجود این فراخوانی‌ها و تقدم `DoNumberAssignment` در `OnSavingRecord` در IL **تأیید شده است**. اجرای عینی این توالی برای `PriceList` در نصب بررسی‌شده، مشروط به استفاده پیاده‌سازی concrete اعلامیه قیمت از همین مسیر عمومی و نبود override مؤثر است؛ این قسمت **نیازمند تأیید runtime در محیط تست** است.
+
+`DoNumberAssignment` فقط وقتی رکورد به `INumberedEntity` تبدیل‌پذیر باشد وارد این شاخه می‌شود. پیاده‌سازی رویداد `BeforeNumberingRecord` و نتیجه `HandlePreNumbering` می‌توانند بر رفتار نهایی اثر بگذارند، بنابراین صرفِ نام این متدها نباید به الگوریتم اختصاص شماره تعبیر شود.
+
+در `BusinessBase<T>.CreateRequiredTransactionScope`، مقدار `IsolationLevel=2` (معادل `ReadCommitted` در `System.Transactions`) به سازنده `SgTransactionScope` ارسال می‌شود. در `DoSave` و `SaveWithExtensions` ساخت/تکمیل scope تراکنشی قابل مشاهده است؛ اما **این موضوع به‌تنهایی یکتایی شماره و سازگاری هم‌زمانی با UI را اثبات نمی‌کند**.
+
+## ۴. تمایز UI از سرویس تولید شماره
+
+در `SystemGroup.Web.dll`، `SgNumberingTextBox.AssignReadOnly` متد `INumberingService.GetEntityNumberAssignApproch(Type)` را فراخوانی می‌کند و وضعیت قابل‌ویرایش بودن کنترل را تعیین می‌کند. این فراخوانی، تولید شماره تجاری نیست.
+
+در `SystemGroup.Framework.dll`، `ServiceFactory.Create(Type)` به `ServiceRepository.GetImplementationType` و `CreateServiceInstance` یا مسیر proxy شدن سمت کلاینت وابسته است. در `CreateServiceInstance` بررسی مجوز، ساخت نمونه و اتصال EventEngine دیده شد. این یعنی اینترفیس یک قرارداد داخلی در بستر سرویس‌های راهکاران است؛ **وجود آن معادل API/SDK عمومی یا مجاز برای PHP نیست**.
+
+## ۵. وضعیت موارد حل‌نشده
+
+1. کد concrete پیاده‌ساز `INumberingService.HandlePreSaveNumbering` و `GenerateNewNumber` در DLLهای بررسی‌شده یافت نشده است. بسته‌های `SystemGroup.General.Numbering.Business.bin/.dat` با امضای `SGCR` از نوع اسمبلی PE معمولی نیستند؛ بدون مجوز نباید آن‌ها را دستکاری یا بازگشایی کرد.
+2. هنوز اثبات نشده `HandlePreSaveNumbering` در ذخیره واقعی PriceList شماره بعدی را محاسبه می‌کند، رزرو می‌کند، یا به متد دیگری ارجاع می‌دهد.
+3. هنوز API یا مسیر Import **رسمی، مجاز و پشتیبانی‌شده** برای ایجاد پیش‌نویس PriceList از Pricing شناسایی نشده است.
+4. رفتار هم‌زمانی کاربران راهکاران و Pricing، رزرو `SYS3.NumberingRangeReservation`، شکست تراکنش و ارسال مجدد باید در محیط تست سنجیده شوند.
+
+## ۶. تصمیم و گام پیشنهادی
+
+**فعلاً از `MAX(Number)+1` در محیط عملیاتی استفاده نشود.** ابتدا از ارائه‌دهنده راهکاران درباره سرویس/SDK پشتیبانی‌شده برای «ایجاد پیش‌نویس اعلامیه قیمت با شماره‌دهی رسمی و بدون تأیید» استعلام شود. در کنار آن، فقط در محیط آزمایشی مجاز، یک Save واقعی فرم PriceList را با شواهد Trace کامل ثبت و با مسیر generic بالا تطبیق دهید؛ خصوصاً رزرو شماره، دامنه تراکنش، تغییر رکورد و رفتار خطا/هم‌زمانی. از اجرای reflection یا سرویس‌های داخلی با اتصال به production برای آزمایش خودداری شود.
+
+> این سند **یادداشت تکمیلی** است، نه جایگزین ۱۹ بخش قبلی. می‌توان محتوای آن را با تیتر «۲۰. یافته‌های تکمیلی تحلیل IL — ۱۴۰۵/۰۸/۳۰» در انتهای سند اصلی ادغام کرد.
+
+
