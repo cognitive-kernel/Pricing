@@ -2,13 +2,13 @@
 
 > مخزن مصرف‌کننده: `cognitive-kernel/Pricing`  
 > مسیر: `docs/RAHKARAN-PRICE-REGISTRATION-RESEARCH.fa.md`  
-> تاریخ بازنگری: **۱۴۰۵/۰۸/۲۷ (۲۰۲۶/۱۱/۱۸)**؛ تکمیل پژوهش شماره‌گذاری با بررسی اسمبلی‌های نصب‌شده در IIS  
+> تاریخ بازنگری: **۱۴۰۵/۰۸/۳۰ (۲۰۲۶/۱۱/۲۱)**؛ تکمیل پژوهش IL و بررسی فقط‌خواندنی بسته‌های Business و ماژول‌های `Framework.Spl`  
 > وضعیت: **ثبت پیش‌نویس خالص با COMMIT در دیتابیس تست موفق بوده است (از جمله PriceListID=48147 و آزمون بعدی PriceListID=48197)؛ سرویس عمومی شماره‌گذاری در اسمبلی شناسایی شده، اما روش تخصیص شماره عملیاتی و قابل فراخوانی از Pricing هنوز تأیید نشده است.**  
 > دامنه قطعی: **فقط ایجاد پیش‌نویس اعلامیه قیمت (`State=1`)؛ بدون تأیید، فعال‌سازی یا ایجاد/خاتمه قوانین قیمت.**
 
-> **راهنمای نسخه:** بخش‌های ۱ تا ۱۵ تاریخچه پژوهش و آزمون‌های قبلی هستند؛ بخش ۱۶ وضعیت آزمایش ثبت پیش‌نویس در ۱۴۰۵/۰۸/۲۶، و بخش ۱۷ SQL **صرفاً آزمایشی** را نگه می‌دارد. **بخش ۱۸ جدیدترین یافته‌های قطعی حاصل از Trace، IIS و تحلیل metadata اسمبلی‌ها در ۱۴۰۵/۰۸/۲۷ است؛ در تعارض مربوط به شماره‌گذاری و مجوز استقرار، بخش ۱۸ مقدم است.** هیچ آبجکتی در دیتابیس عملیاتی نباید ایجاد، اصلاح یا حذف شود.
+> **راهنمای نسخه:** بخش‌های ۱ تا ۱۵ تاریخچه پژوهش، بخش ۱۶ آزمون ثبت پیش‌نویس در ۱۴۰۵/۰۸/۲۶ و بخش ۱۷ SQL **صرفاً آزمایشی** هستند. بخش ۱۸ نتایج Trace و metadata، بخش ۱۹ تصمیم همان مقطع، بخش ۲۰ تحلیل IL مسیر ذخیره، و **بخش ۲۱ آخرین شواهد بارگذاری بسته‌های Business و Spl در ۱۴۰۵/۰۸/۳۰** را ثبت می‌کند. برای موضوع شماره‌گذاری و مجوز استقرار، **بخش ۲۱ و سپس بخش ۲۰** در صورت تعارض بر برداشت‌های قدیمی مقدم‌اند. هیچ آبجکتی در دیتابیس عملیاتی نباید ایجاد، اصلاح یا حذف شود.
 
-> **هشدار استقرار (۱۴۰۵/۰۸/۲۷):** وجود `GenerateNewNumber` و `HandlePreSaveNumbering` در `INumberingService` تأیید شد، اما **پیاده‌سازی این متدها، API رسمی قابل‌فراخوانی از PHP، رفتار تراکنشی و هماهنگی با کاربران راهکاران هنوز تأیید نشده است**. کد SQL بخش ۱۷ و هر نسخه مبتنی بر `MAX(Number)+1` **فقط ابزار آزمون در دیتابیس تست** هستند و نباید مبنای استقرار در محیط اصلی باشند.
+> **هشدار استقرار (۱۴۰۵/۰۸/۳۰):** وجود متدهای `GenerateNewNumber` و `HandlePreSaveNumbering` و فراخوانی `HandlePreSaveNumbering` در مسیر عمومی `BusinessBase<T>.DoNumberAssignment` تأیید شده است؛ اما **پیاده‌سازی سرویس، قرارداد API رسمی قابل‌فراخوانی از PHP، الگوریتم رزرو و هماهنگی هم‌زمان با کاربران راهکاران هنوز تأیید نشده است**. نرم‌افزار آزمایشی راهکاران در دسترس نیست و **فقط دیتابیس تست وجود دارد**. کد SQL بخش ۱۷ و هر نسخه مبتنی بر `MAX(Number)+1` **فقط ابزار آزمون در دیتابیس تست** هستند؛ استفاده در محیط عملیاتی ممنوع است.
 
 ## ۱. خلاصه مدیریتی و سطح اطمینان
 
@@ -1230,20 +1230,20 @@ NumberReservation    1
 
 
 
-# یافته‌های تکمیلی مسیر ذخیره و شماره‌گذاری راهکاران
+## ۲۰. یافته‌های تکمیلی مسیر ذخیره و شماره‌گذاری راهکاران — ۱۴۰۵/۰۸/۳۰ (۲۰۲۶/۱۱/۲۱)
 
 > تاریخ: ۱۴۰۵/۰۸/۳۰ (۲۰۲۶/۱۱/۲۱)  
 > مرجع تکمیلی بخش ۱۸ مستند `docs/RAHKARAN-PRICE-REGISTRATION-RESEARCH.fa.md` در مخزن `cognitive-kernel/Pricing`.  
 > دامنه: تحلیل **ایستا و فقط‌خواندنی** اسمبلی‌های نصب‌شده، بدون اجرای کد راهکاران، تغییر IIS یا نوشتن در SQL Server.  
 > وضعیت: مسیر عمومی اجرای شماره‌گذاری در لایه Business شناسایی شده؛ پیاده‌سازی تخصیص شماره و دسترسی پشتیبانی‌شده از PHP همچنان ناشناخته است.
 
-## ۱. فایل‌های مبنا
+### ۲۰.۱. فایل‌های مبنا
 
 - `Rahkaran-Diagnostics(2).zip`: شامل `SystemGroup.Web.dll`، به اندازه `38,438,912` بایت؛ SHA256: `B9B954A87787DEF9E71E426D650D17FA4F0BC26632C4435C44CF336CDFB18350`.
 - بسته‌های قبلی: `SystemGroup.Framework.dll`، `SystemGroup.Sales.PriceList.Web.dll`، `SystemGroup.Sales.PriceList.Common.dll`.
 - روش: خواندن مستقیم جدول‌های metadata (.NET CLI) و توکن‌های فراخوانی در IL، بدون Reflection اجرایی.
 
-## ۲. مسیر ذخیره از صفحه وب
+### ۲۰.۲. مسیر ذخیره از صفحه وب
 
 در `SystemGroup.Sales.PriceList.Web.dll` کلاس `SystemGroup.Sales.PriceList.Web.PriceListPages.Edit` از `SgEditorPage<PriceList>` مشتق شده است. در `OnEntitySaving` اختصاصی فرم، فراخوانی کلاس پایه نیز دیده می‌شود؛ برای تولید شماره فراخوانی مستقیمی به `GenerateNewNumber` در همین متد مشاهده نشده است.
 
@@ -1261,7 +1261,7 @@ SgEditorPage<T>.SaveEntity
 
 در `SystemGroup.Sales.PriceList.Common.dll`، قرارداد `IPriceListBusiness` اینترفیس‌های جنریک `IBusinessBase<PriceList>`، `ISaveService<PriceList>` و قراردادهای مرتبط را توسعه می‌دهد. کد concrete business مربوط به PriceList در پنج DLL عمومی استخراج‌شده موجود نیست و در این تحلیل مشاهده نشده است؛ **نمی‌توان با قطعیت گفت در زمان اجرا از کدام override یا پیاده‌سازی استفاده می‌شود**.
 
-## ۳. مسیر عمومی شماره‌گذاری در Framework
+### ۲۰.۳. مسیر عمومی شماره‌گذاری در Framework
 
 در `SystemGroup.Framework.dll` کلاس `SystemGroup.Framework.Business.BusinessBase<T>` دارای متدهای زیر است:
 
@@ -1296,23 +1296,177 @@ BusinessBase<T>.Save / SaveWithExtensions
 
 در `BusinessBase<T>.CreateRequiredTransactionScope`، مقدار `IsolationLevel=2` (معادل `ReadCommitted` در `System.Transactions`) به سازنده `SgTransactionScope` ارسال می‌شود. در `DoSave` و `SaveWithExtensions` ساخت/تکمیل scope تراکنشی قابل مشاهده است؛ اما **این موضوع به‌تنهایی یکتایی شماره و سازگاری هم‌زمانی با UI را اثبات نمی‌کند**.
 
-## ۴. تمایز UI از سرویس تولید شماره
+### ۲۰.۴. تمایز UI از سرویس تولید شماره
 
 در `SystemGroup.Web.dll`، `SgNumberingTextBox.AssignReadOnly` متد `INumberingService.GetEntityNumberAssignApproch(Type)` را فراخوانی می‌کند و وضعیت قابل‌ویرایش بودن کنترل را تعیین می‌کند. این فراخوانی، تولید شماره تجاری نیست.
 
 در `SystemGroup.Framework.dll`، `ServiceFactory.Create(Type)` به `ServiceRepository.GetImplementationType` و `CreateServiceInstance` یا مسیر proxy شدن سمت کلاینت وابسته است. در `CreateServiceInstance` بررسی مجوز، ساخت نمونه و اتصال EventEngine دیده شد. این یعنی اینترفیس یک قرارداد داخلی در بستر سرویس‌های راهکاران است؛ **وجود آن معادل API/SDK عمومی یا مجاز برای PHP نیست**.
 
-## ۵. وضعیت موارد حل‌نشده
+### ۲۰.۵. وضعیت موارد حل‌نشده
 
 1. کد concrete پیاده‌ساز `INumberingService.HandlePreSaveNumbering` و `GenerateNewNumber` در DLLهای بررسی‌شده یافت نشده است. بسته‌های `SystemGroup.General.Numbering.Business.bin/.dat` با امضای `SGCR` از نوع اسمبلی PE معمولی نیستند؛ بدون مجوز نباید آن‌ها را دستکاری یا بازگشایی کرد.
 2. هنوز اثبات نشده `HandlePreSaveNumbering` در ذخیره واقعی PriceList شماره بعدی را محاسبه می‌کند، رزرو می‌کند، یا به متد دیگری ارجاع می‌دهد.
 3. هنوز API یا مسیر Import **رسمی، مجاز و پشتیبانی‌شده** برای ایجاد پیش‌نویس PriceList از Pricing شناسایی نشده است.
 4. رفتار هم‌زمانی کاربران راهکاران و Pricing، رزرو `SYS3.NumberingRangeReservation`، شکست تراکنش و ارسال مجدد باید در محیط تست سنجیده شوند.
 
-## ۶. تصمیم و گام پیشنهادی
+### ۲۰.۶. تصمیم و گام پیشنهادی
 
-**فعلاً از `MAX(Number)+1` در محیط عملیاتی استفاده نشود.** ابتدا از ارائه‌دهنده راهکاران درباره سرویس/SDK پشتیبانی‌شده برای «ایجاد پیش‌نویس اعلامیه قیمت با شماره‌دهی رسمی و بدون تأیید» استعلام شود. در کنار آن، فقط در محیط آزمایشی مجاز، یک Save واقعی فرم PriceList را با شواهد Trace کامل ثبت و با مسیر generic بالا تطبیق دهید؛ خصوصاً رزرو شماره، دامنه تراکنش، تغییر رکورد و رفتار خطا/هم‌زمانی. از اجرای reflection یا سرویس‌های داخلی با اتصال به production برای آزمایش خودداری شود.
+**فعلاً از `MAX(Number)+1` در محیط عملیاتی استفاده نشود.** ابتدا از ارائه‌دهنده راهکاران درباره سرویس/SDK پشتیبانی‌شده برای «ایجاد پیش‌نویس اعلامیه قیمت با شماره‌دهی رسمی و بدون تأیید» استعلام شود. اگر بعداً محیط اجرایی آزمایشیِ مجاز راهکاران فراهم شد، در همان محیط یک Save واقعی فرم PriceList را با شواهد Trace کامل ثبت و با مسیر generic بالا تطبیق دهید؛ خصوصاً رزرو شماره، دامنه تراکنش، تغییر رکورد و رفتار خطا/هم‌زمانی. در وضعیت فعلی فقط **دیتابیس آزمایشی** موجود است و این آزمون اجرایی قابل انجام نیست. از اجرای reflection یا سرویس‌های داخلی با اتصال به production برای آزمایش خودداری شود.
 
-> این سند **یادداشت تکمیلی** است، نه جایگزین ۱۹ بخش قبلی. می‌توان محتوای آن را با تیتر «۲۰. یافته‌های تکمیلی تحلیل IL — ۱۴۰۵/۰۸/۳۰» در انتهای سند اصلی ادغام کرد.
+> **یادداشت تاریخی:** این بخش ابتدا به‌صورت یادداشت جداگانه تحلیل IL تهیه و سپس با حفظ محتوای آن در سند اصلی ادغام شد. برای نتایج بعدی مربوط به Loader و بسته‌های `SGCR` به بخش ۲۱ رجوع شود.
 
+---
+
+## ۲۱. بررسی بارگذاری ماژول‌های Business و شواهد `Framework.Spl` — ۱۴۰۵/۰۸/۳۰ (۲۰۲۶/۱۱/۲۱)
+
+> **وضعیت این بخش:** حاصل خروجی مستقیم PowerShell ارائه‌شده از سرور نصب‌شده راهکاران است. اسکریپت‌های موفق، فقط نام فایل، مسیر، manifest، سرآیند باینری و رشته‌های قابل‌خواندن را بررسی کرده‌اند؛ **هیچ کد DLL اجرا نشده، هیچ بسته اختصاصی بازگشایی نشده و هیچ تغییر یا اتصال نوشتنی به SQL Server/IIS انجام نشده است.** شواهد زیر جایگزین حدس‌های قبلی درباره Loader نمی‌شوند؛ صرفاً آن‌ها را محدود و دقیق‌تر می‌کنند.
+
+### ۲۱.۱. محدودیت محیط اجرای آزمایش
+
+- **یک نسخه اجرایی/وبِ آزمایشی راهکاران وجود ندارد.** تنها دیتابیس آزمایشی جدا از دیتابیس عملیاتی در دسترس است.
+- بنابراین آزمون «ذخیره اعلامیه در UI تست و بررسی Network/Trace همان عملیات» در وضعیت فعلی قابل انجام نیست. **هیچ Save آزمایشی نباید روی نرم‌افزار عملیاتی اجرا شود.**
+- آزمون‌های قبلی `INSERT` و `COMMIT` روی **دیتابیس تست** (بخش‌های ۱۶ تا ۱۸) معتبر باقی می‌مانند؛ اما هرگز به‌تنهایی صحت شماره‌دهی رسمی یا هم‌زمانی با UI را ثابت نمی‌کنند.
+- تا تعیین روش رسمی/مجاز یکپارچه‌سازی، مسیر تولیدی `Pricing → Rahkaran` برای ایجاد پیش‌نویس باید غیرفعال بماند.
+
+### ۲۱.۲. نتیجه اسکن محدود ارجاع‌های شماره‌گذاری
+
+در خروجی `STATIC NUMBERING REFERENCE SCAN` در تاریخ ۲۰۲۶/۱۱/۲۱، تعداد **۲۱ فایل DLL نامزد** بررسی شد و تنها **۳ فایل** دارای یکی از نشانگرهای جست‌وجوشده بودند:
+
+| فایل | نشانه‌های یافت‌شده | برداشت مجاز |
+|---|---|---|
+| `SystemGroup.Framework.dll` | `INumberingService`، `HandlePreSaveNumbering`، `GenerateNewNumber`، `ServiceRepository`، `DoNumberAssignment` | تعریف و استفاده عمومی از قرارداد سرویس شماره‌گذاری؛ در بخش ۲۰ با تحلیل IL تکمیل شده است |
+| `SystemGroup.General.Numbering.Common.dll` | `INumberingService`، `NumberingRangeReservation` | نوع‌ها/قراردادهای شماره‌گذاری و رزرو |
+| `SystemGroup.General.Numbering.Web.dll` | `INumberingService` | ارجاع در ماژول مدیریتی وب |
+
+**محدودیت:** اسکن رشته، صرفاً نام‌هایی را پیدا می‌کند که به‌صورت قابل‌خواندن در فایل موجود باشند. نبود نام در سایر ۱۸ DLL به معنی نبود پیاده‌سازی در کل سامانه نیست. DLLهای بررسی‌شده نیز نماینده تمام فایل‌های نصب نیستند.
+
+### ۲۱.۳. مسیرهای پیکربندی و اجزای پویا
+
+خروجی گزارش `Rahkaran-Assembly-Resolution.txt` نشان داد:
+
+```text
+AlternativeBinPaths = ..\Presentation\Bin
+DynamicComponents: present
+ComponentModel\General: present
+Config\machine.config: present
+```
+
+در بررسی **دو مسیر احتمالی** زیر، پوشه وجود نداشت:
+
+```text
+E:\Systemgroup\Rahkaran\App\Presentation\Bin
+E:\Systemgroup\Rahkaran\Presentation\Bin
+```
+
+عدم وجود این دو مسیر **اثبات نمی‌کند** تنظیم `AlternativeBinPaths` بی‌اثر است؛ پایه resolve شدن مسیر نسبی در زمان اجرای برنامه هنوز به‌طور کامل بررسی نشده است.
+
+در فهرست مستقیم `E:\Systemgroup\Rahkaran\App\DynamicComponents` تعداد **۱۹ ورودی** ثبت شد؛ DLLهای Business/Common/Web مربوط به `CustomerManagement.v12`، `InvoiceManagement.v51` و `ProductManagement.v10` دیده شدند، اما **فایل مستقیم مربوط به `General.Numbering.Business` یا `Sales.PriceList.Business` در این فهرست نبود**. این مشاهده صرفاً ناظر بر اقلام همان سطح پوشه است و نبود پیاده‌سازی در سایر بخش‌های نصب را ثابت نمی‌کند.
+
+### ۲۱.۴. manifest و بسته‌بندی اختصاصی ماژول‌های Business
+
+گزارش `Rahkaran-Business-Loader-LITE.txt` با `STATUS: COMPLETED` ساختار `.deps.json` این دو ماژول را تأیید کرد:
+
+| Manifest | Target | Runtime asset اعلام‌شده | وابستگی مشترک |
+|---|---|---|---|
+| `SystemGroup.General.Numbering.Business.deps.json` | `.NETCoreApp,Version=v8.0` | `SystemGroup.General.Numbering.Business.dll` | `SystemGroup.Framework.Spl/20.0.31.43237` |
+| `SystemGroup.Sales.PriceList.Business.deps.json` | `.NETCoreApp,Version=v8.0` | `SystemGroup.Sales.PriceList.Business.dll` | `SystemGroup.Framework.Spl/20.0.31.43237` |
+
+برای هر دو ماژول، نسخه متناظر در manifest نیز ثبت شده است:
+
+```text
+SystemGroup.General.Numbering.Business/20.0.31.43266
+SystemGroup.Sales.PriceList.Business/20.0.31.43595
+```
+
+با اینکه فایل‌های manifest نام DLL را به‌عنوان **runtime asset** اعلام می‌کنند، در مسیر اصلی نصب، به‌جای این دو DLL، فایل‌های زیر مشاهده شدند:
+
+```text
+SystemGroup.General.Numbering.Business.bin  (108040 bytes)
+SystemGroup.General.Numbering.Business.dat  (175624 bytes)
+SystemGroup.Sales.PriceList.Business.bin     (560136 bytes)
+SystemGroup.Sales.PriceList.Business.dat     (519688 bytes)
+```
+
+هر چهار فایل با ۸ بایت یکسان زیر آغاز می‌شوند:
+
+```text
+53-47-43-52-01-00-00-00  = ASCII "SGCR" + 01-00-00-00
+```
+
+این تفاوت با فرض **بسته‌بندی اختصاصی اسمبلی‌های تجاری** سازگار است؛ اما از header و manifest **نمی‌توان** نتیجه گرفت کدام فایل حاوی کد اجرایی است، قالب دقیق چیست، آیا هر دو فایل مکمل‌اند، یا در چه مرحله‌ای بارگذاری می‌شوند. به‌ویژه قرار گرفتن نام `.dll` در manifest **به معنی موجود بودن فایل فیزیکی DLL در همان مسیر نیست**.
+
+در جست‌وجوی مستقیم سه مسیر زیر، هر دو فایل `Business.dll` موردنظر **وجود نداشتند**:
+
+```text
+E:\Systemgroup\Rahkaran\App
+E:\Systemgroup\Rahkaran\App\DynamicComponents
+E:\Systemgroup\Rahkaran\App\WebRoot\Bin
+```
+
+این بررسی recursive نبوده و درباره همه مسیرهای بالقوه یا ماژول‌های بارگذاری‌شده در حافظه حکم قطعی نمی‌دهد.
+
+### ۲۱.۵. شواهد جدید از سه اسمبلی `Framework.Spl`
+
+در گزارش `Rahkaran-Spl-Metadata.txt`، با وضعیت `STATUS: COMPLETED` و بدون اجرای DLL، نتایج زیر به دست آمد:
+
+| اسمبلی | اندازه | نشانه‌های مهمِ مشاهده‌شده در رشته‌ها | ارزیابی |
+|---|---:|---|---|
+| `SystemGroup.Framework.Spl.dll` | 41,984 بایت | `DecryptedAssemblyInfo`، `ReadProtectedData`، `ReadExtendedProtectedData`، `BCRYPTDECRYPT_FAILED`، `CRYPTENCRYPT_FAILED` | با خدمات داده/اسمبلی محافظت‌شده سازگار؛ نقش دقیق تأیید نشده |
+| `SystemGroup.Framework.SplData64.dll` | 376,832 بایت | `CryptDecrypt`، `CryptEncrypt`، `SystemGroup.ApplicationPlatform.Packaging` و نام تعداد زیادی ماژول `.Business` | سرنخ ارتباط با بسته‌های تجاری؛ صرف وجود رشته، دلیل پیاده‌سازی سرویس نیست |
+| `SystemGroup.Framework.SplNative64.dll` | 233,472 بایت | `SGCR`، `AssemblyLoader_LoadAssembly_Params`، `Get_AssemblyLoader_LoadAssembly_Params`، `BCryptDecrypt`، `CryptDecrypt`، `SYS3.NoForceAssemblyEncryption` | **نامزد قوی‌تر برای بررسی مسیر بارگذاری SGCR**؛ هنوز هیچ فراخوانی/رابطه اجرایی تأیید نشده است |
+
+**ارزیابی جدید:** پیش از این فقط مشابهت نام `Framework.Spl` در manifest مطرح بود؛ اکنون وجود رشته `SGCR` در `Framework.SplNative64.dll` و هم‌زمان نام‌های مرتبط با بارگذاری Assembly شاهد مستقیمِ قوی‌تری برای **احتمال نقش داشتن این ماژول در پردازش بسته‌های SGCR** است. بااین‌حال، چون فقط رشته‌ها بررسی شده‌اند، **این رابطه هنوز در سطح فرضیه فنی است** و نباید به‌عنوان «کشف قطعی Loader»، «کشف الگوریتم رمزگشایی» یا «بازیابی پیاده‌سازی `INumberingService`» ثبت شود.
+
+فهرست ۷۰ رشته گزارش‌شده برای `SplData64.dll` بخشی از خروجی محدود جست‌وجو است؛ شمارش دقیق همه ماژول‌های موجود یا اثبات وجود ماژول Numbering در آن نیست.
+
+### ۲۱.۶. نقشه ارتباط‌ها و سطح اطمینان
+
+```text
+[تأییدشده با IL]
+PriceList (INumberedEntity)
+    ↓ مسیر عمومی BusinessBase<T>.DoNumberAssignment
+INumberingService.HandlePreSaveNumbering(...)
+    ↓
+[نامعلوم: concrete implementation و زمان/رفتار دقیق اجرا برای PriceList]
+
+[تأییدشده با فهرست فایل و manifest]
+General.Numbering.Business.deps.json ── runtime asset: Business.dll
+                                       └── dependency: Framework.Spl
+General.Numbering.Business.bin/.dat ── header: SGCR
+Sales.PriceList.Business.bin/.dat    ── header: SGCR
+Framework.SplNative64.dll           ── readable strings: SGCR / AssemblyLoader
+    ⇢ [فرضیه، نه فراخوانی اثبات‌شده] استفاده از بسته‌های محافظت‌شده
+```
+
+**حد دانش موجود:** هنوز کد concrete متدهای `HandlePreSaveNumbering` و `GenerateNewNumber` در دست نیست؛ سازوکار باز کردن بسته‌ها، انتخاب Range/Domain، شماره بعدی، رزرو تحت تراکنش، برخورد هم‌زمان و رابط رسمی یکپارچه‌سازی مشخص نشده‌اند. حتی اگر یک مکانیزم بارگذاری داخلی پیدا شود، **الزاماً API پایدار یا مجاز برای Pricing فراهم نمی‌کند**.
+
+### ۲۱.۷. تصمیم اجرایی و اولویت ادامه پژوهش
+
+**اکنون ضرورتی برای ادامه اسکن رشته‌ای مشابه یا آزمودن رمزگشایی فایل‌های محافظت‌شده وجود ندارد.** قدم‌های ارزشمند بعدی چنین‌اند:
+
+1. **استعلام رسمی از تأمین‌کننده راهکاران** درباره API/SDK/Import پشتیبانی‌شده برای «ایجاد اعلامیه قیمت فروش فقط در حالت پیش‌نویس (`State=1`) با شماره‌گذاری رسمی، بدون تأیید/فعال‌سازی قیمت». در استعلام باید درباره شماره‌گذاری، احراز هویت/مجوز، ورودی چند کالا و چند توافق، idempotency، تراکنش و خطا/Retry سؤال شود.
+2. **بررسی صرفاً خواندنی دیتابیس آزمایشی** برای تکمیل محدودیت‌های `NumberingMethodRange`، `NumberingRangeReservation`، تداخل شماره‌ها و وجود index/constraint؛ این بررسی جایگزین آزمون شماره‌گذاری اپلیکیشن نیست.
+3. **محیط تست اجرایی فقط در صورت دسترسی قانونی/عملیاتی**: اگر بعداً نسخه آزمایشی نرم‌افزار تهیه شد، آزمون هم‌بسته Save/Trace و هم‌زمانی را فقط همان‌جا انجام دهیم. در وضعیت فعلی این گزینه **در دسترس نیست**.
+4. **Pricing**: تا مشخص شدن مسیر مجاز، قابلیت نوشتن در راهکاران را پشت کنترل feature flag غیرفعال نگه داریم؛ طراحی انتقال، ثبت رخداد، شناسه یکتای درخواست و اعتبارسنجی‌ها می‌تواند بدون عملیات واقعی روی راهکاران ادامه یابد.
+
+**ممنوعیت‌های استقرار:** بدون تأیید مسیر رسمی، از `MAX(Number)+1`، ساخت دستی Reservation، فراخوانی مستقیم DLL داخلی روی production، تغییر فایل‌های `Business.bin/.dat`، دستکاری Loader، ایجاد آبجکت جدید در دیتابیس عملیاتی و اجرای تست نوشتنی روی وب عملیاتی استفاده نشود.
+
+### ۲۱.۸. منابع شواهد و معیارهای تکمیل
+
+| شاهد | تاریخ | نتیجه کلیدی |
+|---|---|---|
+| `STATIC NUMBERING REFERENCE SCAN` | ۲۰۲۶/۱۱/۲۱ | ۲۱ DLL بررسی، ۳ DLL دارای نشانگرهای جست‌وجوشده |
+| `Rahkaran-Assembly-Resolution.txt` | ۲۰۲۶/۱۱/۲۱ | مسیر جایگزین و فهرست ماژول‌های `DynamicComponents` |
+| `Rahkaran-Business-Loader-LITE.txt` | ۲۰۲۶/۱۱/۲۱ | `STATUS: COMPLETED`؛ target برابر .NET 8، runtime assets، headerهای SGCR |
+| `Rahkaran-Spl-Metadata.txt` | ۲۰۲۶/۱۱/۲۱ | `STATUS: COMPLETED`؛ نام `SGCR` و Loader در SplNative64 |
+| بخش‌های ۱۸ تا ۲۰ این مستند | ۲۰۲۶/۱۱/۱۸ تا ۲۰۲۶/۱۱/۲۱ | Trace، metadata و IL مسیر عمومی ذخیره/شماره‌گذاری |
+
+**معیار اتمام این تحقیق برای استقرار:** تا زمانی که مسیر تخصیص شماره و ثبت پیش‌نویس از طریق رابط پشتیبانی‌شده مشخص، در محیط اجرایی آزمایشی مجاز آزموده و با رفتار هم‌زمانی/خطا تأیید نشده است، **ثبت خودکار پیش‌نویس در محیط عملیاتی فعال نمی‌شود**.
+
+### ۲۱.۹. وضعیت مستند و تصمیم نهایی تا این تاریخ
+
+- مستند حاضر نسخه **کامل جایگزین** فایل `docs/RAHKARAN-PRICE-REGISTRATION-RESEARCH.fa.md` است؛ بخش‌های ۱ تا ۱۹ حفظ و یافته‌های یادداشت تحلیل IL به‌عنوان بخش ۲۰ یکپارچه شده‌اند؛ یافته‌های اسکن Loader/Spl بخش ۲۱ را تشکیل می‌دهند.
+- اعداد `PriceListID` و `Number` مثال‌های مشاهده/آزمون تاریخی‌اند، نه شماره‌هایی برای استفاده مجدد.
+- نتیجه قطعی این مرحله **کشف یک نامزد فنی برای Loader** است؛ نه کشف API رسمی و نه تأیید پیاده‌سازی سرویس.
+- تغییرات فقط در همین فایل Markdown است؛ هیچ عملیاتی روی فایل‌های نصب‌شده یا دیتابیس انجام نشده است.
 
