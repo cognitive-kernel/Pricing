@@ -1,0 +1,3 @@
+# E6E2E.4 — EntityLookup metadata discovered
+
+Observed SYS3.EntityLookup.Code (int), EntityName (nvarchar). Candidate entity dictionary for resolving SourceType and TargetType; contents not yet inspected. The code 639 table name remains unverified. Other observed system metadata includes SYS3.EntityHistoryRecord(EntityCode, RecordID), SYS3.EntityEvent(EntityCode, EventName), GNR3.EntitySegmentSetting(EntityCode). Next: query EntityLookup for known codes and delivery/reserve/assignment/tracking/permit/batch names. Validate lookup names against actual table metadata and relations before treating them as physical table mappings. SELECT only.

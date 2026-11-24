@@ -1,0 +1,12 @@
+# E6E2E.6 — issue permit schema and direct relations (2026-11-24)
+
+## Confirmed physical tables and fields
+LGS3.IssuePermit: IssuePermitID bigint, Date datetime, ShippingPointRef, StoreRef, RecipientRef (FK GNR3.Party.PartyID), Version timestamp, ExpirationDate, ReferenceType int nullable, ReferenceRef bigint nullable, PlantRef, State, CounterpartEntityCode, CounterpartEntityRef, CounterpartEntityText, CounterpartStoreRef, Number, BranchRef, Additional1..5, IssuePermitType int not null, RegisterBranchRef, CreationDate, LastModificationDate, Creator, LastModifier, FiscalYearRef, LedgerRef, CounterpartPlantRef, PrevState, Description.
+LGS3.IssuePermitItem: IssuePermitItemID bigint, IssuePermitRef (FK IssuePermit.IssuePermitID), RowNumber, ReferenceType int nullable, ReferenceRef bigint nullable, PartRef, UnitRef, PartUnitRef, Quantity decimal, MajorUnitQuantity decimal, State, Version timestamp, ExtraData xml nullable, CounterpartEntityCode, CounterpartEntityRef, CounterpartEntityText, Additional1..5, IssuePermitTolerancePercent decimal, MaxMajorUnitQuantity decimal, PrevState, ReferenceCode, Description. Column ordinal 13 absent from supplied metadata; do not infer a column.
+Other FK targets: Part→LGS3.Part, Unit→GNR3.Unit, PartUnit→GNR3.EntityUnit, Plant→LGS3.Plant, Store→LGS3.Store, ShippingPoint→LGS3.ShippingPoint, Branch/RegisterBranch→GNR3.Branch, FiscalYear→GNR3.FiscalYear, Ledger→GNR3.Ledger, Creator/LastModifier→SYS3.User.
+
+## Direct entity edges
+All 32 selected permit items have exactly one distinct outgoing 639→669 edge; 32 related inventory items. No incoming edge or other outgoing edge returned by the direct SYS3.EntityRelation diagnostic. This is sample-specific; not proof that no application-level or recursive reference exists. Physical table mapping 639=LGS3.IssuePermitItem now confirmed by metadata and previous reference evidence; row existence/quantity validation still pending. Do not infer ReferenceType enum from EntityLookup.Code.
+
+## Next
+E6E2E.7 inspect header/item ReferenceType, ReferenceRef, counterpart references, quantities, state, dates and XML/additional-data presence for 32 local deliveries. Do not publish raw XML, document IDs, customer data or transaction quantities to public repository. SQL template uses placeholder 0. If references do not resolve, inspect permit header entity 634 relations and targeted XML structure; exact invoice allocation remains unproven. Two late-return groups remain pending financial-return review. Source only SELECT/CTE.
