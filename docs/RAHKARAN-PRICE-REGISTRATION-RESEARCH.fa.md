@@ -2,11 +2,11 @@
 
 > مخزن مصرف‌کننده: `cognitive-kernel/Pricing`  
 > مسیر: `docs/RAHKARAN-PRICE-REGISTRATION-RESEARCH.fa.md`  
-> تاریخ بازنگری: **۱۴۰۵/۰۹/۰۴ (۲۰۲۶/۱۱/۲۵)**؛ افزودن نتایج SQL تست، لاگ IIS و تحلیل ایستای دو اسمبلی `General.Numbering.API` و `Framework.API`؛ بخش‌های ۱ تا ۲۱ بدون حذف حفظ شده‌اند؛ کشف ارث‌بری کنترلر و برنامه اسکن Gateway در بخش ۲۶ افزوده شده است.  
-> وضعیت: **ثبت پیش‌نویس دوکالا/دوتوافق با COMMIT در دیتابیس تست تا PriceListID=48202 تأیید شده؛ آزمون شماره خودکار 46665 با ROLLBACK پایان یافته؛ `RahkaranEntityController<T0,T1,T2>.Save/BatchSave` در `Framework.API` شناسایی شده‌اند، اما اتصال قابل‌استفاده و پشتیبانی‌شده به `PriceList` و شماره‌گذاری رسمی در محیط عملیاتی هنوز تأیید نشده است.**  
+> تاریخ بازنگری: **۱۴۰۵/۰۹/۰۴ (۲۰۲۶/۱۱/۲۵)**؛ افزودن نتایج SQL تست، لاگ IIS و تحلیل ایستای دو اسمبلی `General.Numbering.API` و `Framework.API`؛ بخش‌های ۱ تا ۲۱ بدون حذف حفظ شده‌اند؛ کشف ارث‌بری کنترلر، اسکن Gateway و تحلیل نهایی API پورتال مشتریان تا بخش ۲۸ افزوده شده است.  
+> وضعیت: **ثبت پیش‌نویس دوکالا/دوتوافق با COMMIT در دیتابیس تست تا PriceListID=48202 تأیید شده؛ آزمون شماره خودکار 46665 با ROLLBACK پایان یافته؛ `RahkaranEntityController<T0,T1,T2>.Save/BatchSave` در `Framework.API` شناسایی شده‌اند، تحلیل ایستای API پورتال مشتریان آن را از نامزدهای ثبت اعلامیه کنار گذاشت؛ اما اتصال قابل‌استفاده و پشتیبانی‌شده به `PriceList` و شماره‌گذاری رسمی در محیط عملیاتی هنوز تأیید نشده است.**  
 > دامنه قطعی: **فقط ایجاد پیش‌نویس اعلامیه قیمت (`State=1`)؛ بدون تأیید، فعال‌سازی یا ایجاد/خاتمه قوانین قیمت.**
 
-> **راهنمای نسخه:** بخش‌های ۱ تا ۲۱ تاریخچه پژوهش تا ۱۴۰۵/۰۸/۳۰ را حفظ می‌کنند؛ **بخش‌های ۲۲ تا ۲۶ یافته‌های بعدیِ ۱۴۰۵/۰۹/۰۴ و وضعیت فعلی** هستند. در تعارض بین ارزیابی‌های تاریخی و یافته‌های جدیدترِ تأییدشده، بخش‌های ۲۲ تا ۲۶ مقدم‌اند. هیچ آبجکتی در دیتابیس عملیاتی نباید ایجاد، اصلاح یا حذف شود.
+> **راهنمای نسخه:** بخش‌های ۱ تا ۲۱ تاریخچه پژوهش تا ۱۴۰۵/۰۸/۳۰ را حفظ می‌کنند؛ **بخش‌های ۲۲ تا ۲۸ یافته‌های بعدیِ ۱۴۰۵/۰۹/۰۴ و وضعیت فعلی** هستند. در تعارض بین ارزیابی‌های تاریخی و یافته‌های جدیدترِ تأییدشده، بخش‌های ۲۲ تا ۲۸ مقدم‌اند. هیچ آبجکتی در دیتابیس عملیاتی نباید ایجاد، اصلاح یا حذف شود.
 
 > **هشدار استقرار (۱۴۰۵/۰۹/۰۴):** وجود کنترلر عمومی `Save/BatchSave` در `Framework.API`، وجود قرارداد `IPriceListService.SavePriceLists` و مسیر داخلی `BusinessBase<T>.DoNumberAssignment` **به معنی احراز endpoint رسمی ثبت PriceList، تضمین شماره‌دهی، مجوز استفاده بیرونی یا ایمنی هم‌زمانی نیست**. تنها یک دیتابیس تست بازیابی‌شده از بک‌آپ و وب راهکاران عملیاتی در دسترس بوده‌اند؛ روی وب/دیتابیس عملیاتی هیچ آزمون نوشتنی اجرا نشود. SQL شماره‌دهی مبتنی بر `MAX(Number)+1` صرفاً برای تست بک‌آپ است و در محیط اصلی ممنوع است.
 
@@ -1783,3 +1783,54 @@ E:\Systemgroup\Rahkaran\App\CustomerSalesPortalGateway\
 روی سرور صرفاً با PowerShell 5.1 می‌توان از همین فایل‌ها ZIP تهیه کرد؛ این کار کد راهکاران را اجرا نمی‌کند و نیازمند Python یا نصب برنامه‌ای نیست. فایل‌های اختصاصی فقط در صورت مجوز انتقال بررسی شوند و در GitHub عمومی بارگذاری نشوند. در تحلیل آفلاین باید نوع‌های تعریف‌شده، ارث‌بری Controllerها، API attributeها و اشاره واقعی به `SystemGroup.Sales.PriceList.Common.PriceList` بررسی شود؛ پس از آن درباره وجود مسیر ثبت اظهار نظر می‌کنیم.
 
 **حد نتیجه در این مقطع:** هیچ `PriceListController` قابل‌تأیید یا URL رسمی ذخیره اعلامیه قیمت در Gateway اثبات نشده است؛ `Pricing` همچنان نباید روی production عملیات نوشتن/شماره‌دهی مستقیم را فعال کند. ثبت پیش‌نویس با `State=1` روی دیتابیس تست، مجوز فنی یا عملیاتی برای production محسوب نمی‌شود.
+
+## ۲۸. تحلیل نهایی `CustomerSalesManagementPortal.API.dll` با metadata و IL — ۲۰۲۶/۱۱/۲۵
+
+### ۲۸.۱. منبع آزمون و روش بررسی
+
+منبع، ZIP ارسالی `Rahkaran-CustomerSalesPortal-API.zip` است؛ شامل دو فایل `SystemGroup.Sales.CustomerSalesManagementPortal.API.dll` (۴۰۹٬۶۰۰ بایت) و `SystemGroup.Sales.CustomerSalesManagementPortal.API.deps.json` (۶۰٬۶۹۰ بایت). اسمبلی از مسیر `CustomerSalesPortalGateway` سرور کپی شده است. SHA-256 اسمبلی: `e65b82526f050df0c709e396c90e1015bd7525fd626d058c7c3ab960a7014ad1`.
+
+این بررسی صرفاً با تحلیل **ایستای metadata استاندارد .NET و IL** انجام شد؛ DLL بارگذاری یا اجرا نشد، هیچ درخواست HTTP/SQL ارسال نشد و هیچ فایل یا داده‌ای در راهکاران تغییر نکرد. فهرست کلاس‌ها، وراثت آن‌ها، قراردادهای متد، attributeهای HTTP و فراخوانی‌های IL خوانده شد.
+
+### ۲۸.۲. ساختار مشاهده‌شده
+
+| شاخص | نتیجه |
+|---|---|
+| TypeDef | ۱۰۸ نوع تعریف‌شده (شامل انواع پشتیبان/تولیدشده توسط کامپایلر) |
+| MethodDef | ۴۳۵ متد |
+| Controllerهای تعریف‌شده با پسوند Controller | ۱۱ |
+| Controller اختصاصی `PriceList` | **یافت نشد** |
+| Controller مشتق از `RahkaranEntityController<PriceList,...>` | **یافت نشد** |
+| TypeRef مستقیم به `SystemGroup.Sales.PriceList.Common.PriceList` | **یافت نشد** |
+| AssemblyRef مستقیم به `SystemGroup.Sales.PriceList.Common` در metadata این DLL | **یافت نشد** |
+
+یازده Controller مربوط به کاربردهای پورتال مشتری هستند: `ConstructorFilterController`، `CustomerSalesPortalPurchaseController`، `CustomerSalesPortalUserController`، `CustomerSalesPortalUserPermissionController`، `EPaymentController`، `NewsController`، `PurchaseInfoController`، `PursuitDocumentsController`، `AuthController`، `CustomerSalesPortalReportController` و `ProductGroupFilterController`.
+
+از این تعداد، ده Controller از `SystemGroup.Framework.API.RahkaranController` و `AuthController` از `Microsoft.AspNetCore.Mvc.ControllerBase` ارث می‌برند؛ **هیچ‌کدام از `RahkaranEntityController<T0,T1,T2>` ارث نمی‌برند**. این نتیجه از `TypeDef.Extends` است، نه فقط جست‌وجوی رشته‌ای.
+
+فایل `.deps.json` نام `SystemGroup.Sales.PriceList.Common/20.0.31.43595` و `.Reference` را به‌عنوان وابستگی بسته‌ها فهرست کرده است. **وجود package dependency در manifest، با ارجاع واقعی IL به مدل `PriceList` یا endpoint ثبت برابر نیست**؛ در metadata خود DLL، چنین ارجاع مستقیمی پیدا نشد. این موضوع علت مثبت‌بودن اسکن رشته‌ای بخش ۲۷ را روشن می‌کند.
+
+### ۲۸.۳. متدهای قیمت در پورتال و مسیر فراخوانی واقعی
+
+هر سه متد زیر در `CustomerSalesPortalPurchaseController` قرار دارند:
+
+| متد | Attribute | فراخوانی مشاهده‌شده در IL | نتیجه |
+|---|---|---|---|
+| `GetListPrices` | `[HttpPost]` | `ICustomerSalesPortalPurchaseFrontendService.GetListPrices` | خواندن قیمت لیستی کالا |
+| `GetContractListPrice` | `[HttpPost]` | `ICustomerSalesPortalPurchaseFrontendService.GetContractListPrice` | خواندن قیمت قراردادی کالا |
+| `GetShoppingCartItemProductsPrices` | `[HttpGet]` | `ICustomerSalesPortalPurchaseFrontendService.GetShoppingCartItemProductsPrices` | دریافت قیمت اقلام سبد خرید |
+
+در IL دو متد اول، propertyهای `RequestSalesPriceList.get_ProductID` و `RequestSalesPriceList.get_Filter` خوانده می‌شوند. این Request در namespace `SystemGroup.Sales.CustomerSalesManagementPortal.Common` است و **نوع موجودیت `SLS3.PriceList` نیست**. متدهای `GetListPrices` و `GetContractListPrice` نتیجه سرویس مربوطه را به `ControllerBase.Ok(...)` می‌دهند. متد `GetShoppingCartItemProductsPrices` نیز نتیجه سرویس را به `Ok(...)` تحویل می‌دهد.
+
+وجود متدهای نوشتنی مانند `FinalizeSaleRequest` و `SaveOneTimeCustomer` در همان Controller مشاهده شد، اما هر دو مربوط به فرآیند پورتال مشتریان‌اند؛ نه ذخیره سند اعلامیه قیمت. برای مثال `FinalizeSaleRequest` در IL به `ICustomerSalesPortalPurchaseFrontendService.FinalizeSaleRequest` واگذار می‌کند.
+
+### ۲۸.۴. نتیجه و اصلاح جهت تحقیق
+
+**نتیجه تأییدشده برای این DLL:** هیچ شاهدی از یک کنترلر یا endpoint ایجاد/ویرایش `SLS3.PriceList` در `SystemGroup.Sales.CustomerSalesManagementPortal.API.dll` به دست نیامد. متدهای دارای واژه Price/List برای **دریافت قیمت** هستند، نه ذخیره سند اعلامیه قیمت. بنابراین این DLL از نامزدهای جدی مسیر ثبت پیش‌نویس کنار گذاشته می‌شود.
+
+**نتیجه‌ای که نمی‌توان گرفت:** این بررسی عدم وجود یک API اعلامیه قیمت در تمام نسخه‌ها، تمام ماژول‌ها یا محیط‌های راهکاران را اثبات نمی‌کند. همچنین درستی یا پشتیبانی‌شدن فراخوانی مستقیم `IPriceListService.SavePriceLists` از خارج نرم‌افزار را تأیید نمی‌کند.
+
+**گام پیشنهادی با بیشترین ارزش اجرایی:** به‌جای ادامه جست‌وجوی تصادفی DLL، از تأمین‌کننده راهکاران درباره رابط رسمی (API/SDK/Import) برای «ایجاد پیش‌نویس `State=1` با چند کالا، چند توافق پرداخت و شماره‌گذاری رسمی بدون تأیید قیمت» استعلام شود. اگر فقط مسیر داخلی WebForms قابل دسترس باشد، باید آن را به‌عنوان **رابط داخلی و ناپایدار** طبقه‌بندی کرد، نه API مجاز برای Pricing. بررسی بعدیِ بدون نوشتن، در صورت لزوم، tracing فقط‌خواندنی مسیر صفحه `Sales.PriceList.Web` و ثبت route/متدها در گزارش است، نه ارسال POST ذخیره روی وب عملیاتی.
+
+**تصمیم استقرار بدون تغییر:** Write روی دیتابیس/وب عملیاتی راهکاران در Pricing غیرفعال بماند؛ SQL مبتنی بر `MAX(Number)+1` و رزرو دستی شماره فقط ابزار آزمون روی کپی تست است.
+
