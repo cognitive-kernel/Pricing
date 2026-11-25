@@ -2,11 +2,11 @@
 
 > مخزن مصرف‌کننده: `cognitive-kernel/Pricing`  
 > مسیر: `docs/RAHKARAN-PRICE-REGISTRATION-RESEARCH.fa.md`  
-> تاریخ بازنگری: **۱۴۰۵/۰۹/۰۴ (۲۰۲۶/۱۱/۲۵)**؛ افزودن نتایج SQL تست، لاگ IIS و تحلیل ایستای دو اسمبلی `General.Numbering.API` و `Framework.API`؛ بخش‌های ۱ تا ۲۱ بدون حذف حفظ شده‌اند.  
+> تاریخ بازنگری: **۱۴۰۵/۰۹/۰۴ (۲۰۲۶/۱۱/۲۵)**؛ افزودن نتایج SQL تست، لاگ IIS و تحلیل ایستای دو اسمبلی `General.Numbering.API` و `Framework.API`؛ بخش‌های ۱ تا ۲۱ بدون حذف حفظ شده‌اند؛ کشف ارث‌بری کنترلر و برنامه اسکن Gateway در بخش ۲۶ افزوده شده است.  
 > وضعیت: **ثبت پیش‌نویس دوکالا/دوتوافق با COMMIT در دیتابیس تست تا PriceListID=48202 تأیید شده؛ آزمون شماره خودکار 46665 با ROLLBACK پایان یافته؛ `RahkaranEntityController<T0,T1,T2>.Save/BatchSave` در `Framework.API` شناسایی شده‌اند، اما اتصال قابل‌استفاده و پشتیبانی‌شده به `PriceList` و شماره‌گذاری رسمی در محیط عملیاتی هنوز تأیید نشده است.**  
 > دامنه قطعی: **فقط ایجاد پیش‌نویس اعلامیه قیمت (`State=1`)؛ بدون تأیید، فعال‌سازی یا ایجاد/خاتمه قوانین قیمت.**
 
-> **راهنمای نسخه:** بخش‌های ۱ تا ۲۱ تاریخچه پژوهش تا ۱۴۰۵/۰۸/۳۰ را حفظ می‌کنند؛ **بخش‌های ۲۲ تا ۲۵ یافته‌های بعدیِ ۱۴۰۵/۰۹/۰۴ و وضعیت فعلی** هستند. در تعارض بین ارزیابی‌های تاریخی و یافته‌های جدیدترِ تأییدشده، بخش‌های ۲۲ تا ۲۵ مقدم‌اند. هیچ آبجکتی در دیتابیس عملیاتی نباید ایجاد، اصلاح یا حذف شود.
+> **راهنمای نسخه:** بخش‌های ۱ تا ۲۱ تاریخچه پژوهش تا ۱۴۰۵/۰۸/۳۰ را حفظ می‌کنند؛ **بخش‌های ۲۲ تا ۲۶ یافته‌های بعدیِ ۱۴۰۵/۰۹/۰۴ و وضعیت فعلی** هستند. در تعارض بین ارزیابی‌های تاریخی و یافته‌های جدیدترِ تأییدشده، بخش‌های ۲۲ تا ۲۶ مقدم‌اند. هیچ آبجکتی در دیتابیس عملیاتی نباید ایجاد، اصلاح یا حذف شود.
 
 > **هشدار استقرار (۱۴۰۵/۰۹/۰۴):** وجود کنترلر عمومی `Save/BatchSave` در `Framework.API`، وجود قرارداد `IPriceListService.SavePriceLists` و مسیر داخلی `BusinessBase<T>.DoNumberAssignment` **به معنی احراز endpoint رسمی ثبت PriceList، تضمین شماره‌دهی، مجوز استفاده بیرونی یا ایمنی هم‌زمانی نیست**. تنها یک دیتابیس تست بازیابی‌شده از بک‌آپ و وب راهکاران عملیاتی در دسترس بوده‌اند؛ روی وب/دیتابیس عملیاتی هیچ آزمون نوشتنی اجرا نشود. SQL شماره‌دهی مبتنی بر `MAX(Number)+1` صرفاً برای تست بک‌آپ است و در محیط اصلی ممنوع است.
 
@@ -1665,3 +1665,121 @@ PriceList-specific API controller / URL / authorization
 | `Rahkaran-Framework-API.zip` (۲۰۲۶/۱۱/۲۵) | `RahkaranEntityController.Save/BatchSave` در `Framework.API` |
 
 **قانون مستندسازی:** تمام داده‌های فنی فوق مربوط به نسخه/نمونه مشخص‌شده‌اند؛ گزاره‌های قراردادی و پشتیبانی‌نشده به‌عنوان فرضیه یا «نیازمند آزمون» باقی می‌مانند. فایل‌های DLL اختصاصی، توکن‌ها، Cookieها، session، CSRF و رشته‌های اتصال در GitHub منتشر نشوند.
+## ۲۶. کشف ارث‌بری واقعی کنترلر API و آزمون کشف PriceList در Gateway — ۲۰۲۶/۱۱/۲۵
+
+### ۲۶.۱. تصحیح برداشت از کنترلر عمومی
+
+بازبینی مستقیم جدول `TypeDef` در `SystemGroup.Framework.API.dll` تأیید کرد کلاس زیر **abstract** است (`TypeAttributes = 0x00100081`؛ شامل بیت `Abstract = 0x80`):
+
+```csharp
+SystemGroup.Framework.API.RahkaranEntityController<T0, T1, T2>
+```
+
+در metadata این کلاس، دو متد `Save` و `BatchSave` با attribute `Microsoft.AspNetCore.Mvc.HttpPostAttribute` ثبت شده‌اند:
+
+```csharp
+IActionResult Save(EntityWithExtensions<T0> entity);
+IActionResult BatchSave(List<T0> entities);
+```
+
+**نتیجه محدود:** کلاس abstract مستقیماً Controller نهایی قابل‌نمونه‌سازی نیست؛ برای نتیجه‌گیری درباره API `PriceList` باید کلاس concrete مربوط به آن در Gateway شناسایی شود. وجود `[HttpPost]` روی متد پایه بدون شناخت Route registration، کنترلر concrete، تنظیمات احراز هویت و قرارداد نسخه، **هیچ URL مشخصی را اثبات نمی‌کند**. این موضوع محدودیت مهم برداشت‌های بخش ۲۴ است.
+
+### ۲۶.۲. نمونهٔ واقعی `RahkaranEntityController` در شماره‌گذاری
+
+از جدول `TypeDef` و امضای `TypeSpec` فایل `Gateway/SystemGroup.General.Numbering.API.dll` مشخص شد:
+
+```csharp
+SystemGroup.General.Numbering.API.NumberingMethodController
+    : SystemGroup.Framework.API.RahkaranEntityController<
+        SystemGroup.General.Numbering.Common.NumberingMethod,
+        SystemGroup.General.Numbering.Common.NumberingMethodModel,
+        SystemGroup.General.Numbering.Common.INumberingMethodFrontendService>
+```
+
+این نوع **abstract نیست** (`TypeAttributes = 0x00100001`) و متدهای اختصاصی `FetchTreeNodes`، `GetAttributeSelectorData` و `DefaultEntity` دارد. متدهای اختصاصی بررسی‌شده با `[HttpPost]` یا `[HttpGet]` نشانه‌گذاری شده‌اند. چنین ساختاری نشان می‌دهد الگوی ارث‌بری عمومی در یک ماژول نصب‌شده **واقعاً استفاده شده است**؛ اما صرف ارث‌بری و attributeها، فعال‌بودن route یا اجازهٔ دسترسی بیرونی به `Save/BatchSave` را به‌تنهایی اثبات نمی‌کند.
+
+**نکته دامنه:** `NumberingMethod` موجودیتی برای **تنظیم روش شماره‌گذاری** است، نه موجودیت `Sales.PriceList.PriceList`. وجود `Save` موروثی برای آن به‌معنی ایجاد شماره یا ثبت پیش‌نویس اعلامیه قیمت نیست.
+
+### ۲۶.۳. وضعیت بررسی کنترلر قیمت فروش
+
+در باینری‌های رسیده تا این مرحله، شامل `Framework.API` و `General.Numbering.API`، **کنترلر مشخصِ `PriceList` شناسایی نشده است**. بااین‌حال، این نتیجه به همه DLLهای نصب‌شده تعمیم‌پذیر نیست، چون `Rahkaran-Page-Tree-20261125-125844.zip` فهرست **فیلترشده** دارد و محتویات تمام اسمبلی‌های `.API.dll` در Gateway را برای تحلیل نوع‌ها شامل نمی‌شود.
+
+برای تعیین تکلیف این سؤال ابزار فقط‌خواندنی زیر آماده شد:
+
+`Inspect-Rahkaran-Gateway-PriceList-Controllers-READONLY.ps1` (PowerShell 7) یا `scan_gateway_metadata.py` همراه `inspect_dotnet.py` (Python 3).
+
+ابزار در مسیر اصلی `App` و پوشه‌های مستقیم انتهای نام `Gateway`، تنها فایل‌های `*.API.dll` و `*.API.deps.json` را تحلیل می‌کند و پنج گزارش می‌سازد:
+
+- `01-API-Inventory.csv`: کل فایل‌های `.API.dll` مشمول اسکن؛ برای تعیین دامنه.
+- `02-PriceList-TypeReferences.csv`: اسمبلی‌هایی که TypeRef مرتبط با PriceList / PriceAnnouncement دارند.
+- `03-Controller-Types.csv`: Controllerهای موجود، BaseType، abstract بودن، و نام متدهای مرتبط.
+- `04-Manifest-PriceList-Hits.csv`: manifestهای وابسته به `SystemGroup.Sales.PriceList`.
+- `WARNINGS.txt`: خطاهای غیرکشنده برای تعیین اعتبار نتیجه.
+
+**آزمون صحت محلی:** نسخه Python ابزار با دو DLL ارسالی اجرا شد و بدون خطا، `NumberingMethodController` را با ارث‌بری generic دقیق و `RahkaranEntityController` را با `IsAbstract=True` تشخیص داد؛ دامنه آزمون محلی صرفاً همان دو DLL است، نه تمام سرور.
+
+### ۲۶.۴. جدول تصمیم پس از گزارش جدید
+
+| نتیجه مشاهده‌شده در Gateway | تفسیر مجاز | اقدام بعدی |
+|---|---|---|
+| `PriceListController` با ارث‌بری از `RahkaranEntityController<PriceList,...>` | نامزد جدی Controller ذخیره اعلامیه | بررسی ایستای HTTP attributes، Route/Startup و قرارداد، سپس استعلام پشتیبانی |
+| یک DLL بدون نام PriceList ولی دارای TypeRef به `SystemGroup.Sales.PriceList.Common.PriceList` | نامزد غیرمستقیم یا mediator | بررسی کلاس‌های آن؛ نوع مرجع به‌تنهایی endpoint را اثبات نمی‌کند |
+| هیچ ارجاعی به PriceList در `.API.dll`های اسکن‌شده | شاهدی علیه وجود Controller مشخص در *این دامنه اسکن* | بررسی registration پویا/ماژول‌های دیگر یا رابط رسمی تأمین‌کننده؛ عدم وجود جهانی اثبات نمی‌شود |
+| فقط کنترلرهای عمومی Framework و Numbering یافت شد | همچنان بدون API تأییدشده اعلامیه | **عدم فعال‌سازی Write در Pricing**؛ ادامه استعلام API/SDK رسمی |
+
+### ۲۶.۵. مرز ایمنی و موارد اثبات‌نشده
+
+اسکن **هیچ DLL اختصاصی راهکاران را Load یا اجرا نمی‌کند** و هیچ درخواست HTTP/SQL یا تغییر فایل‌های نصب و داده‌های اصلی ندارد. گزارش فقط نام فایل‌ها، نوع‌ها، متدها و وابستگی‌ها را شامل می‌شود. از آپلود DLLهای اختصاصی در مخزن عمومی GitHub یا ارسال Cookie/Token/connection string خودداری شود.
+
+تا زمان شناسایی کنترلر واقعی، مستندشدن route و احراز هویت، تأیید مجوز مصرف API و آزمون ذخیره/شماره‌دهی با **وب آزمایشی**، وجود متد عمومی `Save/BatchSave` **هرگز مجوز ثبت از Pricing روی production نیست**. دامنه پروژه همچنان صرفاً ایجاد پیش‌نویس `State=1` با چند کالا و چند توافق پرداخت است.
+
+## ۲۷. نتیجه اسکن واقعی APIهای Gateway با PowerShell 5.1 — ۲۰۲۶/۱۱/۲۵
+
+### ۲۷.۱. منبع و دامنه اسکن
+
+منبع این بخش خروجی واقعی کاربر از اجرای `Inspect-Rahkaran-Gateway-PS51-READONLY.ps1` در سرور نصب راهکاران است؛ بسته `Rahkaran-Gateway-PS51-20261125-132653.zip` شامل پنج گزارش اصلی و `WARNINGS.txt` خالی. اسکن فقط فایل‌های `*.API.dll` در زیرپوشه‌های Gateway مشخص‌شده را به‌صورت **اسکن رشته باینری** بررسی کرده و **هیچ DLL را Load یا اجرا نکرده** است. بنابراین نتیجه آن «شاهد نام/عبارت» است، نه `TypeDef`، ارث‌بری کنترلر، route، قرارداد API یا رفتار ذخیره واقعی.
+
+| پوشه | DLLهای API بررسی‌شده |
+|---|---:|
+| `Gateway` | 174 |
+| `EmployeePortalGateway` | 50 |
+| `MobileGateway` | 20 |
+| `CustomerSalesPortalGateway` | 15 |
+| `TransportationGateway` | 12 |
+| **جمع** | **271** |
+
+بر اساس `README.txt` و فایل‌های CSV: **271** DLL اسکن‌شده، **17** ردیف نامزد (`02-PriceList-Candidates.csv`؛ بسیاری از این ردیف‌ها تکرار یک Framework/Numbering API در Gatewayهای متفاوت‌اند)، **47** manifest مرتبط، و **صفر** هشدار ثبت‌شده در `WARNINGS.txt`. تمامی 271 ردیف inventory وضعیت `Scanned` دارند.
+
+### ۲۷.۲. تنها وجود رشته PriceList در APIهای بررسی‌شده
+
+از 271 فایل API، **تنها یک فایل** در ستون `ContainsPriceListString` مقدار `True` داشته است:
+
+```text
+E:\Systemgroup\Rahkaran\App\CustomerSalesPortalGateway\
+    SystemGroup.Sales.CustomerSalesManagementPortal.API.dll
+```
+
+- اندازه ثبت‌شده: **409,600 بایت**.
+- در ستون `ContainsRahkaranEntityControllerString` برای همین فایل مقدار `False` ثبت شده است؛ **این نتیجه رشته‌ای است و عدم ارث‌بری یا نبود کنترلر generic را به‌طور قطعی اثبات نمی‌کند**.
+- از رشته‌های نامزد همان فایل، کنترلرهایی مانند `CustomerSalesPortalPurchaseController`، `CustomerSalesPortalReportController`، `CustomerSalesPortalUserController` و `ProductGroupFilterController` دیده شده‌اند؛ در این اسکن رشته‌ای نام واضح `PriceListController` گزارش نشده است.
+- بسته `CustomerSalesPortalGateway/SystemGroup.Sales.CustomerSalesManagementPortal.API.deps.json` نیز از جمله manifestهای دارای ارجاع PriceList است.
+- در inventory این دامنه فایل مشخصی با نام `SystemGroup.Sales.PriceList.API.dll` وجود ندارد.
+
+**تفسیر محدود:** این تنها نامزد جدید برای تحلیل metadata دقیق‌تر است، ولی وجود واژه PriceList ممکن است صرفاً ناشی از دسترسی/نمایش قیمت در پورتال مشتریان باشد، نه ایجاد `SLS3.PriceList`. «وجود رشته PriceList» **به معنی وجود endpoint ثبت اعلامیه فروش نیست**.
+
+### ۲۷.۳. نتیجه برای مسیرهای Framework و Numbering
+
+فایل‌های `SystemGroup.Framework.API.dll` و `SystemGroup.General.Numbering.API.dll` در چند Gateway با محتوا/اندازه یکسان ظاهر شده‌اند (اندازه‌های گزارش‌شده به‌ترتیب 97,792 و 9,728 بایت). حضور متن `RahkaranEntityController` در آن‌ها با نتایج IL قبلی سازگار است. این مسئله **وجود کنترلر concrete ویژه `PriceList` را نشان نمی‌دهد**. فایل‌های `SystemGroup.ECM.NumberingManagement.API.dll` نیز به امور شماره‌گذاری مکاتبات مربوط‌اند و نباید با `Sales.PriceList` خلط شوند.
+
+`SystemGroup.Sales.PriceList.Business.deps.json` و `SystemGroup.Sales.PriceList.Web.deps.json` در فهرست manifestهای مرتبط وجود دارند، اما شواهد فعلی همچنان دربارهٔ **سرویس تجاری و صفحه وب** است، نه endpoint مستقل ثبت قیمت.
+
+### ۲۷.۴. تصمیم و اقدام بعدی بدون نصب یا دستکاری سرور
+
+اولویت بعدی بررسی **ایستای metadata و IL** فقط همین فایل محدود است:
+
+- `CustomerSalesPortalGateway/SystemGroup.Sales.CustomerSalesManagementPortal.API.dll`
+- در صورت امکان `CustomerSalesPortalGateway/SystemGroup.Sales.CustomerSalesManagementPortal.API.deps.json`
+
+روی سرور صرفاً با PowerShell 5.1 می‌توان از همین فایل‌ها ZIP تهیه کرد؛ این کار کد راهکاران را اجرا نمی‌کند و نیازمند Python یا نصب برنامه‌ای نیست. فایل‌های اختصاصی فقط در صورت مجوز انتقال بررسی شوند و در GitHub عمومی بارگذاری نشوند. در تحلیل آفلاین باید نوع‌های تعریف‌شده، ارث‌بری Controllerها، API attributeها و اشاره واقعی به `SystemGroup.Sales.PriceList.Common.PriceList` بررسی شود؛ پس از آن درباره وجود مسیر ثبت اظهار نظر می‌کنیم.
+
+**حد نتیجه در این مقطع:** هیچ `PriceListController` قابل‌تأیید یا URL رسمی ذخیره اعلامیه قیمت در Gateway اثبات نشده است؛ `Pricing` همچنان نباید روی production عملیات نوشتن/شماره‌دهی مستقیم را فعال کند. ثبت پیش‌نویس با `State=1` روی دیتابیس تست، مجوز فنی یا عملیاتی برای production محسوب نمی‌شود.
