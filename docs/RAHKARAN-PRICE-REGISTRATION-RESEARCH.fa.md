@@ -2,13 +2,13 @@
 
 > مخزن مصرف‌کننده: `cognitive-kernel/Pricing`  
 > مسیر: `docs/RAHKARAN-PRICE-REGISTRATION-RESEARCH.fa.md`  
-> تاریخ بازنگری: **۱۴۰۵/۰۸/۳۰ (۲۰۲۶/۱۱/۲۱)**؛ تکمیل پژوهش IL و بررسی فقط‌خواندنی بسته‌های Business و ماژول‌های `Framework.Spl`  
-> وضعیت: **ثبت پیش‌نویس خالص با COMMIT در دیتابیس تست موفق بوده است (از جمله PriceListID=48147 و آزمون بعدی PriceListID=48197)؛ سرویس عمومی شماره‌گذاری در اسمبلی شناسایی شده، اما روش تخصیص شماره عملیاتی و قابل فراخوانی از Pricing هنوز تأیید نشده است.**  
+> تاریخ بازنگری: **۱۴۰۵/۰۹/۰۴ (۲۰۲۶/۱۱/۲۵)**؛ افزودن نتایج SQL تست، لاگ IIS و تحلیل ایستای دو اسمبلی `General.Numbering.API` و `Framework.API`؛ بخش‌های ۱ تا ۲۱ بدون حذف حفظ شده‌اند.  
+> وضعیت: **ثبت پیش‌نویس دوکالا/دوتوافق با COMMIT در دیتابیس تست تا PriceListID=48202 تأیید شده؛ آزمون شماره خودکار 46665 با ROLLBACK پایان یافته؛ `RahkaranEntityController<T0,T1,T2>.Save/BatchSave` در `Framework.API` شناسایی شده‌اند، اما اتصال قابل‌استفاده و پشتیبانی‌شده به `PriceList` و شماره‌گذاری رسمی در محیط عملیاتی هنوز تأیید نشده است.**  
 > دامنه قطعی: **فقط ایجاد پیش‌نویس اعلامیه قیمت (`State=1`)؛ بدون تأیید، فعال‌سازی یا ایجاد/خاتمه قوانین قیمت.**
 
-> **راهنمای نسخه:** بخش‌های ۱ تا ۱۵ تاریخچه پژوهش، بخش ۱۶ آزمون ثبت پیش‌نویس در ۱۴۰۵/۰۸/۲۶ و بخش ۱۷ SQL **صرفاً آزمایشی** هستند. بخش ۱۸ نتایج Trace و metadata، بخش ۱۹ تصمیم همان مقطع، بخش ۲۰ تحلیل IL مسیر ذخیره، و **بخش ۲۱ آخرین شواهد بارگذاری بسته‌های Business و Spl در ۱۴۰۵/۰۸/۳۰** را ثبت می‌کند. برای موضوع شماره‌گذاری و مجوز استقرار، **بخش ۲۱ و سپس بخش ۲۰** در صورت تعارض بر برداشت‌های قدیمی مقدم‌اند. هیچ آبجکتی در دیتابیس عملیاتی نباید ایجاد، اصلاح یا حذف شود.
+> **راهنمای نسخه:** بخش‌های ۱ تا ۲۱ تاریخچه پژوهش تا ۱۴۰۵/۰۸/۳۰ را حفظ می‌کنند؛ **بخش‌های ۲۲ تا ۲۵ یافته‌های بعدیِ ۱۴۰۵/۰۹/۰۴ و وضعیت فعلی** هستند. در تعارض بین ارزیابی‌های تاریخی و یافته‌های جدیدترِ تأییدشده، بخش‌های ۲۲ تا ۲۵ مقدم‌اند. هیچ آبجکتی در دیتابیس عملیاتی نباید ایجاد، اصلاح یا حذف شود.
 
-> **هشدار استقرار (۱۴۰۵/۰۸/۳۰):** وجود متدهای `GenerateNewNumber` و `HandlePreSaveNumbering` و فراخوانی `HandlePreSaveNumbering` در مسیر عمومی `BusinessBase<T>.DoNumberAssignment` تأیید شده است؛ اما **پیاده‌سازی سرویس، قرارداد API رسمی قابل‌فراخوانی از PHP، الگوریتم رزرو و هماهنگی هم‌زمان با کاربران راهکاران هنوز تأیید نشده است**. نرم‌افزار آزمایشی راهکاران در دسترس نیست و **فقط دیتابیس تست وجود دارد**. کد SQL بخش ۱۷ و هر نسخه مبتنی بر `MAX(Number)+1` **فقط ابزار آزمون در دیتابیس تست** هستند؛ استفاده در محیط عملیاتی ممنوع است.
+> **هشدار استقرار (۱۴۰۵/۰۹/۰۴):** وجود کنترلر عمومی `Save/BatchSave` در `Framework.API`، وجود قرارداد `IPriceListService.SavePriceLists` و مسیر داخلی `BusinessBase<T>.DoNumberAssignment` **به معنی احراز endpoint رسمی ثبت PriceList، تضمین شماره‌دهی، مجوز استفاده بیرونی یا ایمنی هم‌زمانی نیست**. تنها یک دیتابیس تست بازیابی‌شده از بک‌آپ و وب راهکاران عملیاتی در دسترس بوده‌اند؛ روی وب/دیتابیس عملیاتی هیچ آزمون نوشتنی اجرا نشود. SQL شماره‌دهی مبتنی بر `MAX(Number)+1` صرفاً برای تست بک‌آپ است و در محیط اصلی ممنوع است.
 
 ## ۱. خلاصه مدیریتی و سطح اطمینان
 
@@ -1470,3 +1470,198 @@ Framework.SplNative64.dll           ── readable strings: SGCR / AssemblyLoad
 - نتیجه قطعی این مرحله **کشف یک نامزد فنی برای Loader** است؛ نه کشف API رسمی و نه تأیید پیاده‌سازی سرویس.
 - تغییرات فقط در همین فایل Markdown است؛ هیچ عملیاتی روی فایل‌های نصب‌شده یا دیتابیس انجام نشده است.
 
+
+---
+
+## ۲۲. به‌روزرسانی آزمون‌های دیتابیس بازیابی‌شده — ۱۴۰۵/۰۹/۰۴ (۲۰۲۶/۱۱/۲۵)
+
+> وضعیت: **تأییدشده با خروجی SQL ارائه‌شده توسط اپراتور**. سرور `IT-Soleymani` / دیتابیس `Rahkaran_sg3` یک نسخه بازیابی‌شده از بک‌آپ واقعی است؛ محیط وب اجرایی مستقل برای آن وجود ندارد. تاریخ داده‌ها لزوماً با تاریخ عملیاتی امروز برابر نیست.
+
+### ۲۲.۱. تنظیمات شماره‌گذاری و رزرو
+
+| موضوع | مقدار مشاهده‌شده |
+|---|---|
+| `SYS3.NumberingMethod.NumberingMethodID` | 77 |
+| عنوان | `اعلامیه قیمت` |
+| `NumberTemplate` | `*سریال` |
+| `NumberType` | 1 |
+| `NumberDigitsType` | 2 |
+| `NumberOfDigits` | 0 |
+| `AssignApproch` | 1 |
+| `NumberingMethodState` | 1 |
+| `CheckUniqueness` | 1 |
+| `MissedNumberBehavior` | 0 |
+| `NumberingMethodRangeID` | 77؛ **شناسه بازه را از FK تعیین کنید و برابری آن با ID روش را فرض نگیرید** |
+| `Priority` / `StartSerial` / `FinishSerial` / `SerialStep` | 1 / 1 / `NULL` / 1 |
+| `DomainKey` | رشته خالی |
+| شمار رزروها در آن لحظه | 92 |
+| کمترین / بیشترین سریال رزروشده | 46570 / 46664 |
+
+برای ستون `SLS3.PriceList.Number` در نمونه بررسی‌شده ایندکس یکتای مستقل مشاهده نشد؛ PK روی `PriceListID` قرار دارد. در مقابل، ایندکس منحصربه‌فرد `UIX_SYS3_NumberingRangeReservation_NumberingMethodRangeRef_DomainKey_ReservedSerial` بر روی سه‌گانه بازه/دامنه/سریال وجود دارد. `CheckUniqueness=1` یک تنظیم نرم‌افزاری است و رفتار اجرایی دقیق آن هنوز شناسایی نشده است. گزارش جست‌وجوی تکراری‌ها دو ردیف با شماره خالی نشان داد؛ این داده‌ها را نباید به معنی شماره تجاری عددی تکراری تعبیر کرد.
+
+`SYS3.spAddNumberingMethodReservation` مقدار `@ReservedValue` را از فراخواننده می‌گیرد؛ **این Procedure شماره بعدی را تولید نمی‌کند.** کنترل concurrency صرفاً با قفل اختصاصی Pricing مثل `sp_getapplock` با UI راهکاران مشترک نیست و ادعای سازگاری با UI مجاز نیست.
+
+### ۲۲.۲. آزمایش چندکالا و چند توافق
+
+| آزمون | وضعیت قطعی |
+|---|---|
+| ثبت پیش‌نویس دو کالا و دو توافق پرداخت | `PriceListID=48202`، `Number=46664`، `State=1`، `ItemCount=2`، `AgreementCount=2`؛ در دیتابیس تست COMMIT شده |
+| رزرو شماره 46664 | در Range=77 / DomainKey خالی موجود است |
+| محاسبه و درج آزمایشی شماره 46665 | `PriceListID=48203`، دو کالا و دو توافق در تراکنش مشاهده شد؛ **`@CommitChanges=0` و ROLLBACK**؛ رکورد و رزرو 46665 پس از آن مشاهده نشد |
+| آخرین `CreationDate` در بررسی ۲۰۲۶/۱۱/۲۵ | `2026-11-24 16:13:17.197` مربوط به اعلامیه 48202 |
+
+این نتایج **درستی بخشی از ساختار جداول و رفتار آزمایشی SQL** را نشان می‌دهند، نه هم‌زمانی با راهکاران اصلی، نه صحت الگوریتم رسمی شماره بعدی، و نه قابلیت نمایش/تأیید رکورد در یک نمونه وب تست. `StartDate` و `CreationDate` دو مفهوم مستقل هستند؛ تاریخ شروع اعتبار ممکن است پیش از زمان ایجاد رکورد باشد.
+
+## ۲۳. شواهد رابط کاربری و مسیر وب اعلامیه قیمت — ۱۴۰۵/۰۹/۰۴
+
+### ۲۳.۱. IIS و ASP.NET Web Forms
+
+گزارش فقط‌خواندنی از ۱۰ فایل لاگ W3C قدیمی و جدید قابل‌خواندن، `5820` درخواست منطبق را ثبت کرده است. فایل لاگ روز جاری به‌دلیل قفل بودن قابل خواندن نبود؛ عملیات inventory سایت IIS نیز با HRESULT `0x8007000D` شکست خورد، ولی خواندن لاگ‌ها انجام شد.
+
+| درخواست | تعداد گزارش‌شده | تفسیر |
+|---|---:|---|
+| `POST /Sales/PriceList/PriceListPages/Edit.aspx` | 3293 | Postback فرم؛ همه درخواست‌ها الزاماً ذخیره نیستند |
+| `GET /Sales/PriceList/PriceListPages/Edit.aspx` | 525 | بازکردن فرم |
+| `GET /Sales/PriceList/PriceListPages/Edit.js` | 10 | تحویل اسکریپت صفحه، نه لزوماً فایل مستقل روی دیسک |
+| `GET /Download.ashx/PriceListItems.xlsx` | 41 | دریافت قالب اکسل |
+| `POST /Sales/PriceList/PriceListPages/GetPriceListEndDate.aspx` | 2 | درخواست مرتبط با تاریخ پایان |
+
+در Chrome دو نمونه POST بررسی شدند:
+
+1. `__CALLBACKID=fvwPriceList$grdCandidateParameters$ClientTemplates$cbConceptPropertyName` و `Command=LOD`، مربوط به بارگذاری داده کنترل انتخاب.
+2. `__ASYNCPOST=true` با `fvwPriceList$btnManualPostBack`، `hidPageData.Command=0` و آرایه‌های تغییرات اقلام/توافق‌ها خالی، یک Partial Postback؛ **نشانه قطعی ذخیره نیست**.
+
+فرم از CSRF، Cookie و وضعیت کنترل‌های Web Forms استفاده می‌کند. **هیچ هدر احراز هویت یا Cookie، توکن، مقدار VIEWSTATE/EVENTVALIDATION و Payload کامل درخواست در مستندات یا GitHub نگهداری نشود.** اطلاعات نشستِ قبلاً منتشرشده باید مطابق رویه امنیتی سازمان باطل شوند. تکرار POST داخلی با PHP جایگزین API رسمی نیست.
+
+### ۲۳.۲. یافته‌های اسمبلی وب و فرم
+
+بر اساس بررسی metadata/IL نمونه‌های `SystemGroup.Sales.PriceList.Web.dll` و `SystemGroup.Sales.PriceList.Common.dll`:
+
+- کلاس `SystemGroup.Sales.PriceList.Web.PriceListPages.Edit` دارای متدهای `OnEntityCreated`، `OnEntityLoaded`، `OnEntitySaving` و `btnManualPostBack_OnClick` است.
+- `OnEntitySaving` اعتبارسنجی‌های مرتبط با پارامترهای اعلامیه و ادغام تاریخ/زمان را انجام می‌دهد و به مسیر پایه ذخیره متصل است؛ به‌تنهایی مولد شماره نیست.
+- `btnManualPostBack_OnClick` برای تنظیم نمایش/پارامترهای فرم استفاده می‌شود؛ مشاهده نام آن در Network **به معنی اجرای Save نیست**.
+- در منابع فرم، کنترل شماره `SgNumberingTextBox` با `NumberedEntity='<%# CurrentEntity %>'` و `Text='<%# Bind("Number") %>'` به موجودیت متصل است.
+- قرارداد `void IPriceListService.SavePriceLists(ref List<PriceList> priceLists)` در اسمبلی Common وجود دارد. **تضمین تراکنش اتمیکِ کل لیست، شرایط احراز هویت و امکان فراخوانی بیرونی از روی امضا ثابت نشده‌اند**.
+
+### ۲۳.۳. ساختار فایل‌های نصب‌شده
+
+`Rahkaran-Page-Tree-20261125-125844.zip` از بررسی 26,708 فایل تولید شد؛ 370 فایل مرتبط و 71 تطبیق کلیدواژه گزارش شد. در جست‌وجوی فیزیکی فایل `Edit.aspx` و `Edit.js` با نام و مسیر PriceList پیدا نشد، ولی DLL وب و PDB آن، فایل‌های `.Business.bin/.dat` و manifestهای وابستگی یافت شدند. درخت فایل‌ها با **درخت فراخوانی متدها** متفاوت است. نبود فایل مستقل به‌تنهایی به معنی نبود محتوای صفحه نیست؛ منابع ممکن است embedded یا از route ارائه شوند.
+
+## ۲۴. تحلیل ایستای APIها — یافته‌های ۲۰۲۶/۱۱/۲۵
+
+### ۲۴.۱. `SystemGroup.General.Numbering.API.dll`
+
+| ویژگی | مقدار |
+|---|---|
+| منشأ | `Gateway/SystemGroup.General.Numbering.API.dll` و مسیرهای Gateway دیگر |
+| اندازه | 9,728 بایت |
+| نسخه مشاهده‌شده | `20.0.31.43266`؛ هدف .NET 8 |
+| SHA-256 فایل بررسی‌شده | `5380334d88f3d6dfc18b4b2788589ca7bbe1f8771a8d4b130569982add10ed8f` |
+| روش بررسی | تحلیل ایستای metadata/IL، بدون اجرای DLL |
+
+متدها و رفتارهای بررسی‌شده:
+
+| کلاس/متد | Attribute | عملکرد قابل اثبات |
+|---|---|---|
+| `NumberingController.EntityNumbering(string entityFullName)` | `HttpGet` | تعیین ویژگی‌های readonly/required شماره در حالت New/Edit، با تکیه بر metadata و روش تخصیص |
+| `NumberingController.HasEntityTypeActiveNumbering` | `HttpGet` | بررسی فعال بودن شماره‌گذاری |
+| `NumberingMethodController.FetchTreeNodes` | `HttpPost` | دریافت درخت روش شماره‌گذاری |
+| `NumberingMethodController.GetAttributeSelectorData` | `HttpPost` | دریافت اطلاعات selector |
+| `NumberingMethodController.DefaultEntity` | `HttpGet` | داده موجودیت پیش‌فرض |
+
+بدنه `EntityNumbering` به `INumberingService.GetEntityNumberAssignApproch` رجوع می‌کند، اما **`GenerateNewNumber` و `HandlePreSaveNumbering` را فراخوانی نمی‌کند**. بنابراین این endpoint مشخص، مولد رسمی شماره تجاری نیست؛ آنچه در DLL بررسی شد بیشتر اطلاعات UI و تنظیمات شماره‌گذاری است. نبود این فراخوانی‌ها در متدهای بررسی‌شده، نفی وجود سرویس داخلی/دیگر APIها نیست.
+
+### ۲۴.۲. `SystemGroup.Framework.API.dll` — **یافته جدید و مهم**
+
+فایل جدید دریافت‌شده در `Rahkaran-Framework-API.zip` شامل اسمبلی `SystemGroup.Framework.API.dll` با اندازه 97,792 بایت است؛ SHA-256 آن `e7a1fa567d6f871930583a35b81ac2d7218df68307574d39d8ccf247a83e7903` است. بررسی با پارسر ایستای ECMA-335 بر روی metadata/IL انجام شد؛ DLL load/execute نشد.
+
+در `SystemGroup.Framework.API.RahkaranEntityController<T0,T1,T2>` دو متد عمومی زیر **واقعاً در metadata وجود دارند**:
+
+```csharp
+IActionResult Save(EntityWithExtensions<T0> entity);
+IActionResult BatchSave(List<T0> entities);
+```
+
+همچنین `Get(long id)`، `New()`، `Delete(...)`، `DeleteByID(...)` و متدهای کنترل مجوز از جمله `HasPermission(...)` دیده شدند. بررسی IL نشان می‌دهد:
+
+- `Save` وضعیت اعتبار `ModelState` و مجوز را بررسی می‌کند و به سرویس ذخیره زیرین واگذار می‌کند؛ سپس خطا/پاسخ و ثبت رویداد را مدیریت می‌کند.
+- `BatchSave` وضعیت موجودیت‌ها و مجوز را بررسی کرده و فراخوانی ذخیره گروهیِ سرویس زیرین دارد. **از این یافته نه اتمیک‌بودن کل batch و نه تولید شماره برای PriceList اثبات می‌شود.**
+- امضای generic controller **نشان نمی‌دهد** که برای `PriceList` حتماً یک controller مشتق‌شده ثبت شده، چه URLی قابل فراخوانی است، چه authentication/authorizationی لازم دارد یا آیا چنین endpointی برای یکپارچه‌سازی خارجی پشتیبانی شده است.
+- مسیر عمومی framework با `IPriceListService.SavePriceLists(ref List<PriceList>)` **دو قرارداد متفاوت** هستند. شباهت نام عملیات ذخیره، دلیل یکی بودن آن‌ها نیست.
+
+**نتیجه قابل اتکا:** این اسمبلی وجود سازوکار *generic HTTP-side save/batch-save* را نشان می‌دهد؛ این یافته **مسیر تحقیق را از جست‌وجوی شماره‌دهنده مستقل به بررسی ثبت خود موجودیت با سرویس بومی** تغییر می‌دهد، ولی هنوز یکپارچه‌سازی عملیاتیِ معتبر برای Pricing را اثبات نمی‌کند.
+
+### ۲۴.۳. نقشه ارتباط با سطح اطمینان
+
+```text
+[تأییدشده: metadata / IL مستقل]
+SystemGroup.Framework.API.RahkaranEntityController<T0,T1,T2>
+  ├── Save(EntityWithExtensions<T0>)
+  └── BatchSave(List<T0>)
+       └── واگذاری به سرویس زیرین (نوع PriceList هنوز تأیید نشده)
+
+[تأییدشده: قرارداد مجزای فروش]
+SystemGroup.Sales.PriceList.Common.IPriceListService
+  └── SavePriceLists(ref List<PriceList>)
+
+[تأییدشده: مسیر عمومی تجاری]
+BusinessBase<T>.OnSavingRecord
+  └── DoNumberAssignment
+       └── INumberingService.HandlePreSaveNumbering
+
+[تأییدشده: API شماره‌گذاریِ UI]
+General.Numbering.API.NumberingController.EntityNumbering
+  └── GetEntityNumberAssignApproch
+       └── ویژگی‌های فیلد شماره برای New/Edit
+
+[نامعلوم: اتصالات و قرارداد اجرایی]
+PriceList-specific API controller / URL / authorization
+  ? → save service / SavePriceLists / business hook
+  ? → GenerateNewNumber / reservation / transaction
+  ? → COMMIT اتمیک، retry، concurrency با UI راهکاران
+```
+
+## ۲۵. تصمیم جاری، کارهای باقی‌مانده و معیار پایان پروژه
+
+### ۲۵.۱. موارد بسته‌شده
+
+1. ساختار درج `SLS3.PriceList`، `SLS3.PriceListItem` و `SLS3.PriceListResultRow` در بک‌آپ تست به‌صورت چندکالا/چندتوافق تأیید شده است؛ شرط دامنه **فقط `State=1`** باقی می‌ماند.
+2. سازوکار شناسه داخلی `SYS3.spGetNextId` شناخته شده است.
+3. تنظیمات روش شماره‌گذاری 77، بازه، رزرو و ایندکس یکتا در بک‌آپ تست مشاهده و ثبت شده‌اند؛ **الگوریتم رسمی انتخاب/رزرو شماره کشف نشده است**.
+4. مسیر Web Forms و دو نوع Postback غیرذخیره شناسایی شده‌اند.
+5. قرارداد `SavePriceLists`، مسیر عمومی `HandlePreSaveNumbering`، کنترلرهای `General.Numbering.API` و `Framework.API.RahkaranEntityController.Save/BatchSave` در metadata شناسایی شده‌اند.
+
+### ۲۵.۲. موارد باز — با اولویت
+
+| اولویت | پرسش/کار | شاهد لازم برای بستن |
+|---|---|---|
+| P0 | آیا controller مشتق از `RahkaranEntityController<PriceList,...>` در نصب موجود است؟ | نام DLL، نوع کامل کنترلر، Route/Http verb، امضای contract؛ بررسی ایستای فایل‌ها یا مستند رسمی |
+| P0 | آیا API/SDK ثبت `PriceList` توسط تأمین‌کننده پشتیبانی می‌شود؟ | مستند یا پاسخ صریح رسمی، مجوز دسترسی بیرونی، نسخه و قرارداد |
+| P0 | آیا عملیات ذخیره از مسیر رسمی، شماره‌گذاری را اجرا می‌کند؟ | شواهد IL معتبر یا آزمایش امن در **نمونه وب آزمایشی**؛ نه وب اصلی |
+| P0 | هم‌زمانی با UI و رزرو شماره چگونه تضمین می‌شود؟ | آزمون concurrency و سناریوهای شکست در محیط اجرایی غیرعملیاتی |
+| P1 | آیا همه کالاها/توافق‌ها در یک BatchSave تراکنشی‌اند؟ | قرارداد سرویس و تست failure injection مجاز در محیط تست |
+| P1 | چگونه retry و idempotency انجام شود؟ | شناسه درخواست، audit و recovery در **دیتابیس Pricing**، همراه با تطبیق نتیجه در راهکاران |
+| P1 | آیا همه اعتبارسنجی‌های UI با مسیر API اعمال می‌شوند؟ | تطبیق قواعد کالا/واحد/ارز/توافق/تاریخ و بررسی پیش‌نویس در رابط کاربری تست |
+
+### ۲۵.۳. دستورالعمل مرحله بعد
+
+**قدم بعدی فنی:** با تحلیل ایستای DLLهای مرتبط با `PriceList` در Gatewayها، نوع‌های `PriceListController` و ارث‌بری آن‌ها از `RahkaranEntityController` را جست‌وجو کنیم. در صورت نبودشان، سازوکار ثبت/registration این کنترلرها را بررسی کنیم. صرف وجود `Framework.API.dll` یا نبود فایل با نام `Sales.PriceList.API.dll` در یک فهرست فیلترشده، برای نتیجه‌گیری قطعی کافی نیست.
+
+**قدم بعدی رسمی:** درخواست کتبی مشخص از پشتیبانی همکاران سیستم برای API/SDK پشتیبانی‌شده ایجاد «پیش‌نویس اعلامیه قیمت فروش با چند کالا و چند توافق پرداخت» با شماره‌گذاری بومی، نتیجه تراکنش، idempotency و کنترل مجوز.
+
+**شرط پیش از استقرار:** تا زمان مشخص‌شدن مسیر معتبر ثبت و شماره‌دهی، آزمون concurrency، محافظت در برابر ثبت تکراری و مشاهده نتیجه در وب تست، feature flag ثبت به راهکاران در Pricing خاموش می‌ماند. **هیچ `INSERT/UPDATE/DELETE`، تغییر schema، شبیه‌سازی درخواست Save یا اجرای DLL اختصاصی روی محیط عملیاتی انجام نشود.** بررسی فقط‌خواندنی metadata، manifest، فایل‌ها و لاگ‌های بدون اطلاعات محرمانه مجاز است.
+
+### ۲۵.۴. فهرست شواهد اضافه‌شده در این بازنگری
+
+| منبع | دامنه اثبات |
+|---|---|
+| خروجی SQL `NumberingMethod/Range/Reservation/Index` و `48202/46664` | ساختار و آزمون بک‌آپ تست |
+| خروجی SQL آزمون `48203/46665` با `ROLLED BACK` | اجرای آزمایشی، **نه ثبت ماندگار یا شماره‌دهی رسمی** |
+| `Rahkaran-Service-Surface-READONLY.txt` و `Rahkaran-Spl-Metadata.txt` | حضور DLLها/manifestها و سرنخ بارگذاری SGCR |
+| گزارش IIS مسیرهای PriceList | الگوی Web Forms/Postback؛ نه API ذخیره |
+| `Rahkaran-Page-Tree-20261125-125844.zip` | درخت فایل و manifestها |
+| `Rahkaran-PriceList-Numbering-Metadata-20261125.zip` | metadata/IL مسیر PriceList و Framework |
+| `Rahkaran-Numbering-API-Only.zip` و `Rahkaran-Numbering-API-Analysis-2026-11-25.fa.md` | `General.Numbering.API` و نبود allocator در endpoint بررسی‌شده |
+| `Rahkaran-Framework-API.zip` (۲۰۲۶/۱۱/۲۵) | `RahkaranEntityController.Save/BatchSave` در `Framework.API` |
+
+**قانون مستندسازی:** تمام داده‌های فنی فوق مربوط به نسخه/نمونه مشخص‌شده‌اند؛ گزاره‌های قراردادی و پشتیبانی‌نشده به‌عنوان فرضیه یا «نیازمند آزمون» باقی می‌مانند. فایل‌های DLL اختصاصی، توکن‌ها، Cookieها، session، CSRF و رشته‌های اتصال در GitHub منتشر نشوند.
